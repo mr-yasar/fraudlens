@@ -1,0 +1,433 @@
+{
+  "model_name": "logistic_regression",
+  "model_version": "v1.2.0",
+  "sample_size": 100,
+  "feature_importance_ranking": [
+    {
+      "feature_name": "num__composite_risk_flag_count",
+      "mean_abs_shap": 2.1173,
+      "mean_shap": -0.6227,
+      "rank": 1
+    },
+    {
+      "feature_name": "num__customer_behaviour_deviation",
+      "mean_abs_shap": 0.72,
+      "mean_shap": 0.0472,
+      "rank": 2
+    },
+    {
+      "feature_name": "num__Transaction_Hour",
+      "mean_abs_shap": 0.6747,
+      "mean_shap": -0.1724,
+      "rank": 3
+    },
+    {
+      "feature_name": "num__Unusual_Location",
+      "mean_abs_shap": 0.6746,
+      "mean_shap": -0.1273,
+      "rank": 4
+    },
+    {
+      "feature_name": "num__International_Transaction",
+      "mean_abs_shap": 0.5631,
+      "mean_shap": 0.0463,
+      "rank": 5
+    },
+    {
+      "feature_name": "num__is_extreme_amount_surge",
+      "mean_abs_shap": 0.5387,
+      "mean_shap": 0.0826,
+      "rank": 6
+    },
+    {
+      "feature_name": "num__location_change_signal",
+      "mean_abs_shap": 0.5164,
+      "mean_shap": 0.0974,
+      "rank": 7
+    },
+    {
+      "feature_name": "num__is_location_mismatch",
+      "mean_abs_shap": 0.5164,
+      "mean_shap": 0.0974,
+      "rank": 8
+    },
+    {
+      "feature_name": "num__cos_hour",
+      "mean_abs_shap": 0.4218,
+      "mean_shap": -0.051,
+      "rank": 9
+    },
+    {
+      "feature_name": "num__sin_hour",
+      "mean_abs_shap": 0.4114,
+      "mean_shap": 0.1183,
+      "rank": 10
+    },
+    {
+      "feature_name": "num__surge_on_intl",
+      "mean_abs_shap": 0.3451,
+      "mean_shap": -0.1625,
+      "rank": 11
+    },
+    {
+      "feature_name": "num__failed_attempts_velocity_surge",
+      "mean_abs_shap": 0.3362,
+      "mean_shap": -0.1502,
+      "rank": 12
+    },
+    {
+      "feature_name": "num__failed_attempt_intensity",
+      "mean_abs_shap": 0.333,
+      "mean_shap": 0.0186,
+      "rank": 13
+    },
+    {
+      "feature_name": "num__Previous_Transaction_Amount",
+      "mean_abs_shap": 0.2948,
+      "mean_shap": 0.0913,
+      "rank": 14
+    },
+    {
+      "feature_name": "num__Average_Previous_Amount",
+      "mean_abs_shap": 0.2853,
+      "mean_shap": -0.0953,
+      "rank": 15
+    },
+    {
+      "feature_name": "cat__Usual_Location_Hassan",
+      "mean_abs_shap": 0.2827,
+      "mean_shap": 0.0961,
+      "rank": 16
+    },
+    {
+      "feature_name": "num__New_Device",
+      "mean_abs_shap": 0.2397,
+      "mean_shap": 0.2397,
+      "rank": 17
+    },
+    {
+      "feature_name": "num__device_change_signal",
+      "mean_abs_shap": 0.2397,
+      "mean_shap": 0.2397,
+      "rank": 18
+    },
+    {
+      "feature_name": "num__international_risk_signal",
+      "mean_abs_shap": 0.2364,
+      "mean_shap": 0.0911,
+      "rank": 19
+    },
+    {
+      "feature_name": "num__Amount_Ratio",
+      "mean_abs_shap": 0.23,
+      "mean_shap": -0.0092,
+      "rank": 20
+    },
+    {
+      "feature_name": "num__amount_to_average_ratio",
+      "mean_abs_shap": 0.23,
+      "mean_shap": -0.0092,
+      "rank": 21
+    },
+    {
+      "feature_name": "num__amount_deviation_strength",
+      "mean_abs_shap": 0.23,
+      "mean_shap": -0.0092,
+      "rank": 22
+    },
+    {
+      "feature_name": "num__log_amount",
+      "mean_abs_shap": 0.1894,
+      "mean_shap": 0.0669,
+      "rank": 23
+    },
+    {
+      "feature_name": "cat__Usual_Location_Bangalore",
+      "mean_abs_shap": 0.1868,
+      "mean_shap": -0.0,
+      "rank": 24
+    },
+    {
+      "feature_name": "cat__Usual_Location_Mysore",
+      "mean_abs_shap": 0.1859,
+      "mean_shap": 0.0227,
+      "rank": 25
+    },
+    {
+      "feature_name": "cat__Transaction_Type_Bill Payment",
+      "mean_abs_shap": 0.1807,
+      "mean_shap": 0.0187,
+      "rank": 26
+    },
+    {
+      "feature_name": "cat__Usual_Location_Hyderabad",
+      "mean_abs_shap": 0.1785,
+      "mean_shap": -0.0,
+      "rank": 27
+    },
+    {
+      "feature_name": "num__amount_diff_prev_abs",
+      "mean_abs_shap": 0.1751,
+      "mean_shap": -0.0568,
+      "rank": 28
+    },
+    {
+      "feature_name": "cat__Device_Type_Android",
+      "mean_abs_shap": 0.1691,
+      "mean_shap": -0.0742,
+      "rank": 29
+    },
+    {
+      "feature_name": "cat__Location_Mumbai",
+      "mean_abs_shap": 0.1665,
+      "mean_shap": -0.0118,
+      "rank": 30
+    },
+    {
+      "feature_name": "cat__Transaction_Type_Online Payment",
+      "mean_abs_shap": 0.1638,
+      "mean_shap": 0.071,
+      "rank": 31
+    },
+    {
+      "feature_name": "cat__Location_Bangalore",
+      "mean_abs_shap": 0.1561,
+      "mean_shap": 0.0,
+      "rank": 32
+    },
+    {
+      "feature_name": "num__intl_unusual_loc_risk",
+      "mean_abs_shap": 0.1447,
+      "mean_shap": -0.1447,
+      "rank": 33
+    },
+    {
+      "feature_name": "num__is_night_transaction",
+      "mean_abs_shap": 0.1435,
+      "mean_shap": 0.1435,
+      "rank": 34
+    },
+    {
+      "feature_name": "num__temporal_risk_signal",
+      "mean_abs_shap": 0.1435,
+      "mean_shap": 0.1435,
+      "rank": 35
+    },
+    {
+      "feature_name": "num__amount_velocity_24h_surge",
+      "mean_abs_shap": 0.1419,
+      "mean_shap": 0.0643,
+      "rank": 36
+    },
+    {
+      "feature_name": "cat__Location_Mangalore",
+      "mean_abs_shap": 0.1318,
+      "mean_shap": -0.0499,
+      "rank": 37
+    },
+    {
+      "feature_name": "num__Amount",
+      "mean_abs_shap": 0.1289,
+      "mean_shap": -0.0433,
+      "rank": 38
+    },
+    {
+      "feature_name": "cat__Location_Hyderabad",
+      "mean_abs_shap": 0.1268,
+      "mean_shap": 0.0129,
+      "rank": 39
+    },
+    {
+      "feature_name": "cat__Device_Type_iPhone",
+      "mean_abs_shap": 0.124,
+      "mean_shap": 0.0212,
+      "rank": 40
+    },
+    {
+      "feature_name": "cat__Usual_Location_Mumbai",
+      "mean_abs_shap": 0.1213,
+      "mean_shap": 0.0305,
+      "rank": 41
+    },
+    {
+      "feature_name": "num__amount_to_account_age_ratio",
+      "mean_abs_shap": 0.1192,
+      "mean_shap": 0.0225,
+      "rank": 42
+    },
+    {
+      "feature_name": "cat__Location_Hassan",
+      "mean_abs_shap": 0.1158,
+      "mean_shap": -0.0352,
+      "rank": 43
+    },
+    {
+      "feature_name": "cat__Transaction_Type_Transfer",
+      "mean_abs_shap": 0.1007,
+      "mean_shap": -0.0026,
+      "rank": 44
+    },
+    {
+      "feature_name": "cat__Device_Type_Windows",
+      "mean_abs_shap": 0.0984,
+      "mean_shap": -0.0434,
+      "rank": 45
+    },
+    {
+      "feature_name": "cat__Location_Mysore",
+      "mean_abs_shap": 0.093,
+      "mean_shap": 0.0206,
+      "rank": 46
+    },
+    {
+      "feature_name": "num__night_unusual_loc_risk",
+      "mean_abs_shap": 0.0896,
+      "mean_shap": 0.0896,
+      "rank": 47
+    },
+    {
+      "feature_name": "cat__Usual_Location_Chennai",
+      "mean_abs_shap": 0.0889,
+      "mean_shap": -0.0889,
+      "rank": 48
+    },
+    {
+      "feature_name": "num__surge_on_unusual_loc",
+      "mean_abs_shap": 0.0838,
+      "mean_shap": -0.0302,
+      "rank": 49
+    },
+    {
+      "feature_name": "num__Transactions_Last_24H",
+      "mean_abs_shap": 0.0821,
+      "mean_shap": 0.0218,
+      "rank": 50
+    },
+    {
+      "feature_name": "num__velocity_intensity",
+      "mean_abs_shap": 0.0821,
+      "mean_shap": 0.0218,
+      "rank": 51
+    },
+    {
+      "feature_name": "num__recent_transaction_activity",
+      "mean_abs_shap": 0.0821,
+      "mean_shap": 0.0218,
+      "rank": 52
+    },
+    {
+      "feature_name": "cat__Usual_Location_Pune",
+      "mean_abs_shap": 0.08,
+      "mean_shap": 0.0211,
+      "rank": 53
+    },
+    {
+      "feature_name": "num__Account_Age_Days",
+      "mean_abs_shap": 0.076,
+      "mean_shap": -0.0127,
+      "rank": 54
+    },
+    {
+      "feature_name": "cat__Usual_Location_Delhi",
+      "mean_abs_shap": 0.0575,
+      "mean_shap": -0.0202,
+      "rank": 55
+    },
+    {
+      "feature_name": "cat__Usual_Location_Mangalore",
+      "mean_abs_shap": 0.0544,
+      "mean_shap": -0.0048,
+      "rank": 56
+    },
+    {
+      "feature_name": "num__Failed_Attempts",
+      "mean_abs_shap": 0.0503,
+      "mean_shap": 0.01,
+      "rank": 57
+    },
+    {
+      "feature_name": "num__failed_attempts_amount_risk",
+      "mean_abs_shap": 0.0454,
+      "mean_shap": -0.0116,
+      "rank": 58
+    },
+    {
+      "feature_name": "cat__Location_Delhi",
+      "mean_abs_shap": 0.0395,
+      "mean_shap": -0.0046,
+      "rank": 59
+    },
+    {
+      "feature_name": "num__amount_to_prev_ratio",
+      "mean_abs_shap": 0.0316,
+      "mean_shap": -0.0286,
+      "rank": 60
+    },
+    {
+      "feature_name": "cat__Device_Type_Mac",
+      "mean_abs_shap": 0.0276,
+      "mean_shap": -0.0022,
+      "rank": 61
+    },
+    {
+      "feature_name": "num__account_takeover_risk",
+      "mean_abs_shap": 0.0249,
+      "mean_shap": 0.0249,
+      "rank": 62
+    },
+    {
+      "feature_name": "num__surge_on_new_device",
+      "mean_abs_shap": 0.0244,
+      "mean_shap": -0.0244,
+      "rank": 63
+    },
+    {
+      "feature_name": "cat__Transaction_Type_ATM Withdrawal",
+      "mean_abs_shap": 0.023,
+      "mean_shap": -0.0011,
+      "rank": 64
+    },
+    {
+      "feature_name": "cat__Transaction_Type_Purchase",
+      "mean_abs_shap": 0.0222,
+      "mean_shap": 0.002,
+      "rank": 65
+    },
+    {
+      "feature_name": "num__night_surge_risk",
+      "mean_abs_shap": 0.0208,
+      "mean_shap": 0.0208,
+      "rank": 66
+    },
+    {
+      "feature_name": "cat__Location_Chennai",
+      "mean_abs_shap": 0.0205,
+      "mean_shap": -0.0205,
+      "rank": 67
+    },
+    {
+      "feature_name": "num__Amount_Deviation",
+      "mean_abs_shap": 0.0173,
+      "mean_shap": -0.002,
+      "rank": 68
+    },
+    {
+      "feature_name": "num__failed_attempts_new_device",
+      "mean_abs_shap": 0.0085,
+      "mean_shap": 0.0007,
+      "rank": 69
+    },
+    {
+      "feature_name": "cat__Location_Pune",
+      "mean_abs_shap": 0.0011,
+      "mean_shap": -0.0001,
+      "rank": 70
+    },
+    {
+      "feature_name": "num__intl_new_device_risk",
+      "mean_abs_shap": 0.0009,
+      "mean_shap": 0.0009,
+      "rank": 71
+    }
+  ]
+}

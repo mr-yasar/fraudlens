@@ -1,0 +1,29 @@
+{
+  "model_name": "xgboost",
+  "model_version": "v1.1.0",
+  "selected_threshold": 0.0637,
+  "training_timestamp": "2026-09-14T07:37:19.565457+00:00",
+  "dataset_version_path": "C:\\Users\\mdyas\\AppData\\Local\\Temp\\pytest-of-mdyas\\pytest-42\\test_admin_model_training_work0\\train_data.csv",
+  "feature_version": "v1.2.0",
+  "preprocessing_version": "v1.0.0",
+  "model_artifact_path": "ml/artifacts/xgboost.joblib",
+  "preprocessor_artifact_path": "ml/artifacts/preprocessor.joblib",
+  "is_active": true,
+  "selection_score": 0.9404,
+  "evaluation_metrics": {
+    "accuracy": 0.9444,
+    "precision": 0.75,
+    "recall": 1.0,
+    "f1_score": 0.8571,
+    "roc_auc": 1.0,
+    "pr_auc": 1.0,
+    "false_positive_rate": 0.0667,
+    "false_negative_rate": 0.0,
+    "confusion_matrix": {
+      "true_negatives": 14,
+      "false_positives": 1,
+      "false_negatives": 0,
+      "true_positives": 3
+    }
+  }
+}
