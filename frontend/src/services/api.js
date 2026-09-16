@@ -92,6 +92,24 @@ export const transactionsApi = {
   },
 }
 
+// 2b. Pre-Authorization Payment Gateway API (Phase 6 & 7)
+export const paymentApi = {
+  initiate: async (payload) => {
+    const res = await fetch(`${BASE_URL}/payment/initiate`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(payload),
+    })
+    return handleResponse(res)
+  },
+  getCustomerProfile: async (customerId) => {
+    const res = await fetch(`${BASE_URL}/payment/customer-profile/${customerId}`, {
+      headers: getAuthHeaders(),
+    })
+    return handleResponse(res)
+  },
+}
+
 // 3. Customers API
 export const customersApi = {
   list: async ({ page = 1, limit = 20, search = '' } = {}) => {

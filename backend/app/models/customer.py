@@ -26,6 +26,11 @@ class Customer(Base):
         back_populates="customer",
         cascade="all, delete-orphan",
     )
+    payment_intents = relationship(
+        "PaymentIntent",
+        back_populates="customer",
+        cascade="all, delete-orphan",
+    )
 
     def __repr__(self) -> str:
         return f"<Customer id={self.id} customer_id='{self.customer_id}'>"

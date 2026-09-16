@@ -27,7 +27,8 @@ export default function Sidebar({
 }) {
   const primaryNav = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'transactions', label: 'Transactions', icon: CreditCard },
+    { id: 'payment', label: 'Secure Payment', icon: CreditCard },
+    { id: 'transactions', label: 'Transactions', icon: History },
     { id: 'customers', label: 'Customers', icon: Users },
     { id: 'predictions', label: 'AI Predictions', icon: BrainCircuit },
     { id: 'explainable-ai', label: 'Explainable AI', icon: Sparkles },

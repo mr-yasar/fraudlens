@@ -14,6 +14,7 @@ import { AuthProvider, useAuth } from './context/AuthContext'
 import Sidebar from './components/Sidebar'
 import ErrorBoundary from './components/ErrorBoundary'
 import DashboardView from './components/DashboardView'
+import PaymentView from './components/PaymentView'
 import TransactionsView from './components/TransactionsView'
 import CustomersView from './components/CustomersView'
 import PredictionsView from './components/PredictionsView'
@@ -240,6 +241,12 @@ function CommandCenterApp() {
                 <DashboardView
                   onSelectTransaction={handleSelectTransaction}
                   onOpenCase={() => navigateTo('investigations')}
+                />
+              )}
+
+              {activeView === 'payment' && (
+                <PaymentView
+                  onViewExplanation={handleViewExplanation}
                 />
               )}
 

@@ -17,6 +17,8 @@ from backend.app.schemas.user import (
 )
 from backend.app.api.deps import get_current_active_user, require_admin
 
+from backend.app.core.rate_limiter import rate_limit
+
 router = APIRouter()
 
 
@@ -25,6 +27,7 @@ router = APIRouter()
     response_model=Token,
     summary="User Login",
     description="Authenticate with email and password to receive a JWT access token.",
+    dependencies=[Depends(rate_limit(max_requests=30, window_seconds=60))],
 )
 def login(
     login_data: LoginRequest,

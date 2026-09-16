@@ -576,3 +576,39 @@ def activate_model(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Model activation failed: {str(e)}. Previous model state was preserved.",
         )
+
+
+@router.post(
+    "/models/backtest",
+    summary="Run Historical Policy Replay & Backtest (Admin Only)",
+    description="Simulates pre-auth risk policies over historical transaction ledgers with zero database mutation.",
+)
+def run_model_backtest(
+    sample_size: int = 100,
+    candidate_threshold: Optional[float] = None,
+    db: Session = Depends(get_db),
+    admin: User = Depends(require_admin),
+):
+    """Execute historical policy replay."""
+    from backend.app.services.backtest_service import BacktestService
+    result = BacktestService.run_historical_replay(
+        db=db,
+        sample_size=sample_size,
+        candidate_threshold=candidate_threshold,
+    )
+    return result
+
+
+@router.get(
+    "/models/performance-metrics",
+    summary="Get Production Model Quality & Drift Metrics (Admin Only)",
+    description="Retrieves accuracy, precision, recall, and false positive metrics derived from verified ground truth outcomes.",
+)
+def get_model_performance_metrics(
+    db: Session = Depends(get_db),
+    admin: User = Depends(require_admin),
+):
+    """Retrieve production model performance metrics."""
+    from backend.app.services.feedback_loop_service import FeedbackLoopService
+    metrics = FeedbackLoopService.calculate_performance_metrics(db)
+    return metrics.__dict__

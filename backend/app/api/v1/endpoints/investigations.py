@@ -14,6 +14,7 @@ from backend.app.models.transaction import Transaction
 from backend.app.models.investigation import Investigation
 from backend.app.models.shap_explanation import ShapExplanation
 from backend.app.models.audit_log import AuditLog
+from backend.app.models.payment_intent import PaymentIntent, PaymentLifecycleStatus
 from backend.app.schemas.user import UserRole
 from backend.app.api.deps import require_investigator
 from backend.app.schemas.investigation import (
@@ -413,10 +414,18 @@ def update_investigation(
                 "notes": investigation.notes,
             }),
         )
-        db.add(audit_entry)
+        # Sync linked PaymentIntent lifecycle status if present
+        linked_payment = db.query(PaymentIntent).filter(PaymentIntent.payment_id == investigation.transaction_id).first()
+        if linked_payment:
+            if investigation.decision == "CONFIRMED_FRAUD":
+                linked_payment.lifecycle_status = PaymentLifecycleStatus.BLOCKED.value
+            elif investigation.decision == "GENUINE":
+                linked_payment.lifecycle_status = PaymentLifecycleStatus.APPROVED.value
+            elif investigation.status == "UNDER_REVIEW":
+                linked_payment.lifecycle_status = PaymentLifecycleStatus.REVIEW_REQUIRED.value
 
-    db.commit()
-    db.refresh(investigation)
+        db.commit()
+        db.refresh(investigation)
 
     tx = db.query(Transaction).filter(Transaction.transaction_id == investigation.transaction_id).first()
     inv_user = db.query(User).filter(User.id == investigation.investigator_id).first() if investigation.investigator_id else None
