@@ -22,7 +22,19 @@ import {
 } from 'lucide-react'
 import { paymentApi, customersApi } from '../services/api'
 
-export default function PaymentView({ onViewExplanation }) {
+export default function PaymentView({
+  onViewExplanation,
+  onNavigateToInvestigations,
+  onSelectTransaction,
+}) {
+  // Evaluation progress step state
+  const [evalStep, setEvalStep] = useState(0)
+  const evalSteps = [
+    'Validating transaction payload...',
+    'Running ML inference & threshold calculation...',
+    'Computing multi-factor risk score...',
+    'Generating local SHAP game-theoretic attributions...',
+  ]
   // Preset scenarios
   const presets = [
     {
@@ -179,20 +191,20 @@ export default function PaymentView({ onViewExplanation }) {
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold text-white tracking-wide">Secure Payment Gateway</h1>
+              <h1 className="text-xl font-bold text-white tracking-wide">Transaction Risk Simulator</h1>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-cyan-950 text-cyan-300 border border-cyan-800">
-                PRE-AUTHORIZATION CHECK
+                REAL-TIME RISK CHECK
               </span>
             </div>
             <p className="text-xs text-slate-400 mt-1 max-w-2xl">
-              Evaluates real-time signals, customer behavioral deviations, and ML risk scores <strong>prior</strong> to authorizing funds.
+              Evaluates application signals, customer behavioral deviations, and ML risk scores for newly submitted transactions.
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2 text-xs font-mono bg-slate-950/80 px-4 py-2 rounded-xl border border-slate-800 text-slate-400">
           <Lock className="w-3.5 h-3.5 text-cyan-400" />
-          <span>Gateway Mode: <strong className="text-emerald-400">PRE-AUTH INTERCEPTOR</strong></span>
+          <span>Evaluation Mode: <strong className="text-emerald-400">REAL-TIME RISK INTERCEPTOR</strong></span>
         </div>
       </div>
 
@@ -232,9 +244,9 @@ export default function PaymentView({ onViewExplanation }) {
           <div className="flex items-center justify-between border-b border-slate-800/80 pb-4">
             <div className="flex items-center gap-2">
               <Sliders className="w-4 h-4 text-cyan-400" />
-              <h2 className="text-sm font-bold text-white uppercase tracking-wider">Payment Transaction Details</h2>
+              <h2 className="text-sm font-bold text-white uppercase tracking-wider">Submitted Transaction Details</h2>
             </div>
-            <span className="text-[11px] font-mono text-slate-400">Zero Sensitive Credentials Requested</span>
+            <span className="text-[11px] font-mono text-slate-400">Zero Sensitive Credentials Stored</span>
           </div>
 
           <form onSubmit={handleInitiatePayment} className="space-y-4">
@@ -390,12 +402,12 @@ export default function PaymentView({ onViewExplanation }) {
                 {evaluating ? (
                   <>
                     <RefreshCw className="w-4 h-4 animate-spin" />
-                    <span>Analyzing Signals &amp; Pre-Authorizing...</span>
+                    <span>Evaluating Signals &amp; Risk Score...</span>
                   </>
                 ) : (
                   <>
                     <ShieldCheck className="w-4 h-4" />
-                    <span>CHECK &amp; PAY (PRE-AUTHORIZE)</span>
+                    <span>EVALUATE TRANSACTION RISK</span>
                   </>
                 )}
               </button>
@@ -623,7 +635,7 @@ export default function PaymentView({ onViewExplanation }) {
 
           {/* Structured SHAP Attribution Card */}
           {decisionResult.structured_explanations && decisionResult.structured_explanations.length > 0 && (
-            <div className="space-y-2">
+            <div className="space-y-3">
               <div className="text-xs font-bold text-white uppercase tracking-wider flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
@@ -634,21 +646,32 @@ export default function PaymentView({ onViewExplanation }) {
                 )}
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-                {decisionResult.structured_explanations.map((exp, idx) => (
-                  <div key={idx} className="p-3 bg-slate-950/90 rounded-xl border border-slate-800 text-xs space-y-1">
-                    <div className="flex items-center justify-between">
-                      <span className="font-mono text-indigo-300 font-semibold">{exp.feature}</span>
-                      <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded border ${
-                        exp.direction === 'INCREASES_RISK'
-                          ? 'bg-rose-950/80 text-rose-300 border-rose-800/80'
-                          : 'bg-emerald-950/80 text-emerald-300 border-emerald-800/80'
-                      }`}>
-                        {exp.direction === 'INCREASES_RISK' ? '▲ Increases Risk' : '▼ Decreases Risk'} ({exp.contribution > 0 ? `+${exp.contribution}` : exp.contribution})
-                      </span>
+                {decisionResult.structured_explanations.map((exp, idx) => {
+                  const isRiskUp = exp.direction === 'INCREASES_RISK'
+                  const absVal = Math.min(Math.abs(exp.contribution || 0) * 100, 100)
+                  return (
+                    <div key={idx} className="p-3 bg-slate-950/90 rounded-xl border border-slate-800 text-xs space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-mono text-indigo-300 font-semibold">{exp.feature}</span>
+                        <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded border ${
+                          isRiskUp
+                            ? 'bg-rose-950/80 text-rose-300 border-rose-800/80'
+                            : 'bg-emerald-950/80 text-emerald-300 border-emerald-800/80'
+                        }`}>
+                          {isRiskUp ? '▲ Contributed toward risk' : '▼ Contributed away from risk'} ({exp.contribution > 0 ? `+${exp.contribution}` : exp.contribution})
+                        </span>
+                      </div>
+                      {/* Visual Contribution Bar */}
+                      <div className="w-full bg-slate-900 rounded-full h-1.5 overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-500 ${isRiskUp ? 'bg-gradient-to-r from-rose-500 to-amber-500' : 'bg-gradient-to-r from-emerald-500 to-cyan-500'}`}
+                          style={{ width: `${Math.max(absVal, 8)}%` }}
+                        />
+                      </div>
+                      <p className="text-[11px] text-slate-300">{exp.human_interpretation}</p>
                     </div>
-                    <p className="text-[11px] text-slate-300">{exp.human_interpretation}</p>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
           )}
@@ -690,6 +713,35 @@ export default function PaymentView({ onViewExplanation }) {
                 <span>Gateway Rejected: Submission Terminated</span>
               </div>
             )}
+          </div>
+
+          {/* Fast Navigation & Action Routing Bar */}
+          <div className="p-3 bg-slate-950/60 rounded-xl border border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs">
+            <div className="text-slate-400 text-[11px] font-mono">
+              Investigation &amp; Audit Trail Active for Token <strong className="text-cyan-400">{decisionResult.transaction_id}</strong>
+            </div>
+            <div className="flex items-center gap-2">
+              {onViewExplanation && (
+                <button
+                  type="button"
+                  onClick={() => onViewExplanation(decisionResult.transaction_id)}
+                  className="px-3 py-1.5 rounded-xl bg-purple-900/60 hover:bg-purple-900 text-purple-200 border border-purple-700 text-xs font-semibold transition flex items-center gap-1.5"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  Full SHAP Breakdown
+                </button>
+              )}
+              {onNavigateToInvestigations && (decisionResult.case_id || decisionResult.risk_level === 'HIGH' || decisionResult.decision === 'REVIEW') && (
+                <button
+                  type="button"
+                  onClick={onNavigateToInvestigations}
+                  className="px-3 py-1.5 rounded-xl bg-amber-900/60 hover:bg-amber-900 text-amber-200 border border-amber-700 text-xs font-semibold transition flex items-center gap-1.5"
+                >
+                  <ShieldAlert className="w-3.5 h-3.5" />
+                  Go to Investigation Cases &rarr;
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}

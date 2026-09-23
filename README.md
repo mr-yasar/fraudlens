@@ -1,48 +1,133 @@
-# Explainable AI-Based Financial Fraud and Risk Detection System
+# FraudLens AI — Explainable AI-Based Financial Fraud & Risk Detection System
 
-An enterprise-grade, explainable AI system for detecting, analyzing, and investigating financial fraud and transaction risks.
+FraudLens AI is an explainable machine-learning-based financial fraud and risk detection system. The system learns fraud-related patterns from historical transaction data (`financial_fraud_customer_transactions.csv`) and evaluates newly submitted transactions immediately through an application/API-based workflow.
 
-## Project Structure
+> **Scope Note:** FraudLens AI evaluates application-level transaction fraud risk and provides human-interpretable SHAP explanations. It does not claim direct integration with banking authorization infrastructure or guaranteed fraud prevention.
 
+---
+
+## 🚀 Key Features
+
+* **Real-Time Transaction Evaluation:** Immediate scoring of newly submitted transactions against active ML models and multi-factor risk engines.
+* **Calibrated Fraud Probability:** Continuous model probability ($0.0 \rightarrow 1.0$) with cost-sensitive decision thresholding.
+* **Independent 0–100 Risk Scoring:** Deterministic risk scoring combining behavioral velocity, amount abnormalities, geolocation signals, failed attempts, and ML probabilities into clear tiers:
+  * `0 – 30` : **LOW**
+  * `31 – 70` : **MEDIUM**
+  * `71 – 100` : **HIGH**
+* **Explainable AI (SHAP):** Local feature attribution via TreeSHAP/LinearSHAP, explaining exactly why each transaction was flagged, plus cached global feature importances.
+* **Investigation & Case Management:** End-to-end investigation lifecycle (`OPEN` → `UNDER_REVIEW` → `RESOLVED`) with analyst decision recording (`CONFIRMED_FRAUD` / `GENUINE`) and audit logging.
+* **Model Benchmarking & Selection:** Comparative evaluation across **Logistic Regression**, **Random Forest**, **XGBoost**, and an **Ensemble Stacking** classifier with one-click champion promotion.
+* **Dashboard & Security Analytics:** Real-time KPIs, transaction volume trends, risk distributions, and dynamic top risk factor visualizations.
+
+---
+
+## 🏗️ Architecture & Workflow
+
+```text
+Historical Dataset (financial_fraud_customer_transactions.csv)
+        ↓
+Dataset Validation & Leakage Audit
+        ↓
+Preprocessing & Feature Engineering (FullFraudPreprocessor)
+        ↓
+Model Training & Benchmarking (LR / RF / XGBoost / Ensemble)
+        ↓
+Validated Active Model
+        ↓
+New Transaction Submission
+        ↓
+Pydantic Input Validation
+        ↓
+Identical Fitted Preprocessing Pipeline
+        ↓
+ML Prediction (Fraud Probability)
+        ↓
+Independent Risk Scoring Engine (0–100 Score & Tier)
+        ↓
+SHAP Feature Attribution (Local Explanation)
+        ↓
+High-Risk Trigger → Fraud Alert → Investigation Case
+        ↓
+Analyst Review & Resolution Decision
+        ↓
+Dashboard Monitoring & Audit Trail
 ```
-fraud-detection-system/
-├── backend/            # FastAPI backend service, API endpoints & database models
-├── frontend/           # React + Tailwind CSS client dashboard
-├── ml/                 # Machine learning models, SHAP explainers & training pipelines
-├── data/               # Raw and processed transaction datasets
-├── docs/               # Architecture, API & system documentation
-├── .env.example        # Environment variable template
-├── .gitignore          # Git ignore rules
-└── README.md           # Project documentation
+
+---
+
+## 🛠️ Technology Stack
+
+* **Backend:** Python 3.14, FastAPI, SQLAlchemy 2.0, Pydantic v2, Alembic, PyJWT, Passlib (Bcrypt)
+* **Database:** SQLite (`fraud_detection.db`) with Write-Ahead Logging (`WAL` mode)
+* **ML & Explainability:** Scikit-Learn, XGBoost, SHAP (TreeExplainer & LinearExplainer), Joblib, Pandas, NumPy
+* **Frontend:** React 19, Vite, Tailwind CSS v4, Lucide React, Recharts
+* **Testing:** Pytest, AnyIO, Starlette TestClient (163 automated unit/integration tests)
+
+---
+
+## 👥 Role-Based Access Control (RBAC)
+
+* **`ADMIN`:** Full administrative control over dataset validation, model training, candidate model benchmarking, model promotion, threshold overrides, and audit inspection.
+* **`FRAUD_INVESTIGATOR`:** Operational access to real-time transaction scoring, case investigation workflows, notes/decision recording, SHAP explanations, and dashboard monitoring.
+
+---
+
+## 📁 Repository Structure
+
+```text
+fraudinvestigation/
+├── backend/
+│   ├── alembic/          # Alembic database migrations
+│   ├── app/
+│   │   ├── api/          # FastAPI routers & RBAC dependencies
+│   │   ├── core/         # Settings, database engine, security
+│   │   ├── models/       # SQLAlchemy 2.0 ORM models
+│   │   ├── schemas/      # Pydantic v2 validation contracts
+│   │   ├── services/     # Business logic & prediction singleton
+│   │   └── main.py       # FastAPI application entrypoint
+│   ├── tests/            # 33 test modules (163 automated tests)
+│   └── requirements.txt  # Backend Python dependencies
+├── data/
+│   └── raw/              # financial_fraud_customer_transactions.csv (4,582 rows)
+├── ml/
+│   ├── artifacts/        # Serialized models (.joblib), preprocessor & registry metadata
+│   ├── evaluation/       # ModelSelector & threshold optimizer
+│   ├── explainability/   # FraudShapExplainer & CounterfactualEngine
+│   ├── features/         # FraudFeatureEngineer
+│   ├── models/           # Model interfaces & candidate adapters
+│   ├── preprocessing/    # FullFraudPreprocessor pipeline
+│   ├── training/         # FraudModelTrainer engine
+│   └── validation/       # DatasetValidator engine
+├── frontend/             # React 19 + Tailwind CSS v4 Single Page Application
+├── docs/                 # Architecture and evaluation documentation
+└── fraud_detection.db    # Primary SQLite persistent database
 ```
 
-## Technology Stack
+---
 
-- **Backend**: Python 3.14, FastAPI, SQLAlchemy 2.0, Pydantic v2, Alembic, Uvicorn
-- **Frontend**: React 19, Vite, Tailwind CSS
-- **Database**: PostgreSQL (with psycopg 3 driver)
-- **ML / XAI**: Scikit-Learn, XGBoost, SHAP (configured for subsequent phases)
+## ⚡ Quick Start
 
-## Setup & Running
+### 1. Backend Service
+```bash
+# From repository root
+cd backend
+python -m uvicorn app.main:app --reload --port 8000
+```
+* Interactive API Documentation: `http://localhost:8000/docs`
+* Health Endpoint: `http://localhost:8000/api/health`
 
-### Backend
+### 2. Frontend Dashboard
+```bash
+# From repository root
+cd frontend
+npm install
+npm run dev
+```
+* Dashboard URL: `http://localhost:5173`
 
-1. Navigate to `backend/`
-2. Create environment file: `copy .env.example .env`
-3. Install dependencies: `pip install -r requirements.txt`
-4. Start FastAPI server: `python -m uvicorn app.main:app --reload --port 8000`
-5. Access API documentation at: `http://localhost:8000/docs`
-6. Health Check: `http://localhost:8000/api/health`
-
-### Frontend
-
-1. Navigate to `frontend/`
-2. Install dependencies: `npm install`
-3. Start Vite dev server: `npm run dev`
-4. Open `http://localhost:5173` in your browser
-
-## Current Status
-
-- **Phase 1 (Project Foundation)**: Completed
-- **Phase 2 (Database Architecture)**: Completed
-- **Phase 3+ (ML, SHAP, Auth, Dashboard)**: In preparation
+### 3. Running Automated Tests
+```bash
+# From repository root (PowerShell / Bash)
+$env:PYTHONPATH="."
+.venv\Scripts\pytest backend/tests
+```

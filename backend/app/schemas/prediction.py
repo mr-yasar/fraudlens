@@ -60,8 +60,8 @@ class TransactionPredictionInput(BaseModel):
 
         d = dict(data)
 
-        # Reconcile & Validate Amount / transaction_amount
-        amt = d.get("Amount", d.get("transaction_amount"))
+        # Reconcile & Validate Amount / transaction_amount / amount
+        amt = d.get("Amount") if d.get("Amount") is not None else (d.get("transaction_amount") if d.get("transaction_amount") is not None else d.get("amount"))
         if amt is None:
             raise ValueError("Field 'transaction_amount' or 'Amount' is required.")
         try:
@@ -160,6 +160,12 @@ class PredictionResponse(BaseModel):
     transaction_id: Optional[str] = Field(None, description="Echoed transaction identifier")
     risk_factors: List[Dict[str, Any]] = Field(default_factory=list, description="Contributing risk signals breakdown")
     top_shap_factors: Optional[List[Dict[str, Any]]] = Field(None, description="Summary of top SHAP attributions")
+    anomaly_score: Optional[float] = Field(None, description="Unsupervised Isolation Forest anomaly score")
+    anomaly_status: Optional[str] = Field(None, description="Anomaly service status: 'AVAILABLE' | 'UNAVAILABLE'")
+    uncertainty_score: Optional[float] = Field(None, description="Model prediction uncertainty score [0.0 - 1.0]")
+    uncertainty_level: Optional[str] = Field(None, description="Uncertainty level: 'LOW' | 'MODERATE' | 'HIGH'")
+    counterfactual: Optional[Dict[str, Any]] = Field(None, description="Verified counterfactual perturbation scenario")
+    composed_explanation: Optional[Dict[str, Any]] = Field(None, description="Evidence-grounded investigator narrative")
 
 
 class LocalExplanationResponse(BaseModel):

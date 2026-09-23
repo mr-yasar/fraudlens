@@ -13,6 +13,9 @@ import {
   Settings,
   LogOut,
   ShieldCheck,
+  Network,
+  Share2,
+  Sliders,
   X,
 } from 'lucide-react'
 
@@ -27,11 +30,13 @@ export default function Sidebar({
 }) {
   const primaryNav = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'payment', label: 'Secure Payment', icon: CreditCard },
+    { id: 'payment', label: 'Risk Simulator', icon: CreditCard },
     { id: 'transactions', label: 'Transactions', icon: History },
     { id: 'customers', label: 'Customers', icon: Users },
     { id: 'predictions', label: 'AI Predictions', icon: BrainCircuit },
     { id: 'explainable-ai', label: 'Explainable AI', icon: Sparkles },
+    { id: 'fraud-intelligence', label: 'Fraud Intelligence', icon: Share2 },
+    { id: 'adaptive-intelligence', label: 'Adaptive Intelligence', icon: Sliders },
     { id: 'investigations', label: 'Investigations', icon: ShieldAlert },
     { id: 'reports', label: 'Reports & Analytics', icon: BarChart3 },
   ]

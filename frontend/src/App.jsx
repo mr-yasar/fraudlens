@@ -23,6 +23,8 @@ import InvestigationsView from './components/InvestigationsView'
 import ReportsView from './components/ReportsView'
 import AuditLogsView from './components/AuditLogsView'
 import AdminMlView from './components/AdminMlView'
+import FraudIntelligenceView from './components/FraudIntelligenceView'
+import AdaptiveIntelligenceView from './components/AdaptiveIntelligenceView'
 import SettingsView from './components/SettingsView'
 import LoginScene from './components/login/LoginScene'
 import SecurityUnlockTransition from './components/SecurityUnlockTransition'
@@ -247,6 +249,8 @@ function CommandCenterApp() {
               {activeView === 'payment' && (
                 <PaymentView
                   onViewExplanation={handleViewExplanation}
+                  onNavigateToInvestigations={() => navigateTo('investigations')}
+                  onSelectTransaction={handleSelectTransaction}
                 />
               )}
 
@@ -271,6 +275,20 @@ function CommandCenterApp() {
               {activeView === 'explainable-ai' && (
                 <ExplainableAiView
                   initialTransactionId={targetTxId}
+                />
+              )}
+
+              {activeView === 'fraud-intelligence' && (
+                <FraudIntelligenceView
+                  onOpenInvestigation={() => navigateTo('investigations')}
+                  onSelectTransaction={handleSelectTransaction}
+                />
+              )}
+
+              {activeView === 'adaptive-intelligence' && (
+                <AdaptiveIntelligenceView
+                  onOpenInvestigation={() => navigateTo('investigations')}
+                  onSelectTransaction={handleSelectTransaction}
                 />
               )}
 

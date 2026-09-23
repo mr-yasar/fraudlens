@@ -27,12 +27,12 @@ router = APIRouter()
     "/initiate",
     response_model=PreAuthDecisionResult,
     status_code=status.HTTP_200_OK,
-    summary="Initiate Payment and Execute Pre-Authorization Gatekeeper",
+    summary="Evaluate Transaction Risk in Simulation Flow",
     dependencies=[Depends(rate_limit(max_requests=60, window_seconds=60))],
     description=(
-        "Intercepts payment checkout request BEFORE funds authorization. "
+        "Evaluates newly submitted transaction request within the application risk engine. "
         "Enforces idempotency, customer behavioral profiling, ML scoring, local SHAP attribution, "
-        "explainable rule checks, risk scoring, case creation (if REVIEW), and provider execution (if ALLOW)."
+        "explainable rule checks, independent risk scoring, case creation (if REVIEW), and simulated execution (if ALLOW)."
     ),
 )
 def initiate_payment(
@@ -41,7 +41,7 @@ def initiate_payment(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ) -> PreAuthDecisionResult:
-    """Evaluate pre-authorization payment fraud risk and manage payment intent lifecycle."""
+    """Evaluate submitted transaction fraud risk and compute multi-factor risk score."""
     try:
         effective_key = idempotency_key_header or payload.idempotency_key
         decision_result = RiskDecisionOrchestrator.evaluate_and_process_payment(

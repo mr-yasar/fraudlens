@@ -22,7 +22,7 @@ import {
   FileText,
 } from 'lucide-react'
 import CyberHeroShield from './CyberHeroShield'
-import { dashboardApi } from '../services/api'
+import { dashboardApi, alertsApi } from '../services/api'
 import {
   ResponsiveContainer,
   BarChart,
@@ -36,6 +36,9 @@ export default function DashboardView({ onSelectTransaction, onOpenCase }) {
   const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [alerts, setAlerts] = useState([])
+  const [alertsLoading, setAlertsLoading] = useState(false)
+  const [acknowledgingId, setAcknowledgingId] = useState(null)
 
   const fetchStats = async () => {
     setLoading(true)
@@ -50,9 +53,37 @@ export default function DashboardView({ onSelectTransaction, onOpenCase }) {
     }
   }
 
+  const fetchAlerts = async () => {
+    setAlertsLoading(true)
+    try {
+      const data = await alertsApi.list({ unacknowledged_only: false, limit: 8 })
+      setAlerts(data || [])
+    } catch {
+      // Non-blocking for alerts
+    } finally {
+      setAlertsLoading(false)
+    }
+  }
+
+  const handleAcknowledgeAlert = async (alertId) => {
+    setAcknowledgingId(alertId)
+    try {
+      await alertsApi.acknowledge(alertId)
+      fetchAlerts()
+    } catch (err) {
+      console.error('Failed to acknowledge alert:', err)
+    } finally {
+      setAcknowledgingId(null)
+    }
+  }
+
   useEffect(() => {
     fetchStats()
-    const timer = setInterval(fetchStats, 20000)
+    fetchAlerts()
+    const timer = setInterval(() => {
+      fetchStats()
+      fetchAlerts()
+    }, 20000)
     return () => clearInterval(timer)
   }, [])
 
@@ -646,7 +677,94 @@ export default function DashboardView({ onSelectTransaction, onOpenCase }) {
         </div>
       </div>
 
-      {/* 6. Live High-Risk Activity Feed Table */}
+      {/* 6. In-App Security Alert Center (Live In-App Alert Feed) */}
+      <div className="p-5 sm:p-6 rounded-3xl bg-slate-900/60 border border-amber-800/40 shadow-xl backdrop-blur-md">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <ShieldAlert className="w-5 h-5 text-amber-400" />
+            <h3 className="text-xs font-bold text-white uppercase tracking-wider">
+              Security Alert Command Center
+            </h3>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-mono text-slate-400">
+              {alerts.filter(a => !a.is_acknowledged).length} Unacknowledged
+            </span>
+            <button
+              onClick={fetchAlerts}
+              className="p-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition"
+              title="Refresh Alerts"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${alertsLoading ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
+        </div>
+
+        {alerts.length === 0 ? (
+          <div className="py-6 text-center text-slate-400 text-xs flex flex-col items-center gap-1.5">
+            <CheckCircle2 className="w-6 h-6 text-emerald-400" />
+            <span>All system alerts are acknowledged and clear.</span>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {alerts.slice(0, 4).map((alert) => (
+              <div
+                key={alert.alert_id}
+                className={`p-3.5 rounded-2xl border transition-all text-xs space-y-2 ${
+                  alert.is_acknowledged
+                    ? 'bg-slate-950/50 border-slate-800 opacity-70'
+                    : 'bg-slate-950/90 border-amber-700/60 shadow-lg shadow-amber-950/20'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase ${
+                      alert.severity === 'CRITICAL' || alert.severity === 'HIGH'
+                        ? 'bg-rose-950 text-rose-300 border border-rose-800'
+                        : 'bg-amber-950 text-amber-300 border border-amber-800'
+                    }`}>
+                      {alert.severity}
+                    </span>
+                    <span className="font-mono text-[10px] text-cyan-300">{alert.entity_id}</span>
+                  </div>
+                  <span className="text-[10px] font-mono text-slate-500">
+                    {alert.created_at ? new Date(alert.created_at).toLocaleTimeString() : ''}
+                  </span>
+                </div>
+
+                <p className="text-slate-200 text-xs leading-snug">{alert.message}</p>
+
+                <div className="flex items-center justify-between pt-1 border-t border-slate-800/80">
+                  <span className="text-[10px] font-mono text-slate-400">
+                    {alert.is_acknowledged ? `Acknowledged by ${alert.acknowledged_by || 'Investigator'}` : 'Requires Investigator Review'}
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    {!alert.is_acknowledged && (
+                      <button
+                        onClick={() => handleAcknowledgeAlert(alert.alert_id)}
+                        disabled={acknowledgingId === alert.alert_id}
+                        className="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[10px] font-semibold transition border border-slate-700 disabled:opacity-50"
+                      >
+                        {acknowledgingId === alert.alert_id ? 'Ack...' : 'Acknowledge'}
+                      </button>
+                    )}
+                    {onSelectTransaction && alert.entity_id && (
+                      <button
+                        onClick={() => onSelectTransaction(alert.entity_id)}
+                        className="px-2 py-0.5 rounded-lg bg-cyan-900/60 hover:bg-cyan-800 text-cyan-200 text-[10px] font-semibold transition border border-cyan-700"
+                      >
+                        Inspect &rarr;
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* 7. Live High-Risk Activity Feed Table */}
       <div className="p-5 sm:p-6 rounded-3xl bg-slate-900/60 border border-slate-800 shadow-xl backdrop-blur-md">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">

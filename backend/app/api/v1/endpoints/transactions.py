@@ -127,8 +127,26 @@ def create_transaction(
                 "impact": shap_rec.impact,
             })
 
-    # 6. If HIGH risk or FRAUD, record AuditLog
+    # 6. If HIGH risk or FRAUD, record in-app alert and AuditLog
     if pred_res.risk_level == "HIGH" or pred_res.prediction == "FRAUD":
+        from backend.app.services.alert_service import AlertService, AlertType
+        from backend.app.models.alert import Alert
+        existing_alert = db.query(Alert).filter(Alert.entity_id == tx_id, Alert.is_acknowledged.is_(False)).first()
+        if not existing_alert:
+            AlertService.create_alert(
+                db=db,
+                alert_type=AlertType.HIGH_RISK_PAYMENT,
+                severity="HIGH" if pred_res.risk_level == "HIGH" else "MEDIUM",
+                entity_id=tx_id,
+                message=f"High-risk transaction flagged: {tx_id} (Score: {pred_res.risk_score}/100, Prob: {pred_res.fraud_probability:.2f})",
+                details={
+                    "risk_score": pred_res.risk_score,
+                    "risk_level": pred_res.risk_level,
+                    "fraud_probability": pred_res.fraud_probability,
+                    "prediction": pred_res.prediction,
+                    "model_name": pred_res.model_name,
+                },
+            )
         audit = AuditLog(
             user_id=current_user.id,
             action="HIGH_RISK_TRANSACTION_FLAGGED",
@@ -250,8 +268,26 @@ def evaluate_realtime_transaction(
             )
             db.add(shap_rec)
 
-    # 6. Record Audit Event for Alert if HIGH risk
+    # 6. Record in-app Alert and Audit Event if HIGH risk
     if alert_generated:
+        from backend.app.services.alert_service import AlertService, AlertType
+        from backend.app.models.alert import Alert
+        existing_alert = db.query(Alert).filter(Alert.entity_id == tx_id, Alert.is_acknowledged.is_(False)).first()
+        if not existing_alert:
+            AlertService.create_alert(
+                db=db,
+                alert_type=AlertType.HIGH_RISK_PAYMENT,
+                severity="HIGH",
+                entity_id=tx_id,
+                message=f"Real-time high-risk alert: {tx_id} (Score: {pred_res.risk_score}/100, Prob: {pred_res.fraud_probability:.2f})",
+                details={
+                    "risk_score": pred_res.risk_score,
+                    "risk_level": pred_res.risk_level,
+                    "fraud_probability": pred_res.fraud_probability,
+                    "prediction": pred_res.prediction,
+                    "model_name": pred_res.model_name,
+                },
+            )
         audit = AuditLog(
             user_id=current_user.id,
             action="REALTIME_HIGH_RISK_ALERT",
@@ -282,6 +318,12 @@ def evaluate_realtime_transaction(
         risk_factors=pred_res.risk_factors,
         top_explanations=pred_res.top_shap_factors or [],
         alert_generated=alert_generated,
+        anomaly_score=pred_res.anomaly_score,
+        anomaly_status=pred_res.anomaly_status,
+        uncertainty_score=pred_res.uncertainty_score,
+        uncertainty_level=pred_res.uncertainty_level,
+        counterfactual=pred_res.counterfactual,
+        composed_explanation=pred_res.composed_explanation,
     )
 
 

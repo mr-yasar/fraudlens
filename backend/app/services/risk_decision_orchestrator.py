@@ -80,6 +80,41 @@ class RiskDecisionOrchestrator:
         # -----------------------------------------------------------------
         # STEP 2: Customer Behavioral Intelligence & Rolling Velocity
         # -----------------------------------------------------------------
+        from backend.app.services.behavior_intelligence_service import CustomerBehaviourIntelligenceService
+        from backend.app.services.device_session_service import DeviceSessionRiskService
+        from backend.app.services.network_intelligence_service import FraudNetworkIntelligenceService
+
+        beh_report = CustomerBehaviourIntelligenceService.evaluate_behavior(
+            db=db,
+            customer_id=request.customer_id,
+            amount=request.amount,
+            merchant_name=request.merchant_name,
+            merchant_category=request.merchant_category,
+            device_type=request.device_type,
+            location=request.location,
+            transaction_country=request.transaction_country,
+            transaction_type=request.transaction_type,
+            failed_attempts=request.failed_attempts,
+            current_timestamp=datetime.now(timezone.utc),
+        )
+
+        dev_assessment = DeviceSessionRiskService.evaluate_device_session(
+            db=db,
+            customer_id=request.customer_id,
+            device_type=request.device_type,
+            failed_attempts=request.failed_attempts,
+            channel=request.transaction_type,
+            current_timestamp=datetime.now(timezone.utc),
+        )
+
+        net_report = FraudNetworkIntelligenceService.evaluate_network_risk(
+            db=db,
+            customer_id=request.customer_id,
+            device_type=request.device_type,
+            merchant_name=request.merchant_name,
+            amount=request.amount,
+        )
+
         pre_auth_features: DerivedPreAuthFeatures = BehaviorProfileService.derive_pre_auth_features(
             db=db,
             customer_id=request.customer_id,
@@ -232,18 +267,20 @@ class RiskDecisionOrchestrator:
         )
         base_score = risk_result.risk_score
 
-        # Apply rule floors
-        if rule_result.hard_block:
+        # Seamlessly incorporate Intelligence Fabric risk adjustments
+        if dev_assessment.is_spoofed_environment or "KNOWN_FRAUD_RING_LINK" in net_report.cluster_indicators:
+            final_risk_score = max(base_score, 82)
+        elif rule_result.hard_block:
             final_risk_score = max(base_score, 80)
-        elif rule_result.recommended_action == RuleActionImpact.FLAG_REVIEW:
-            final_risk_score = max(base_score, 40)
+        elif rule_result.recommended_action == RuleActionImpact.FLAG_REVIEW or dev_assessment.combined_hardware_score >= 60 or net_report.network_risk_score >= 50:
+            final_risk_score = max(base_score, 45)
         else:
             final_risk_score = base_score
 
         final_risk_score = min(100, max(0, int(round(final_risk_score))))
 
         # Determine authoritative decision
-        if rule_result.hard_block or final_risk_score >= 71:
+        if rule_result.hard_block or dev_assessment.is_spoofed_environment or final_risk_score >= 71:
             decision = PaymentDecision.BLOCK
             risk_level = RiskLevelEnum.HIGH
             lifecycle_status = PaymentLifecycleStatus.BLOCKED
@@ -259,7 +296,7 @@ class RiskDecisionOrchestrator:
             lifecycle_status = PaymentLifecycleStatus.APPROVED
             status_message = "Payment pre-authorized successfully."
 
-        # Format risk factor explanations
+        # Format risk factor explanations (combining ML, Behaviour, Device, and Network)
         top_factors = [
             RiskFactorExplanation(
                 factor=f.factor,
@@ -269,6 +306,24 @@ class RiskDecisionOrchestrator:
             )
             for f in risk_result.risk_factors
         ]
+
+        # Add intelligence fabric diagnostic factors
+        for ev in dev_assessment.evidence[:2]:
+            top_factors.append(RiskFactorExplanation(
+                factor="Device & Session Anomaly",
+                impact_score=dev_assessment.combined_hardware_score,
+                severity="HIGH" if dev_assessment.combined_hardware_score >= 60 else "MEDIUM",
+                detail=ev,
+            ))
+
+        for ev in net_report.evidence[:2]:
+            top_factors.append(RiskFactorExplanation(
+                factor="Network & Relationship Risk",
+                impact_score=net_report.network_risk_score,
+                severity="HIGH" if net_report.network_risk_score >= 50 else "MEDIUM",
+                detail=ev,
+            ))
+
 
         # -----------------------------------------------------------------
         # STEP 8: Create IDs and Case (if REVIEW)
@@ -451,6 +506,13 @@ class RiskDecisionOrchestrator:
             processing_time_ms=round(elapsed_ms, 2),
             ready_for_provider=(decision == PaymentDecision.ALLOW),
             status_message=status_message,
+            device_risk_score=dev_assessment.combined_hardware_score,
+            session_risk_score=dev_assessment.session_risk_score,
+            network_risk_score=net_report.network_risk_score,
+            connected_entities_count=net_report.connected_entity_count,
+            behaviour_intelligence=beh_report.to_dict(),
+            device_session_intelligence=dev_assessment.to_dict(),
+            network_intelligence=net_report.to_dict(),
         )
 
         # -----------------------------------------------------------------
@@ -477,6 +539,8 @@ class RiskDecisionOrchestrator:
             "risk_score": final_risk_score,
             "risk_level": risk_level.value,
             "fraud_probability": round(ml_prob, 4),
+            "device_risk_score": dev_assessment.combined_hardware_score,
+            "network_risk_score": net_report.network_risk_score,
             "lifecycle_status": lifecycle_status.value,
             "case_id": case_id,
             "triggered_rules_count": len(triggered_rule_dtos),

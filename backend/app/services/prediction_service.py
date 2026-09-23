@@ -17,6 +17,10 @@ from backend.app.schemas.prediction import (
 from backend.app.services.risk_scoring_service import RiskScoringEngine
 from ml.preprocessing.pipeline import FullFraudPreprocessor
 from ml.explainability.shap_explainer import FraudShapExplainer
+from ml.anomaly.isolation_forest_service import AnomalyIntelligenceService
+from ml.evaluation.uncertainty_service import UncertaintyEstimationService
+from ml.explainability.counterfactual_engine import CounterfactualEngine
+from backend.app.services.explanation_composer import ExplanationComposer
 
 
 class FraudPredictionService:
@@ -202,6 +206,71 @@ class FraudPredictionService:
             except Exception:
                 top_shap_factors = None
 
+        # 6. Unsupervised Anomaly Scoring (Isolation Forest)
+        anomaly_score = None
+        anomaly_status = "UNAVAILABLE"
+        anomaly_res = None
+        try:
+            anom_service = AnomalyIntelligenceService.get_instance(artifact_dir=str(self.artifact_dir))
+            if anom_service.is_ready:
+                anomaly_res = anom_service.score_vector(transformed_mat[0])
+                anomaly_score = anomaly_res.anomaly_score
+                anomaly_status = anomaly_res.anomaly_status
+        except Exception:
+            anomaly_status = "UNAVAILABLE"
+
+        # 7. Model Prediction Uncertainty Estimation
+        uncertainty_score = None
+        uncertainty_level = "LOW"
+        uncertainty_res = None
+        try:
+            uncertainty_res = UncertaintyEstimationService.evaluate_uncertainty(
+                probabilities={self.model_name: prob},
+                active_probability=prob,
+                threshold=applied_threshold,
+            )
+            uncertainty_score = uncertainty_res.uncertainty_score
+            uncertainty_level = uncertainty_res.uncertainty_level
+        except Exception:
+            uncertainty_score = None
+
+        # 8. Counterfactual Scenario Perturbation
+        counterfactual_dict = None
+        cf_res = None
+        try:
+            decision_tier = "BLOCK" if risk_result.risk_level.value == "HIGH" else ("REVIEW" if risk_result.risk_level.value == "MEDIUM" else "ALLOW")
+            cf_res = CounterfactualEngine.generate_counterfactual(
+                raw_payload=raw_dict,
+                preprocessor=self.preprocessor,
+                model=self.model,
+                risk_engine=self.risk_engine,
+                original_prob=prob,
+                original_risk=float(risk_result.risk_score),
+                original_decision=decision_tier,
+                threshold=applied_threshold,
+            )
+            counterfactual_dict = cf_res.to_dict()
+        except Exception:
+            counterfactual_dict = None
+
+        # 9. Evidence-Grounded Explanation Narrative
+        composed_explanation_dict = None
+        try:
+            composed = ExplanationComposer.compose_explanation(
+                decision="FRAUD (BLOCK)" if prediction_label == "FRAUD" else "GENUINE (ALLOW)",
+                risk_score=float(risk_result.risk_score),
+                fraud_probability=prob,
+                model_version=f"{self.model_name} {self.model_version}",
+                shap_factors=None,
+                counterfactual=cf_res,
+                anomaly=anomaly_res,
+                uncertainty=uncertainty_res,
+                behavior_deviation=float(raw_dict.get("Amount_Deviation", 0.0)),
+            )
+            composed_explanation_dict = composed.to_dict()
+        except Exception:
+            composed_explanation_dict = None
+
         return PredictionResponse(
             prediction=prediction_label,
             fraud_probability=round(prob, 4),
@@ -221,6 +290,12 @@ class FraudPredictionService:
                 for f in risk_result.risk_factors
             ],
             top_shap_factors=top_shap_factors,
+            anomaly_score=anomaly_score,
+            anomaly_status=anomaly_status,
+            uncertainty_score=uncertainty_score,
+            uncertainty_level=uncertainty_level,
+            counterfactual=counterfactual_dict,
+            composed_explanation=composed_explanation_dict,
         )
 
     def explain_transaction(

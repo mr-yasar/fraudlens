@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     """Application settings loaded from environment variables or .env file."""
 
     # Application
-    APP_NAME: str = "Explainable AI Financial Fraud & Risk Detection"
+    APP_NAME: str = "FraudLens AI — Financial Fraud & Risk Detection"
     APP_ENV: str = "development"
     DEBUG: bool = True
     API_V1_PREFIX: str = "/api/v1"

@@ -320,6 +320,11 @@ def get_investigation_detail(
     )
 
 
+@router.put(
+    "/{case_id}",
+    response_model=InvestigationDetailResponse,
+    include_in_schema=False,
+)
 @router.patch(
     "/{case_id}",
     response_model=InvestigationDetailResponse,

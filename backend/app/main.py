@@ -45,7 +45,7 @@ def create_application() -> FastAPI:
     """Factory function to build and configure the FastAPI application."""
     application = FastAPI(
         title=settings.APP_NAME,
-        description="Enterprise-grade Explainable AI Financial Fraud and Risk Detection Backend API",
+        description="FraudLens AI — Explainable AI-Based Financial Fraud & Risk Detection System API",
         version="0.1.0",
         docs_url="/docs",
         redoc_url="/redoc",

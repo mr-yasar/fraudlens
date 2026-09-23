@@ -110,6 +110,40 @@ export const paymentApi = {
   },
 }
 
+// 2c. Predictions & Counterfactual Explainability API
+export const predictionsApi = {
+  predict: async (payload) => {
+    const res = await fetch(`${BASE_URL}/predictions/predict`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(payload),
+    })
+    return handleResponse(res)
+  },
+  explain: async (payload, topK = 5) => {
+    const res = await fetch(`${BASE_URL}/predictions/explain?top_k=${topK}`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(payload),
+    })
+    return handleResponse(res)
+  },
+  getGlobalExplanation: async () => {
+    const res = await fetch(`${BASE_URL}/predictions/explain/global`, {
+      headers: getAuthHeaders(),
+    })
+    return handleResponse(res)
+  },
+  getCounterfactual: async (payload) => {
+    const res = await fetch(`${BASE_URL}/predictions/explain/counterfactual`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(payload),
+    })
+    return handleResponse(res)
+  },
+}
+
 // 3. Customers API
 export const customersApi = {
   list: async ({ page = 1, limit = 20, search = '' } = {}) => {
@@ -261,3 +295,129 @@ export const systemApi = {
     return handleResponse(res)
   },
 }
+
+// 8. Fraud Intelligence Fabric API (Continuous Behaviour, Device/Session & Network Graph)
+export const intelligenceApi = {
+  getCustomerBehavior: async (customerId, amount = 100.0) => {
+    const res = await fetch(`${BASE_URL}/intelligence/customer/${customerId}?amount=${amount}`, {
+      headers: getAuthHeaders(),
+    })
+    return handleResponse(res)
+  },
+  assessDeviceRisk: async (customerId, deviceType = 'web', failedAttempts = 0) => {
+    const res = await fetch(`${BASE_URL}/intelligence/device/assess?customer_id=${customerId}&device_type=${deviceType}&failed_attempts=${failedAttempts}`, {
+      headers: getAuthHeaders(),
+    })
+    return handleResponse(res)
+  },
+}
+
+export const networkApi = {
+  getRelationshipGraph: async (customerId, depth = 2) => {
+    const res = await fetch(`${BASE_URL}/network/graph?customer_id=${customerId}&depth=${depth}`, {
+      headers: getAuthHeaders(),
+    })
+    return handleResponse(res)
+  },
+  getNetworkClusters: async () => {
+    const res = await fetch(`${BASE_URL}/network/clusters`, {
+      headers: getAuthHeaders(),
+    })
+    return handleResponse(res)
+  },
+}
+
+// 9. Adaptive Intelligence & Federated Learning Simulation API (Phase 2)
+export const adaptiveApi = {
+  getThreats: async (limit = 200) => {
+    const res = await fetch(`${BASE_URL}/adaptive/threats?limit=${limit}`, {
+      headers: getAuthHeaders(),
+    })
+    return handleResponse(res)
+  },
+  getRuleEffectiveness: async () => {
+    const res = await fetch(`${BASE_URL}/adaptive/rules/effectiveness`, {
+      headers: getAuthHeaders(),
+    })
+    return handleResponse(res)
+  },
+  getCandidateRules: async () => {
+    const res = await fetch(`${BASE_URL}/adaptive/rules/candidates`, {
+      headers: getAuthHeaders(),
+    })
+    return handleResponse(res)
+  },
+  createCandidateRule: async (data) => {
+    const res = await fetch(`${BASE_URL}/adaptive/rules/candidates`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    })
+    return handleResponse(res)
+  },
+  approveCandidateRule: async (ruleId) => {
+    const res = await fetch(`${BASE_URL}/adaptive/rules/candidates/${ruleId}/approve`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+    })
+    return handleResponse(res)
+  },
+  rejectCandidateRule: async (ruleId, reason = 'Rejected by Admin') => {
+    const res = await fetch(`${BASE_URL}/adaptive/rules/candidates/${ruleId}/reject?reason=${encodeURIComponent(reason)}`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+    })
+    return handleResponse(res)
+  },
+  runFederatedSimulation: async (rounds = 3) => {
+    const res = await fetch(`${BASE_URL}/adaptive/federated/simulate?rounds=${rounds}`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+    })
+    return handleResponse(res)
+  },
+  getModelComparison: async () => {
+    const res = await fetch(`${BASE_URL}/adaptive/models/comparison`, {
+      headers: getAuthHeaders(),
+    })
+    return handleResponse(res)
+  },
+  recordGovernanceAction: async (data) => {
+    const res = await fetch(`${BASE_URL}/adaptive/governance/action`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    })
+    return handleResponse(res)
+  },
+  recordInvestigatorFeedback: async (data) => {
+    const res = await fetch(`${BASE_URL}/adaptive/feedback/record`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(data),
+    })
+    return handleResponse(res)
+  },
+}
+
+// 10. In-App Security Alerts API
+export const alertsApi = {
+  list: async ({ unacknowledged_only = false, severity = '', limit = 50 } = {}) => {
+    const params = new URLSearchParams({ unacknowledged_only, limit })
+    if (severity) params.append('severity', severity)
+    const res = await fetch(`${BASE_URL}/alerts?${params.toString()}`, {
+      headers: getAuthHeaders(),
+    })
+    return handleResponse(res)
+  },
+  acknowledge: async (alertId) => {
+    const res = await fetch(`${BASE_URL}/alerts/${alertId}/acknowledge`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+    })
+    return handleResponse(res)
+  },
+}
+
+
+

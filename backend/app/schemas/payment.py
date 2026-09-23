@@ -113,3 +113,11 @@ class PreAuthDecisionResult(BaseModel):
     processing_time_ms: float = 0.0
     ready_for_provider: bool = Field(..., description="True only if decision == ALLOW")
     status_message: str = ""
+    # Fraud Intelligence Fabric additions
+    device_risk_score: Optional[float] = None
+    session_risk_score: Optional[float] = None
+    network_risk_score: Optional[float] = None
+    connected_entities_count: Optional[int] = None
+    behaviour_intelligence: Optional[Dict[str, Any]] = None
+    device_session_intelligence: Optional[Dict[str, Any]] = None
+    network_intelligence: Optional[Dict[str, Any]] = None
