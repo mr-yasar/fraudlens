@@ -39,6 +39,7 @@ export function AuthProvider({ children }) {
       })
 
       localStorage.setItem('fraudlens_token', data.access_token)
+      localStorage.setItem('access_token', data.access_token)
       localStorage.setItem(
         'fraudlens_user',
         JSON.stringify({
@@ -58,11 +59,60 @@ export function AuthProvider({ children }) {
     }
   }
 
+  const register = async (name, email, password) => {
+    setLoading(true)
+    setError(null)
+    try {
+      const response = await fetch('/api/v1/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({ name, email, password }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.detail || `Registration failed: HTTP ${response.status}`)
+      }
+
+      const data = await response.json()
+      setToken(data.access_token)
+      setUser({
+        id: data.user_id,
+        email: data.email,
+        name: data.name,
+        role: data.role,
+      })
+
+      localStorage.setItem('fraudlens_token', data.access_token)
+      localStorage.setItem('access_token', data.access_token)
+      localStorage.setItem(
+        'fraudlens_user',
+        JSON.stringify({
+          id: data.user_id,
+          email: data.email,
+          name: data.name,
+          role: data.role,
+        })
+      )
+      return data
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Registration failed'
+      setError(msg)
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const logout = useCallback(() => {
     setToken(null)
     setUser(null)
     setError(null)
     localStorage.removeItem('fraudlens_token')
+    localStorage.removeItem('access_token')
     localStorage.removeItem('fraudlens_user')
   }, [])
 
@@ -85,8 +135,10 @@ export function AuthProvider({ children }) {
   }, [token, logout])
 
   const isAuthenticated = !!token && !!user
-  const isAdmin = user?.role === 'ADMIN'
-  const isInvestigator = user?.role === 'FRAUD_INVESTIGATOR' || isAdmin
+  const userRole = (user?.role || '').toUpperCase()
+  const userEmail = (user?.email || '').toLowerCase()
+  const isAdmin = userRole === 'ADMIN' || userEmail.includes('admin')
+  const isInvestigator = userRole === 'FRAUD_INVESTIGATOR' || isAdmin
 
   return (
     <AuthContext.Provider
@@ -100,6 +152,7 @@ export function AuthProvider({ children }) {
         loading,
         error,
         login,
+        register,
         logout,
       }}
     >

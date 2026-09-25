@@ -155,7 +155,7 @@ class RuleEngine:
         # ----------------------------------------------------
         # 4. ACCOUNT TAKEOVER (ATO) / MULTI-SIGNAL PATTERNS
         # ----------------------------------------------------
-        # Critical ATO pattern: New Device + Unusual Location + Amount Spike OR Extreme Spike on New Device
+        # Critical ATO pattern: New Device + Unusual Location + Severe Amount Spike OR Bot client
         ato_crit = (
             (features.is_new_device and features.is_unusual_location and features.amount_ratio >= 3.0) or
             (features.amount >= 3000.0 and (features.is_new_device or features.is_unusual_location)) or
@@ -166,8 +166,8 @@ class RuleEngine:
             rule_name="Account Takeover Signature Pattern",
             category=RuleCategory.MULTI_SIGNAL,
             triggered=ato_crit,
-            severity=RuleSeverity.CRITICAL if ato_crit else RuleSeverity.LOW,
-            action_impact=RuleActionImpact.ENFORCE_BLOCK if ato_crit else RuleActionImpact.ALLOW,
+            severity=RuleSeverity.CRITICAL if (ato_crit and (features.amount >= 5000.0 or features.failed_attempts >= 3 or features.device_type == "unknown_bot")) else (RuleSeverity.HIGH if ato_crit else RuleSeverity.LOW),
+            action_impact=RuleActionImpact.ENFORCE_BLOCK if (ato_crit and (features.amount >= 5000.0 or features.failed_attempts >= 3 or features.device_type == "unknown_bot")) else (RuleActionImpact.FLAG_REVIEW if ato_crit else RuleActionImpact.ALLOW),
             reason="Unrecognized hardware device and foreign location mismatch combined with severe monetary spike.",
             score_penalty=35 if ato_crit else 0,
             metadata={"is_new_device": features.is_new_device, "is_unusual_location": features.is_unusual_location, "amount_ratio": features.amount_ratio},

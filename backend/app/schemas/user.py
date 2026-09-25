@@ -3,13 +3,15 @@
 from datetime import datetime
 from enum import Enum
 from typing import Optional
-from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
 
 class UserRole(str, Enum):
-    """System RBAC roles."""
-    ADMIN = "ADMIN"
+    """System RBAC roles: Customer/User and Fraud Investigator/Admin."""
+    CUSTOMER = "CUSTOMER"
+    USER = "USER"
     FRAUD_INVESTIGATOR = "FRAUD_INVESTIGATOR"
+    ADMIN = "ADMIN"
 
 
 class Token(BaseModel):
@@ -21,6 +23,22 @@ class Token(BaseModel):
     email: str
     name: str
     role: UserRole
+
+    @field_validator("role", mode="before")
+    @classmethod
+    def normalize_role(cls, v):
+        if isinstance(v, UserRole):
+            return v
+        if isinstance(v, str):
+            v_upper = v.strip().upper()
+            if v_upper in ("ADMIN", "SUPERADMIN"):
+                return UserRole.ADMIN
+            if v_upper in ("FRAUD_INVESTIGATOR", "INVESTIGATOR", "ANALYST"):
+                return UserRole.FRAUD_INVESTIGATOR
+            if v_upper in ("USER",):
+                return UserRole.USER
+            return UserRole.CUSTOMER
+        return UserRole.CUSTOMER
 
 
 class TokenPayload(BaseModel):
@@ -40,13 +58,38 @@ class UserBase(BaseModel):
     """Shared user properties."""
     email: EmailStr
     name: str = Field(..., min_length=2, max_length=255)
-    role: UserRole = UserRole.FRAUD_INVESTIGATOR
+    role: UserRole = UserRole.CUSTOMER
     is_active: bool = True
+
+    @field_validator("role", mode="before")
+    @classmethod
+    def normalize_role(cls, v):
+        if isinstance(v, UserRole):
+            return v
+        if isinstance(v, str):
+            v_upper = v.strip().upper()
+            if v_upper in ("ADMIN", "SUPERADMIN"):
+                return UserRole.ADMIN
+            if v_upper in ("FRAUD_INVESTIGATOR", "INVESTIGATOR", "ANALYST"):
+                return UserRole.FRAUD_INVESTIGATOR
+            if v_upper in ("USER",):
+                return UserRole.USER
+            return UserRole.CUSTOMER
+        return UserRole.CUSTOMER
+
+
+class UserRegister(BaseModel):
+    """Customer self-registration payload."""
+    email: EmailStr
+    name: str = Field(..., min_length=2, max_length=255)
+    password: str = Field(..., min_length=6)
+    role: Optional[UserRole] = UserRole.CUSTOMER
 
 
 class UserCreate(UserBase):
     """User creation schema (Admin only)."""
     password: str = Field(..., min_length=8)
+
 
 
 class UserUpdate(BaseModel):

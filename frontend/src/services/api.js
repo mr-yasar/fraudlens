@@ -55,6 +55,12 @@ export const dashboardApi = {
     })
     return handleResponse(res)
   },
+  getCustomerDashboard: async (customerId) => {
+    const res = await fetch(`${BASE_URL}/dashboard/customer/${encodeURIComponent(customerId)}`, {
+      headers: getAuthHeaders(),
+    })
+    return handleResponse(res)
+  },
 }
 
 // 2. Transactions & Real-time Evaluation API
@@ -84,15 +90,16 @@ export const transactionsApi = {
     })
     return handleResponse(res)
   },
-  getExplanation: async (transactionId) => {
-    const res = await fetch(`${BASE_URL}/transactions/${transactionId}/explanation`, {
+  getExplanation: async (transactionId, model = null) => {
+    const query = model ? `?model=${encodeURIComponent(model)}` : ''
+    const res = await fetch(`${BASE_URL}/transactions/${transactionId}/explanation${query}`, {
       headers: getAuthHeaders(),
     })
     return handleResponse(res)
   },
 }
 
-// 2b. Pre-Authorization Payment Gateway API (Phase 6 & 7)
+// 2b. Pre-Authorization Payment Gateway API (Phases 1-2)
 export const paymentApi = {
   initiate: async (payload) => {
     const res = await fetch(`${BASE_URL}/payment/initiate`, {
@@ -104,6 +111,64 @@ export const paymentApi = {
   },
   getCustomerProfile: async (customerId) => {
     const res = await fetch(`${BASE_URL}/payment/customer-profile/${customerId}`, {
+      headers: getAuthHeaders(),
+    })
+    return handleResponse(res)
+  },
+  getWallet: async (customerId) => {
+    const res = await fetch(`${BASE_URL}/payment/wallet/${customerId}`, {
+      headers: getAuthHeaders(),
+    })
+    return handleResponse(res)
+  },
+  getBeneficiaries: async (customerId) => {
+    const res = await fetch(`${BASE_URL}/payment/beneficiaries/${customerId}`, {
+      headers: getAuthHeaders(),
+    })
+    return handleResponse(res)
+  },
+  addBeneficiary: async (customerId, payload) => {
+    const res = await fetch(`${BASE_URL}/payment/beneficiaries/${customerId}`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(payload),
+    })
+    return handleResponse(res)
+  },
+  listPendingApprovals: async (customerId = '') => {
+    const url = customerId
+      ? `${BASE_URL}/payment/approvals/pending?customer_id=${encodeURIComponent(customerId)}`
+      : `${BASE_URL}/payment/approvals/pending`
+    const res = await fetch(url, {
+      headers: getAuthHeaders(),
+    })
+    return handleResponse(res)
+  },
+  processApproval: async (approvalId, { action, notes = '', challenge_response = '' }) => {
+    const res = await fetch(`${BASE_URL}/payment/approvals/${approvalId}/action`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ action, notes, challenge_response }),
+    })
+    return handleResponse(res)
+  },
+  approve: async (approvalId) => {
+    const res = await fetch(`${BASE_URL}/payment/approvals/${approvalId}/approve`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+    })
+    return handleResponse(res)
+  },
+  reject: async (approvalId) => {
+    const res = await fetch(`${BASE_URL}/payment/approvals/${approvalId}/reject`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+    })
+    return handleResponse(res)
+  },
+  sendApprovalOtp: async (approvalId) => {
+    const res = await fetch(`${BASE_URL}/payment/approvals/${approvalId}/send-otp`, {
+      method: 'POST',
       headers: getAuthHeaders(),
     })
     return handleResponse(res)
@@ -201,6 +266,30 @@ export const investigationsApi = {
       method: 'PUT',
       headers: getAuthHeaders(),
       body: JSON.stringify(payload),
+    })
+    return handleResponse(res)
+  },
+  getAiDossier: async (caseId, provider = 'gemini') => {
+    const res = await fetch(`${BASE_URL}/investigations/${caseId}/ai-copilot?provider=${encodeURIComponent(provider)}`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+    })
+    return handleResponse(res)
+  },
+  getAiVoiceHelp: async (topic = 'what_is_fraud', query = null, provider = 'gemini') => {
+    let url = `${BASE_URL}/investigations/ai-voice-help/explain?topic=${encodeURIComponent(topic)}&provider=${encodeURIComponent(provider)}`
+    if (query) {
+      url += `&query=${encodeURIComponent(query)}`
+    }
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+    })
+    return handleResponse(res)
+  },
+  getTimeline: async (caseId) => {
+    const res = await fetch(`${BASE_URL}/investigations/${caseId}/timeline`, {
+      headers: getAuthHeaders(),
     })
     return handleResponse(res)
   },

@@ -1,0 +1,32 @@
+# FraudLens AI - Complete Production Dependencies
+# Compatible with Python 3.10, 3.11, 3.12, 3.13, and 3.14.x
+
+# FastAPI & Web API Server
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+pydantic>=2.8.0
+pydantic-settings>=2.4.0
+python-dotenv>=1.0.1
+python-multipart>=0.0.9
+email-validator>=2.0.0
+
+# Database & Authentication
+sqlalchemy>=2.0.30
+alembic>=1.13.0
+pyjwt>=2.8.0
+passlib>=1.7.4
+bcrypt>=4.0.0
+
+# Machine Learning & Explainable AI (TreeSHAP)
+numpy>=1.26.0
+pandas>=2.2.0
+scikit-learn>=1.5.0
+xgboost>=2.0.0
+shap>=0.45.0
+joblib>=1.4.0
+scipy>=1.13.0
+
+# Testing & Utilities
+pytest>=8.3.0
+httpx>=0.27.0
+Faker>=25.0.0

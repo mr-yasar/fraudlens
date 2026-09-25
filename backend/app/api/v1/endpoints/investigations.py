@@ -5,18 +5,22 @@ import json
 import uuid
 from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import desc, asc, or_
+from sqlalchemy import desc, asc, or_, func
 from sqlalchemy.orm import Session
 
 from backend.app.core.database import get_db
 from backend.app.models.user import User
+from backend.app.models.customer import Customer
 from backend.app.models.transaction import Transaction
 from backend.app.models.investigation import Investigation
 from backend.app.models.shap_explanation import ShapExplanation
+from backend.app.models.approval import Approval
 from backend.app.models.audit_log import AuditLog
+
 from backend.app.models.payment_intent import PaymentIntent, PaymentLifecycleStatus
 from backend.app.schemas.user import UserRole
-from backend.app.api.deps import require_investigator
+from backend.app.api.deps import require_investigator, get_current_active_user
+
 from backend.app.schemas.investigation import (
     InvestigationStatus,
     InvestigationDecision,
@@ -174,6 +178,21 @@ def list_investigations(
     """List investigation cases with comprehensive search and filtering."""
     query = db.query(Investigation).join(Transaction, Investigation.transaction_id == Transaction.transaction_id)
 
+    # Customer Data Isolation: customers can only view investigation cases for their own transactions
+    role = (current_user.role or "").upper()
+    if role not in ("ADMIN", "FRAUD_INVESTIGATOR"):
+        email_l = (current_user.email or "").lower()
+        if "monisha" in email_l:
+            user_cust_id = "CUST_MONISHA_001"
+        elif "mohana" in email_l:
+            user_cust_id = "CUST_MOHANA_002"
+        elif "sowmiya" in email_l:
+            user_cust_id = "CUST_SOWMIYA_003"
+        else:
+            cust_rec = db.query(Customer).filter(func.lower(Customer.email) == email_l).first()
+            user_cust_id = cust_rec.customer_id if cust_rec else f"CUST-USER-{current_user.id}"
+        query = query.filter(Transaction.customer_id == user_cust_id)
+
     # Search filter
     if search:
         search_pattern = f"%{search.strip()}%"
@@ -273,7 +292,7 @@ def list_investigations(
 def get_investigation_detail(
     case_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_investigator),
+    current_user: User = Depends(get_current_active_user),
 ) -> InvestigationDetailResponse:
     """Retrieve full investigation case details."""
     investigation = db.query(Investigation).filter(Investigation.case_id == case_id.strip()).first()
@@ -285,6 +304,26 @@ def get_investigation_detail(
 
     # Load linked transaction
     tx = db.query(Transaction).filter(Transaction.transaction_id == investigation.transaction_id).first()
+
+    # Customer Data Isolation
+    role = (current_user.role or "").upper()
+    if role not in ("ADMIN", "FRAUD_INVESTIGATOR"):
+        email_l = (current_user.email or "").lower()
+        if "monisha" in email_l:
+            user_cust_id = "CUST_MONISHA_001"
+        elif "mohana" in email_l:
+            user_cust_id = "CUST_MOHANA_002"
+        elif "sowmiya" in email_l:
+            user_cust_id = "CUST_SOWMIYA_003"
+        else:
+            cust_rec = db.query(Customer).filter(func.lower(Customer.email) == email_l).first()
+            user_cust_id = cust_rec.customer_id if cust_rec else f"CUST-USER-{current_user.id}"
+        if not tx or tx.customer_id != user_cust_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied: You do not have permission to view this investigation case.",
+            )
+
     inv_user = db.query(User).filter(User.id == investigation.investigator_id).first() if investigation.investigator_id else None
 
     # Load SHAP explanations
@@ -464,3 +503,184 @@ def update_investigation(
             "transaction_hour": tx.transaction_hour if tx else None,
         } if tx else None,
     )
+
+
+@router.get(
+    "/{case_id}/timeline",
+    response_model=List[Dict[str, Any]],
+    summary="Get Investigation Chronological Evidence & Audit Timeline",
+    description="Retrieves a complete chronological sequence of transaction creation, ML evaluation, approval challenges, audit logs, and investigator actions for the case.",
+)
+def get_investigation_timeline(
+    case_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_investigator),
+) -> List[Dict[str, Any]]:
+    """Synthesize complete chronological timeline of events for an investigation case."""
+    investigation = db.query(Investigation).filter(Investigation.case_id == case_id.strip()).first()
+    if not investigation:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Investigation case with ID '{case_id}' not found.",
+        )
+
+    timeline_events: List[Dict[str, Any]] = []
+
+    # 1. Transaction creation & AI Evaluation
+    tx = db.query(Transaction).filter(Transaction.transaction_id == investigation.transaction_id).first()
+    if tx and tx.created_at:
+        timeline_events.append({
+            "timestamp": tx.created_at.isoformat(),
+            "event_type": "TRANSACTION_INITIATED",
+            "title": "Payment Transaction Initiated",
+            "actor": f"Customer: {tx.customer_id}",
+            "severity": "INFO",
+            "details": {
+                "amount": float(tx.amount) if tx.amount else 0.0,
+                "merchant_category": tx.merchant_category,
+                "country": tx.transaction_country,
+                "device": tx.device_type,
+            },
+        })
+
+        timeline_events.append({
+            "timestamp": tx.created_at.isoformat(),
+            "event_type": "RISK_EVALUATION_COMPLETED",
+            "title": f"Risk Evaluation: {tx.risk_level} Risk (Score: {tx.risk_score:.1f})",
+            "actor": "FraudLens AI Engine",
+            "severity": "CRITICAL" if tx.risk_level == "HIGH" else "WARNING" if tx.risk_level == "MEDIUM" else "SUCCESS",
+            "details": {
+                "risk_level": tx.risk_level,
+                "risk_score": tx.risk_score,
+                "fraud_probability": tx.fraud_probability,
+                "model_prediction": "FRAUD" if tx.prediction == 1 else "GENUINE",
+                "decision": tx.decision or "PROCEED",
+            },
+        })
+
+    # 2. Linked Approvals
+    approvals = db.query(Approval).filter(Approval.transaction_id == investigation.transaction_id).all()
+    for app in approvals:
+        if app.requested_at:
+            timeline_events.append({
+                "timestamp": app.requested_at.isoformat(),
+                "event_type": "VERIFICATION_CHALLENGE_CREATED",
+                "title": f"Verification Required (Status: {app.status})",
+                "actor": "Real-Time Verification Engine",
+                "severity": "WARNING",
+                "details": {
+                    "approval_id": app.approval_id,
+                    "status": app.status,
+                    "expires_at": app.expires_at.isoformat() if app.expires_at else None,
+                },
+            })
+        if app.responded_at and app.status != "PENDING":
+            timeline_events.append({
+                "timestamp": app.responded_at.isoformat(),
+                "event_type": f"APPROVAL_{app.status}",
+                "title": f"Customer Verification Decision: {app.status}",
+                "actor": f"Customer User #{app.user_id}",
+                "severity": "SUCCESS" if app.status == "APPROVED" else "CRITICAL",
+                "details": {
+                    "approval_id": app.approval_id,
+                    "status": app.status,
+                },
+            })
+
+    # 3. Investigation Audit Logs
+    audit_logs = (
+        db.query(AuditLog)
+        .filter(
+            or_(
+                AuditLog.resource_id == case_id,
+                AuditLog.resource_id == investigation.transaction_id,
+            )
+        )
+        .all()
+    )
+    for log in audit_logs:
+        actor_name = "System"
+        if log.user_id:
+            u = db.query(User).filter(User.id == log.user_id).first()
+            if u:
+                actor_name = f"{u.name} ({u.role})"
+
+        parsed_details = {}
+        if log.details:
+            try:
+                parsed_details = json.loads(log.details)
+            except Exception:
+                parsed_details = {"raw": log.details}
+
+        timeline_events.append({
+            "timestamp": log.timestamp.isoformat() if log.timestamp else datetime.utcnow().isoformat(),
+            "event_type": log.action,
+            "title": log.action.replace("_", " ").title(),
+            "actor": actor_name,
+            "severity": "INFO",
+            "details": parsed_details,
+        })
+
+    # Sort events chronologically
+    timeline_events.sort(key=lambda x: x.get("timestamp", ""))
+
+    return timeline_events
+
+
+@router.post(
+    "/{case_id}/ai-copilot",
+    summary="Generate AI Forensic Copilot Dossier, Diagram & Voice Briefing (Gemini / Grok)",
+    description="Invokes the AI Forensic Copilot using Gemini / Grok / Claude to synthesize an executive summary, Mermaid attack flow diagram, regulatory SAR filing, and Siri/Google voice narration script.",
+)
+def generate_ai_copilot_dossier(
+    case_id: str,
+    provider: Optional[str] = Query("gemini", description="AI Model provider: 'gemini', 'grok', or 'claude'"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_investigator),
+) -> Dict[str, Any]:
+    """Generate structured GenAI forensic investigation dossier."""
+    from backend.app.services.ai_copilot_service import AiCopilotService
+    try:
+        return AiCopilotService.generate_dossier(
+            db=db,
+            case_id=case_id.strip(),
+            provider=provider or "gemini",
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e),
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"AI Copilot analysis failed: {str(e)}",
+        )
+
+
+@router.post(
+    "/ai-voice-help/explain",
+    summary="AI Voice Help & What is Fraud Explainer (Gemini / Grok / Siri)",
+    description="Provides real-time interactive AI explanations for fraud concepts, attack vectors, TreeSHAP, personas, and voice narration scripts for Siri/Google Voice Assistant.",
+)
+def get_ai_voice_help_explanation(
+    topic: Optional[str] = Query("what_is_fraud", description="Topic to explain: 'what_is_fraud', 'attack_vectors', 'how_ai_detects', 'treeshap_explained', 'customer_personas', 'otp_step_up'"),
+    query: Optional[str] = Query(None, description="Freeform custom question asked via voice or text"),
+    provider: Optional[str] = Query("gemini", description="AI Provider: 'gemini', 'grok', or 'claude'"),
+    current_user: User = Depends(get_current_active_user),
+) -> Dict[str, Any]:
+    """Generate educational or forensic AI explanation with Siri/Google voice script."""
+    from backend.app.services.ai_copilot_service import AiCopilotService
+    try:
+        return AiCopilotService.explain_concept(
+            topic=topic or "what_is_fraud",
+            custom_query=query,
+            provider=provider or "gemini",
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"AI Voice Help failed: {str(e)}",
+        )
+
+

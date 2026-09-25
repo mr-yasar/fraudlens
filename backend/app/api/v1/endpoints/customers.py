@@ -3,14 +3,14 @@
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import desc, asc, func
+from sqlalchemy import desc, asc, func, case
 from sqlalchemy.orm import Session
 
 from backend.app.core.database import get_db
 from backend.app.models.user import User
 from backend.app.models.customer import Customer
 from backend.app.models.transaction import Transaction
-from backend.app.api.deps import require_investigator
+from backend.app.api.deps import require_investigator, get_current_active_user
 from backend.app.schemas.customer import (
     CustomerResponse,
     CustomerBehavioralStats,
@@ -38,7 +38,7 @@ def list_customers(
     sort_by: str = Query("created_at", description="Sort field: created_at, customer_id, account_age_days"),
     sort_order: str = Query("desc", description="Sort direction: asc or desc"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_investigator),
+    current_user: User = Depends(get_current_active_user),
 ) -> CustomerListResponse:
     """List customers with pagination, sorting, and search."""
     # Subquery for transaction count per customer
@@ -59,9 +59,25 @@ def list_customers(
         Customer.customer_id == tx_count_subquery.c.customer_id,
     )
 
-    if search:
+    # Customer Data Isolation: customers can only view their own profile
+    role = (current_user.role or "").upper()
+    if role not in ("ADMIN", "FRAUD_INVESTIGATOR"):
+        email_l = (current_user.email or "").lower()
+        if "monisha" in email_l:
+            user_cust_id = "CUST_MONISHA_001"
+        elif "mohana" in email_l:
+            user_cust_id = "CUST_MOHANA_002"
+        elif "sowmiya" in email_l:
+            user_cust_id = "CUST_SOWMIYA_003"
+        else:
+            cust_rec = db.query(Customer).filter(func.lower(Customer.email) == email_l).first()
+            user_cust_id = cust_rec.customer_id if cust_rec else f"CUST-USER-{current_user.id}"
+        query = query.filter(Customer.customer_id == user_cust_id)
+    elif search:
         search_term = f"%{search.strip()}%"
-        query = query.filter(Customer.customer_id.ilike(search_term))
+        query = query.filter(
+            (Customer.customer_id.ilike(search_term)) | (Customer.name.ilike(search_term))
+        )
 
     # Apply sorting
     sort_field_map = {
@@ -79,13 +95,33 @@ def list_customers(
 
     items = []
     for cust, tx_count in results:
+        # Aggregated telemetry for this customer
+        agg = (
+            db.query(
+                func.avg(Transaction.amount).label("avg_amt"),
+                func.sum(case((Transaction.risk_level == "HIGH", 1), else_=0)).label("high_risk_cnt"),
+                func.sum(case((Transaction.prediction == 1, 1), else_=0)).label("fraud_cnt"),
+            )
+            .filter(Transaction.customer_id == cust.customer_id)
+            .first()
+        )
+        avg_amt = float(agg.avg_amt) if agg and agg.avg_amt is not None else 0.0
+        high_risk_cnt = int(agg.high_risk_cnt) if agg and agg.high_risk_cnt is not None else 0
+        fraud_cnt = int(agg.fraud_cnt) if agg and agg.fraud_cnt is not None else 0
+
         items.append(
             CustomerResponse(
                 id=cust.id,
                 customer_id=cust.customer_id,
                 account_age_days=cust.account_age_days,
+                name=cust.name or f"Customer {cust.customer_id}",
+                email=cust.email,
+                risk_segment=cust.risk_segment or "Standard",
                 created_at=cust.created_at,
                 transaction_count=int(tx_count),
+                historical_avg_amount=round(avg_amt, 2),
+                high_risk_count=high_risk_cnt,
+                fraud_transaction_count=fraud_cnt,
             )
         )
 
@@ -109,9 +145,28 @@ def list_customers(
 def get_customer_detail(
     customer_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_investigator),
+    current_user: User = Depends(get_current_active_user),
 ) -> CustomerDetailResponse:
     """Get single customer profile with dynamic behavioral metrics."""
+    # Customer Data Isolation
+    role = (current_user.role or "").upper()
+    if role not in ("ADMIN", "FRAUD_INVESTIGATOR"):
+        email_l = (current_user.email or "").lower()
+        if "monisha" in email_l:
+            user_cust_id = "CUST_MONISHA_001"
+        elif "mohana" in email_l:
+            user_cust_id = "CUST_MOHANA_002"
+        elif "sowmiya" in email_l:
+            user_cust_id = "CUST_SOWMIYA_003"
+        else:
+            cust_rec = db.query(Customer).filter(func.lower(Customer.email) == email_l).first()
+            user_cust_id = cust_rec.customer_id if cust_rec else f"CUST-USER-{current_user.id}"
+        if customer_id != user_cust_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied: You can only view your own customer profile.",
+            )
+
     customer = db.query(Customer).filter(Customer.customer_id == customer_id).first()
     if not customer:
         raise HTTPException(

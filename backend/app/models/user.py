@@ -33,6 +33,7 @@ class User(Base):
     # Relationships
     investigations = relationship("Investigation", back_populates="investigator")
     audit_logs = relationship("AuditLog", back_populates="user")
+    approvals = relationship("TransactionApproval", back_populates="user")
 
     def __repr__(self) -> str:
         return f"<User id={self.id} email='{self.email}' role='{self.role}'>"

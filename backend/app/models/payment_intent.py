@@ -12,23 +12,30 @@ from backend.app.core.database import Base
 
 
 class PaymentLifecycleStatus(str, Enum):
-    """Explicit Payment Lifecycle states."""
+    """Explicit Payment and Transaction Lifecycle states."""
     CREATED = "CREATED"
+    INITIATED = "INITIATED"
+    ANALYZING = "ANALYZING"
     RISK_EVALUATING = "RISK_EVALUATING"
+    PENDING_APPROVAL = "PENDING_APPROVAL"
+    PENDING_VERIFICATION = "PENDING_VERIFICATION"
     REVIEW_REQUIRED = "REVIEW_REQUIRED"
     APPROVED = "APPROVED"
+    REJECTED = "REJECTED"
     BLOCKED = "BLOCKED"
     SUBMITTED = "SUBMITTED"
     PROCESSING = "PROCESSING"
     AUTHORIZED = "AUTHORIZED"
     SUCCEEDED = "SUCCEEDED"
+    SUCCESS = "SUCCESS"
+    COMPLETED = "COMPLETED"
     FAILED = "FAILED"
     CANCELLED = "CANCELLED"
     EXPIRED = "EXPIRED"
 
 
 class PaymentIntent(Base):
-    """Authoritative Payment Intent record tracking state across pre-auth risk and gateway submission."""
+    """Authoritative Payment Intent record tracking state across pre-auth risk, verification, and execution."""
 
     __tablename__ = "payment_intents"
 
@@ -38,13 +45,18 @@ class PaymentIntent(Base):
     
     # Financial details
     amount = Column(Float, nullable=False)
-    currency = Column(String(3), default="USD", nullable=False)
+    currency = Column(String(10), default="USD", nullable=False)
     merchant_name = Column(String(150), nullable=False)
     merchant_category = Column(String(50), nullable=False)
-    payment_method = Column(String(50), default="card", nullable=False)
+    payment_method = Column(String(50), default="credit_card", nullable=False)
+    beneficiary_name = Column(String(150), nullable=True)
 
     # Lifecycle State (Separated from fraud decision)
     lifecycle_status = Column(String(50), default=PaymentLifecycleStatus.CREATED.value, index=True, nullable=False)
+
+    # Behavioral Signals (Real backend flags)
+    is_new_beneficiary = Column(Boolean, default=False, nullable=True)
+    is_new_device = Column(Boolean, default=False, nullable=True)
 
     # Fraud Risk Evaluation Results (Strictly separated fields)
     fraud_probability = Column(Float, nullable=True)  # ML Output [0.0, 1.0]
@@ -64,6 +76,7 @@ class PaymentIntent(Base):
     idempotency_key = Column(String(128), index=True, nullable=True)
     request_fingerprint = Column(String(64), nullable=True)
     case_id = Column(String(100), index=True, nullable=True)
+    approval_id = Column(String(100), index=True, nullable=True)
 
     # Timestamps
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
@@ -72,6 +85,7 @@ class PaymentIntent(Base):
     # Relationships
     customer = relationship("Customer", back_populates="payment_intents", foreign_keys=[customer_id])
     attempts = relationship("PaymentAttempt", back_populates="payment_intent", cascade="all, delete-orphan")
+    approval_record = relationship("TransactionApproval", back_populates="payment_intent", uselist=False, foreign_keys="[TransactionApproval.payment_id]")
 
     __table_args__ = (
         Index("ix_payment_intents_lifecycle_created", "lifecycle_status", "created_at"),

@@ -10,6 +10,9 @@ class CustomerBase(BaseModel):
 
     customer_id: str = Field(..., min_length=1, max_length=100, description="Unique customer identifier")
     account_age_days: Optional[int] = Field(None, ge=0, description="Customer account age in days")
+    name: Optional[str] = Field(None, description="Full customer name")
+    email: Optional[str] = Field(None, description="Customer email address")
+    risk_segment: Optional[str] = Field("Standard", description="Risk tier segment")
 
 
 class CustomerResponse(CustomerBase):
@@ -20,6 +23,9 @@ class CustomerResponse(CustomerBase):
     id: int
     created_at: datetime
     transaction_count: int = Field(0, description="Total count of transactions for this customer")
+    historical_avg_amount: float = Field(0.0, description="Calculated average transaction amount")
+    high_risk_count: int = Field(0, description="Count of transactions flagged HIGH risk")
+    fraud_transaction_count: int = Field(0, description="Count of confirmed fraud transactions")
 
 
 class CustomerBehavioralStats(BaseModel):

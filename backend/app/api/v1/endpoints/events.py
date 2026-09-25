@@ -20,9 +20,8 @@ async def websocket_live_events(
     """
     WebSocket endpoint for real-time fraud alert streaming.
     Clients receive instant notifications for PRE_AUTH_EVALUATED, CASE_CREATED,
-    CASE_RESOLVED, and WEBHOOK_PROCESSED events.
+    CASE_RESOLVED, APPROVAL_REQUESTED, APPROVAL_RESOLVED, and WEBHOOK_PROCESSED events.
     """
-    # Authenticate token if provided
     if token:
         try:
             payload = decode_access_token(token)
@@ -38,7 +37,6 @@ async def websocket_live_events(
 
     try:
         while True:
-            # Keep socket open and accept optional client ping/ack messages
             msg = await websocket.receive_text()
             if msg == "ping":
                 await websocket.send_text('{"type":"pong"}')
@@ -46,6 +44,38 @@ async def websocket_live_events(
         await broadcaster.disconnect_websocket(websocket)
     except Exception as e:
         logger.debug("WebSocket exception: %s", e)
+        await broadcaster.disconnect_websocket(websocket)
+
+
+@router.websocket("/ws/transactions/{user_id}")
+async def websocket_user_transactions(
+    websocket: WebSocket,
+    user_id: str,
+    token: Optional[str] = Query(None),
+):
+    """Targeted WebSocket endpoint for a user's transaction approvals and real-time status updates."""
+    if token:
+        try:
+            payload = decode_access_token(token)
+            if not payload:
+                await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+                return
+        except Exception:
+            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+            return
+
+    broadcaster = EventBroadcaster.get_instance()
+    await broadcaster.connect_websocket(websocket)
+
+    try:
+        while True:
+            msg = await websocket.receive_text()
+            if msg == "ping":
+                await websocket.send_text('{"type":"pong"}')
+    except WebSocketDisconnect:
+        await broadcaster.disconnect_websocket(websocket)
+    except Exception as e:
+        logger.debug("User WebSocket exception: %s", e)
         await broadcaster.disconnect_websocket(websocket)
 
 

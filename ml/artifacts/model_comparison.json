@@ -1,0 +1,165 @@
+{
+  "dataset_name": "fraudlens_master_synthetic_transactions_29_merchants.csv",
+  "total_rows": 20000,
+  "merchant_count": 30,
+  "fraud_rate": 0.0546,
+  "numeric_features": [
+    "amount",
+    "transaction_hour",
+    "day_of_week",
+    "is_weekend",
+    "is_night_transaction",
+    "merchant_business_age_years",
+    "merchant_average_ticket",
+    "customer_account_age_days",
+    "customer_historical_avg_amount",
+    "customer_historical_max_amount",
+    "customer_total_transactions_prior",
+    "beneficiary_prior_tx_count",
+    "transactions_last_1h",
+    "transactions_last_24h",
+    "transactions_last_7d",
+    "amount_to_avg_ratio",
+    "amount_deviation_zscore",
+    "location_distance_km",
+    "failed_transaction_attempts_24h",
+    "failed_login_attempts_24h",
+    "merchant_historical_fraud_rate",
+    "is_new_device",
+    "is_trusted_device",
+    "is_new_beneficiary",
+    "is_location_changed",
+    "recent_password_change"
+  ],
+  "categorical_features": [
+    "merchant_category",
+    "transaction_type",
+    "merchant_payment_channels",
+    "device_type"
+  ],
+  "encoded_feature_names": [
+    "amount",
+    "transaction_hour",
+    "day_of_week",
+    "is_weekend",
+    "is_night_transaction",
+    "merchant_business_age_years",
+    "merchant_average_ticket",
+    "customer_account_age_days",
+    "customer_historical_avg_amount",
+    "customer_historical_max_amount",
+    "customer_total_transactions_prior",
+    "beneficiary_prior_tx_count",
+    "transactions_last_1h",
+    "transactions_last_24h",
+    "transactions_last_7d",
+    "amount_to_avg_ratio",
+    "amount_deviation_zscore",
+    "location_distance_km",
+    "failed_transaction_attempts_24h",
+    "failed_login_attempts_24h",
+    "merchant_historical_fraud_rate",
+    "is_new_device",
+    "is_trusted_device",
+    "is_new_beneficiary",
+    "is_location_changed",
+    "recent_password_change",
+    "merchant_category_Digital Assets",
+    "merchant_category_E-commerce",
+    "merchant_category_Fashion / Apparel",
+    "merchant_category_Financial Services",
+    "merchant_category_Gaming & Betting",
+    "merchant_category_Grocery & Supermarket",
+    "merchant_category_Jewellery & Bullion",
+    "merchant_category_Restaurant",
+    "merchant_category_Shadow Portal",
+    "transaction_type_CARD",
+    "transaction_type_NETBANKING",
+    "transaction_type_ONLINE",
+    "transaction_type_POS",
+    "transaction_type_TRANSFER",
+    "transaction_type_UPI",
+    "transaction_type_WALLET",
+    "merchant_payment_channels_CARD,ONLINE,TRANSFER",
+    "merchant_payment_channels_ONLINE,UPI,CARD",
+    "merchant_payment_channels_ONLINE,UPI,CARD,NETBANKING",
+    "merchant_payment_channels_ONLINE,UPI,WALLET",
+    "merchant_payment_channels_POS,UPI",
+    "merchant_payment_channels_POS,UPI,CARD",
+    "merchant_payment_channels_POS,UPI,TRANSFER",
+    "merchant_payment_channels_TRANSFER,CARD,NETBANKING",
+    "merchant_payment_channels_TRANSFER,UPI,CARD,ONLINE",
+    "merchant_payment_channels_TRANSFER,UPI,NETBANKING",
+    "merchant_payment_channels_UPI,CARD,ONLINE",
+    "merchant_payment_channels_UPI,TRANSFER",
+    "merchant_payment_channels_UPI,TRANSFER,CARD,ONLINE",
+    "merchant_payment_channels_UPI,TRANSFER,WALLET",
+    "merchant_payment_channels_UPI,WALLET,CARD",
+    "merchant_payment_channels_UPI,WALLET,NETBANKING",
+    "device_type_desktop_windows",
+    "device_type_mobile_android",
+    "device_type_mobile_ios",
+    "device_type_unknown_bot",
+    "device_type_web_browser"
+  ],
+  "champion_model_name": "LogisticRegression",
+  "comparison": {
+    "LogisticRegression": {
+      "name": "LogisticRegression",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "roc_auc": 1.0,
+      "pr_auc": 1.0,
+      "confusion_matrix": [
+        [
+          3790,
+          0
+        ],
+        [
+          0,
+          210
+        ]
+      ],
+      "is_champion": true
+    },
+    "RandomForest": {
+      "name": "RandomForest",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "roc_auc": 1.0,
+      "pr_auc": 1.0,
+      "confusion_matrix": [
+        [
+          3790,
+          0
+        ],
+        [
+          0,
+          210
+        ]
+      ],
+      "is_champion": false
+    },
+    "XGBoost": {
+      "name": "XGBoost",
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1_score": 1.0,
+      "roc_auc": 1.0,
+      "pr_auc": 1.0,
+      "confusion_matrix": [
+        [
+          3790,
+          0
+        ],
+        [
+          0,
+          210
+        ]
+      ],
+      "is_champion": false
+    }
+  }
+}

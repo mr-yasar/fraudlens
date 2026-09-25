@@ -32,5 +32,11 @@ class AuditLog(Base):
     # Relationships
     user = relationship("User", back_populates="audit_logs")
 
+    @property
+    def timestamp(self):
+        return self.created_at
+
     def __repr__(self) -> str:
         return f"<AuditLog id={self.id} action='{self.action}' resource='{self.resource_type}:{self.resource_id}'>"
+
+

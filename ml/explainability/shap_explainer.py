@@ -13,6 +13,11 @@ from sklearn.ensemble import RandomForestClassifier, VotingClassifier
 from xgboost import XGBClassifier
 
 from ml.preprocessing.pipeline import FullFraudPreprocessor
+from ml.explainability.feature_metadata import (
+    get_feature_display_name,
+    format_customer_reason,
+    format_investigator_reason,
+)
 
 
 @dataclass
@@ -25,6 +30,8 @@ class FeatureAttribution:
     impact: str  # 'INCREASES_FRAUD_RISK' or 'DECREASES_FRAUD_RISK'
     importance_rank: int
     detail: str
+    display_name: Optional[str] = None
+    category: Optional[str] = None
 
 
 @dataclass
@@ -164,6 +171,7 @@ class FraudShapExplainer:
             s_float = float(s_val)
 
             impact = "INCREASES_FRAUD_RISK" if s_float > 0 else "DECREASES_FRAUD_RISK"
+            disp_name = get_feature_display_name(feat_name)
             detail = (
                 f"{feat_name} (value: {feat_val:.2f}) increased fraud risk by +{s_float:.4f}"
                 if s_float > 0
@@ -178,6 +186,7 @@ class FraudShapExplainer:
                     impact=impact,
                     importance_rank=0,  # Assigned after sorting
                     detail=detail,
+                    display_name=disp_name,
                 )
             )
 

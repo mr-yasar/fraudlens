@@ -47,3 +47,27 @@ class AnalyticsReportsResponse(BaseModel):
     investigation_outcomes: Dict[str, Any]
     model_performance_summary: Dict[str, Any]
     timeline_series: List[Dict[str, Any]]
+
+
+class CustomerDashboardResponse(BaseModel):
+    """Summary metrics tailored specifically for a customer's personal security dashboard."""
+
+    customer_id: str
+    name: Optional[str] = None
+    email: Optional[str] = None
+    account_balance: float = 0.0
+    risk_segment: Optional[str] = None
+    account_age_days: Optional[int] = 0
+    total_transactions_count: int = 0
+    total_spent_amount: float = 0.0
+    fraud_rate_percentage: Optional[float] = 0.0
+    pending_approvals_count: int = 0
+    pending_approvals: List[Dict[str, Any]] = Field(default_factory=list)
+    recent_transactions: List[Dict[str, Any]] = Field(default_factory=list)
+    category_breakdown: List[Dict[str, Any]] = Field(default_factory=list)
+    security_summary: Dict[str, Any] = Field(default_factory=dict)
+    primary_device: Optional[str] = None
+    primary_location: Optional[str] = None
+    card_last4: Optional[str] = "4092"
+    card_expiry: Optional[str] = "09/29"
+

@@ -1,10 +1,10 @@
 """Fraud Prediction and Explainable AI Endpoints."""
 
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from backend.app.models.user import User
-from backend.app.api.deps import require_investigator
+from backend.app.api.deps import require_investigator, get_current_active_user, get_optional_current_user
 from backend.app.schemas.prediction import (
     TransactionPredictionInput,
     PredictionResponse,
@@ -22,9 +22,14 @@ router = APIRouter()
     summary="Score Financial Transaction for Fraud & Risk",
     description="Evaluates transaction against active ML model, calculates multi-factor risk score (0-100), risk level (LOW, MEDIUM, HIGH), and returns top SHAP attributions.",
 )
+@router.post(
+    "/score",
+    response_model=PredictionResponse,
+    include_in_schema=False,
+)
 def predict_fraud(
     transaction_input: TransactionPredictionInput,
-    current_user: User = Depends(require_investigator),
+    current_user: User = Depends(get_current_active_user),
 ) -> PredictionResponse:
     """Evaluate fraud probability and classify transaction as FRAUD or GENUINE."""
     service = FraudPredictionService.get_instance()
@@ -52,7 +57,7 @@ def predict_fraud(
 def explain_transaction(
     transaction_input: TransactionPredictionInput,
     top_k: int = Query(5, ge=1, le=20, description="Number of top contributing factors to highlight"),
-    current_user: User = Depends(require_investigator),
+    current_user: User = Depends(get_current_active_user),
 ) -> LocalExplanationResponse:
     """Generate exact local SHAP feature attribution report for a single transaction."""
     service = FraudPredictionService.get_instance()
@@ -78,7 +83,7 @@ def explain_transaction(
     description="Retrieves precomputed global mean absolute SHAP importance rankings across the active model.",
 )
 def get_global_model_explanation(
-    current_user: User = Depends(require_investigator),
+    current_user: Optional[User] = Depends(get_optional_current_user),
 ) -> GlobalExplanationResponse:
     """Retrieve global SHAP feature importance rankings."""
     service = FraudPredictionService.get_instance()
@@ -103,7 +108,7 @@ def get_global_model_explanation(
 )
 def generate_counterfactual_explanation(
     transaction_input: TransactionPredictionInput,
-    current_user: User = Depends(require_investigator),
+    current_user: Optional[User] = Depends(get_optional_current_user),
 ) -> Dict[str, Any]:
     """Compute minimal verified counterfactual feature perturbation."""
     service = FraudPredictionService.get_instance()
@@ -130,3 +135,25 @@ def generate_counterfactual_explanation(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Counterfactual generation failed: {str(e)}",
         )
+
+
+@router.post(
+    "/predict/compare",
+    summary="Compare Predictions Across All Candidate Models",
+    description="Evaluates transaction simultaneously across Logistic Regression, Random Forest, and XGBoost models, returning comparative fraud probabilities.",
+)
+def compare_model_predictions(
+    transaction_input: TransactionPredictionInput,
+    current_user: Optional[User] = Depends(get_optional_current_user),
+) -> Dict[str, Any]:
+    """Execute simultaneous multi-model inference benchmark."""
+    service = FraudPredictionService.get_instance()
+    try:
+        return service.compare_all_models(transaction_input)
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Model comparison failed: {str(e)}",
+        )
+
+

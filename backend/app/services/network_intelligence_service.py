@@ -77,17 +77,20 @@ class FraudNetworkIntelligenceService:
         Evaluate customer and transaction relationship topology for synthetic rings and shared devices.
         Uses non-blocking indexed queries over existing SQLite tables.
         """
-        effective_device = (device_id or device_type or "web").strip().lower()
         effective_merchant = (merchant_name or "").strip().lower()
-
-        # 1. Find other customers who used the same device profile
         shared_device_customers: Set[str] = set()
-        if effective_device and effective_device not in ["web", "mobile", "pos"]:
-            # Check Transactions
+        generic_platforms = {"web", "mobile", "pos", "mobile_ios", "mobile_android", "web_browser", "desktop_windows", "desktop_mac", "ios", "android"}
+        target_device = device_id or device_type
+        effective_device = target_device or "unknown"
+        if target_device and target_device.strip().lower() not in generic_platforms:
+            dev_val = target_device.strip().lower()
             device_txs = (
                 db.query(Transaction.customer_id)
                 .filter(
-                    func.lower(Transaction.device_type) == effective_device,
+                    or_(
+                        func.lower(Transaction.device_id) == dev_val,
+                        func.lower(Transaction.device_type) == dev_val,
+                    ),
                     Transaction.customer_id != customer_id,
                 )
                 .distinct()

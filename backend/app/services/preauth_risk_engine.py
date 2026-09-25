@@ -152,7 +152,7 @@ class PreAuthRiskEngine:
         if hard_block:
             final_risk_score = max(base_score, 80)
         elif any(r.action_impact == "FLAG_REVIEW" for r in triggered_rules):
-            final_risk_score = max(base_score, 40)
+            final_risk_score = min(68, max(base_score, 40))
         else:
             final_risk_score = base_score
 

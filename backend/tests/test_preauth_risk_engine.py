@@ -1,6 +1,6 @@
 """Comprehensive tests for Pre-Authorization Risk Engine and Payment Gateway (Phase 6)."""
 
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
@@ -56,30 +56,33 @@ def setup_test_app():
     db.add_all([cust_low, cust_med, cust_high])
     db.commit()
 
+    now = datetime.now(timezone.utc)
     for cid in ["CUST-PAY-LOW", "CUST-PAY-MED", "CUST-PAY-HIGH"]:
         t1 = Transaction(
             transaction_id=f"TX-{cid}-01",
             customer_id=cid,
             amount=90.0,
             transaction_hour=12,
+            beneficiary="Acme Grocery",
             merchant_category="retail",
             transaction_country="US",
             geo_location_region="CA",
             device_type="web",
             transaction_type="online_payment",
-            created_at=datetime.now(timezone.utc),
+            created_at=now - timedelta(days=2),
         )
         t2 = Transaction(
             transaction_id=f"TX-{cid}-02",
             customer_id=cid,
             amount=110.0,
             transaction_hour=15,
+            beneficiary="Acme Grocery",
             merchant_category="retail",
             transaction_country="US",
             geo_location_region="CA",
             device_type="web",
             transaction_type="online_payment",
-            created_at=datetime.now(timezone.utc),
+            created_at=now - timedelta(days=1),
         )
         db.add_all([t1, t2])
     db.commit()

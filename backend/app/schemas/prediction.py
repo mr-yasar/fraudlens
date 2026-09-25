@@ -1,7 +1,7 @@
 """Pydantic schemas for Fraud Prediction and SHAP Explainable AI API."""
 
 from typing import Any, Dict, List, Optional
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator, ConfigDict
 
 
 class TransactionPredictionInput(BaseModel):
@@ -10,6 +10,7 @@ class TransactionPredictionInput(BaseModel):
     Supports both the primary dataset schema (financial_fraud_customer_transactions.csv)
     and legacy fields with seamless bi-directional mapping.
     """
+    model_config = ConfigDict(extra="allow")
 
     # Primary Identifiers
     transaction_id: Optional[str] = Field(None, description="Optional unique transaction reference identifier")
@@ -33,6 +34,22 @@ class TransactionPredictionInput(BaseModel):
     International_Transaction: Optional[int] = Field(0, ge=0, le=1, description="Cross-border payment indicator (0 or 1)")
     Unusual_Location: Optional[int] = Field(0, ge=0, le=1, description="Unusual location indicator (0 or 1)")
 
+    # Frontend Analyzer & Master Profile Fields
+    amount: Optional[float] = Field(None, gt=0.0, description="Transaction monetary value in INR")
+    merchant_id: Optional[str] = Field(None, description="Target Merchant Master Profile ID")
+    merchant_name: Optional[str] = Field(None, description="Target Merchant Name")
+    merchant_category: Optional[str] = Field("general", description="Merchant industry category")
+    merchant_average_ticket: Optional[float] = Field(None, description="Merchant average ticket amount")
+    merchant_historical_fraud_rate: Optional[float] = Field(None, description="Merchant historical fraud rate")
+    customer_historical_avg_amount: Optional[float] = Field(None, description="Customer historical average amount")
+    is_new_device: Optional[bool] = Field(None, description="New device indicator")
+    is_new_beneficiary: Optional[bool] = Field(None, description="New beneficiary indicator")
+    is_location_changed: Optional[bool] = Field(None, description="Location jump indicator")
+    location_distance_km: Optional[float] = Field(0.0, description="Geographic distance deviation in km")
+    transactions_last_1h: Optional[float] = Field(None, description="Transactions in past 1 hour")
+    transactions_last_24h: Optional[float] = Field(None, description="Transactions in past 24 hours")
+    failed_transaction_attempts_24h: Optional[int] = Field(None, description="Failed attempts count in 24h")
+
     # Legacy Compatibility Fields
     transaction_amount: Optional[float] = Field(None, gt=0.0, description="Legacy alias for Amount")
     transaction_hour: Optional[int] = Field(None, ge=0, le=23, description="Legacy alias for Transaction_Hour")
@@ -46,7 +63,6 @@ class TransactionPredictionInput(BaseModel):
     is_international: Optional[int] = Field(None, ge=0, le=1, description="Legacy alias for International_Transaction")
     transaction_day_of_week: Optional[int] = Field(None, ge=0, le=7, description="Day of week [0-7]")
     previous_chargebacks: Optional[int] = Field(0, ge=0, description="Historical chargeback count")
-    merchant_category: Optional[str] = Field("general", description="Merchant industry category")
     transaction_country: Optional[str] = Field("IN", description="Country code")
     is_high_risk_merchant_category: Optional[int] = Field(0, ge=0, le=1, description="High-risk category indicator")
     is_weekend: Optional[int] = Field(0, ge=0, le=1, description="Weekend indicator")
@@ -108,37 +124,73 @@ class TransactionPredictionInput(BaseModel):
         d["Account_Age_Days"] = float(acc_age)
         d["account_age_days"] = float(acc_age)
 
-        # Reconcile Average_Previous_Amount / avg_transaction_amount_30d_customer
-        avg_amt = d.get("Average_Previous_Amount", d.get("avg_transaction_amount_30d_customer", amt if amt is not None else 100.0))
-        d["Average_Previous_Amount"] = float(avg_amt)
-        d["avg_transaction_amount_30d_customer"] = float(avg_amt)
+        # Reconcile Average_Previous_Amount / customer_historical_avg_amount
+        # Crucial: NEVER default baseline to current amt!
+        baseline = d.get("customer_historical_avg_amount")
+        if baseline is None:
+            baseline = d.get("Average_Previous_Amount")
+        if baseline is None:
+            baseline = d.get("avg_transaction_amount_30d_customer")
+        if baseline is None:
+            baseline = d.get("merchant_average_ticket")
+        if baseline is None:
+            baseline = 2000.0
+        try:
+            baseline_amt = float(baseline)
+            if baseline_amt <= 0:
+                baseline_amt = 2000.0
+        except Exception:
+            baseline_amt = 2000.0
+
+        d["Average_Previous_Amount"] = baseline_amt
+        d["avg_transaction_amount_30d_customer"] = baseline_amt
+        d["customer_historical_avg_amount"] = baseline_amt
 
         if "Previous_Transaction_Amount" not in d or d["Previous_Transaction_Amount"] is None:
-            d["Previous_Transaction_Amount"] = float(avg_amt)
+            d["Previous_Transaction_Amount"] = baseline_amt
 
         # Reconcile Amount_Deviation & Amount_Ratio
-        if amt is not None:
-            if "Amount_Deviation" not in d or d["Amount_Deviation"] is None:
-                d["Amount_Deviation"] = float(amt) - float(avg_amt)
-            if "Amount_Ratio" not in d or d["Amount_Ratio"] is None:
-                d["Amount_Ratio"] = float(amt) / (float(avg_amt) + 1e-5)
+        d["Amount_Deviation"] = amt_val - baseline_amt
+        d["Amount_Ratio"] = amt_val / (baseline_amt + 1e-5)
 
-        # Reconcile Transactions_Last_24H / transaction_velocity_24h
-        vel_24 = d.get("Transactions_Last_24H", d.get("transaction_velocity_24h", 2.0))
-        d["Transactions_Last_24H"] = float(vel_24)
-        d["transaction_velocity_24h"] = float(vel_24)
+        # Reconcile New_Device & is_new_device
+        new_dev = 1 if (d.get("is_new_device") is True or d.get("New_Device") == 1 or d.get("is_new_device") == 1) else 0
+        d["New_Device"] = new_dev
+        d["is_new_device"] = bool(new_dev)
 
-        if "transaction_velocity_1h" not in d or d["transaction_velocity_1h"] is None:
-            d["transaction_velocity_1h"] = float(vel_24) / 4.0
+        # Reconcile is_new_beneficiary
+        new_bene = 1 if (d.get("is_new_beneficiary") is True or d.get("is_new_beneficiary") == 1) else 0
+        d["is_new_beneficiary"] = bool(new_bene)
+
+        # Reconcile Unusual_Location & is_location_changed
+        unusual_loc = 1 if (
+            d.get("is_location_changed") is True
+            or d.get("Unusual_Location") == 1
+            or d.get("is_location_changed") == 1
+            or float(d.get("location_distance_km", 0) or 0) > 50
+        ) else 0
+        d["Unusual_Location"] = unusual_loc
+        d["is_location_changed"] = bool(unusual_loc)
+
+        # Reconcile Velocity
+        vel_1 = float(d.get("transactions_last_1h") if d.get("transactions_last_1h") is not None else d.get("transaction_velocity_1h", 1.0))
+        d["transactions_last_1h"] = vel_1
+        d["transaction_velocity_1h"] = vel_1
+
+        vel_24 = float(d.get("transactions_last_24h") if d.get("transactions_last_24h") is not None else d.get("Transactions_Last_24H", d.get("transaction_velocity_24h", max(vel_1, 2.0))))
+        d["transactions_last_24h"] = vel_24
+        d["Transactions_Last_24H"] = vel_24
+        d["transaction_velocity_24h"] = vel_24
+
+        # Reconcile Failed Attempts
+        fails = int(d.get("failed_transaction_attempts_24h") if d.get("failed_transaction_attempts_24h") is not None else d.get("Failed_Attempts", 0))
+        d["failed_transaction_attempts_24h"] = fails
+        d["Failed_Attempts"] = fails
 
         # Reconcile International_Transaction / is_international
         intl = d.get("International_Transaction", d.get("is_international", 0))
         d["International_Transaction"] = int(intl)
         d["is_international"] = int(intl)
-
-        # Reconcile Unusual_Location
-        if "Unusual_Location" not in d or d["Unusual_Location"] is None:
-            d["Unusual_Location"] = 1 if d.get("Location") != d.get("Usual_Location") else 0
 
         # Ensure transaction_day_of_week
         if "transaction_day_of_week" not in d or d["transaction_day_of_week"] is None:
@@ -160,6 +212,8 @@ class PredictionResponse(BaseModel):
     transaction_id: Optional[str] = Field(None, description="Echoed transaction identifier")
     risk_factors: List[Dict[str, Any]] = Field(default_factory=list, description="Contributing risk signals breakdown")
     top_shap_factors: Optional[List[Dict[str, Any]]] = Field(None, description="Summary of top SHAP attributions")
+    top_factors: Optional[List[Dict[str, Any]]] = Field(None, description="Unified top contributing risk and SHAP factors")
+    recommended_action: Optional[str] = Field(None, description="Recommended operational action: BLOCK, REVIEW, or ALLOW")
     anomaly_score: Optional[float] = Field(None, description="Unsupervised Isolation Forest anomaly score")
     anomaly_status: Optional[str] = Field(None, description="Anomaly service status: 'AVAILABLE' | 'UNAVAILABLE'")
     uncertainty_score: Optional[float] = Field(None, description="Model prediction uncertainty score [0.0 - 1.0]")
@@ -180,6 +234,17 @@ class LocalExplanationResponse(BaseModel):
     top_risk_increasing_factors: List[Dict[str, Any]]
     top_risk_decreasing_factors: List[Dict[str, Any]]
     all_attributions: List[Dict[str, Any]]
+
+    # Enhanced Multi-Model AI and Explainability Intelligence
+    model_name: Optional[str] = "xgboost"
+    model_version: Optional[str] = "v1.1.0"
+    model_comparison: Optional[Dict[str, Any]] = None
+    composed_explanation: Optional[Dict[str, Any]] = None
+    counterfactual: Optional[Dict[str, Any]] = None
+    anomaly_score: Optional[float] = None
+    anomaly_status: Optional[str] = None
+    uncertainty_score: Optional[float] = None
+    uncertainty_level: Optional[str] = None
 
 
 class GlobalExplanationResponse(BaseModel):

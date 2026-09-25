@@ -10,27 +10,35 @@ import {
   ArrowRight,
   AlertCircle,
   UserCheck,
+  User,
   Search,
   CheckCircle2,
+  Sparkles,
+  CreditCard,
+  ShieldAlert,
 } from 'lucide-react'
 import { sound } from './soundEffects'
 
 /**
- * LoginCard - Floating Glass Login Panel matching the exact cybernetic design from the reference image.
- * Features glowing double-border, gradient CTA button, password visibility toggle,
- * and distinct Administrator & Fraud Investigator enterprise role cards.
+ * LoginCard - Floating Glass Authentication & Registration Panel.
+ * Supports Sign In & Customer Self-Registration with instant token provisioning,
+ * 1-click quick-fill demo credentials, and real-time audio/visual cyber feedback.
  */
 export default function LoginCard({
-  email,
-  setEmail,
-  password,
-  setPassword,
+  name = '',
+  setName = () => {},
+  email = '',
+  setEmail = () => {},
+  password = '',
+  setPassword = () => {},
   onSubmit,
+  onRegister,
   authLoading,
   authError,
   isUnlocked,
   sequenceStage,
 }) {
+  const [activeTab, setActiveTab] = useState('signin') // 'signin' | 'register'
   const [showPassword, setShowPassword] = useState(false)
   const [rememberMe, setRememberMe] = useState(true)
   const [showForgotNotice, setShowForgotNotice] = useState(false)
@@ -39,7 +47,7 @@ export default function LoginCard({
     e.preventDefault()
     if (authLoading || isUnlocked) return
     sound.playBlip()
-    onSubmit(e)
+    onSubmit && onSubmit(e)
   }
 
   const isTransitioningOut =
@@ -71,17 +79,17 @@ export default function LoginCard({
             FraudLens <span className="text-cyan-400">AI</span>
           </h2>
           <div className="text-[10px] font-mono font-bold text-cyan-300 uppercase tracking-wider mt-0.5">
-            SECURE ENTERPRISE ACCESS
+            SECURE ENTERPRISE AUTHENTICATION
           </div>
         </div>
       </div>
 
-      <div className="mb-4">
-        <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-          Welcome Back
+      <div className="mb-3.5">
+        <h3 className="text-lg font-black text-white tracking-tight">
+          Sign In to Access Platform
         </h3>
         <p className="text-xs text-slate-300 mt-0.5">
-          Access the AI Fraud Intelligence Command Center
+          Select one of the 4 role portals below or enter your credentials.
         </p>
       </div>
 
@@ -89,7 +97,7 @@ export default function LoginCard({
       {authError && (
         <div
           role="alert"
-          className="p-3 rounded-xl bg-rose-950/80 border border-rose-600 text-rose-200 text-xs flex items-center gap-2.5 mb-4 shadow-[0_0_20px_rgba(225,29,72,0.4)] animate-shake"
+          className="p-2.5 rounded-xl bg-rose-950/80 border border-rose-600 text-rose-200 text-xs flex items-center gap-2 mb-3 shadow-[0_0_20px_rgba(225,29,72,0.4)] animate-shake"
         >
           <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
           <span className="font-medium">{authError}</span>
@@ -98,7 +106,7 @@ export default function LoginCard({
 
       {/* Forgot Password Modal Helper */}
       {showForgotNotice && (
-        <div className="p-3 rounded-xl bg-cyan-950/80 border border-cyan-600 text-cyan-200 text-xs mb-4 flex items-start justify-between gap-2">
+        <div className="p-3 rounded-xl bg-cyan-950/80 border border-cyan-600 text-cyan-200 text-xs mb-3 flex items-start justify-between gap-2">
           <div>
             <strong className="block font-semibold mb-0.5">Enterprise Password Reset</strong>
             Contact your fraud platform administrator to provision a password reset token.
@@ -114,7 +122,7 @@ export default function LoginCard({
       )}
 
       {/* Form Controls */}
-      <form onSubmit={handleFormSubmit} className="space-y-3.5">
+      <form onSubmit={handleFormSubmit} className="space-y-3">
         {/* Email Address Input */}
         <div className="space-y-1">
           <label htmlFor="login-email" className="block text-xs font-semibold text-slate-300">
@@ -132,8 +140,8 @@ export default function LoginCard({
               disabled={authLoading || isUnlocked}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="name@fraudlens.internal"
-              className="w-full bg-slate-900/80 border border-slate-700 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 rounded-xl pl-10 pr-3.5 py-2.5 text-xs sm:text-sm text-white placeholder:text-slate-500 font-sans transition outline-none disabled:opacity-50"
+              placeholder="admin@fraudlens.internal"
+              className="w-full bg-slate-900/80 border border-slate-700 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 rounded-xl pl-10 pr-3.5 py-2 text-xs sm:text-sm text-white placeholder:text-slate-500 font-sans transition outline-none disabled:opacity-50"
             />
           </div>
         </div>
@@ -156,7 +164,7 @@ export default function LoginCard({
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••••••"
-              className="w-full bg-slate-900/80 border border-slate-700 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 rounded-xl pl-10 pr-10 py-2.5 text-xs sm:text-sm text-white placeholder:text-slate-500 font-sans transition outline-none disabled:opacity-50"
+              className="w-full bg-slate-900/80 border border-slate-700 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 rounded-xl pl-10 pr-10 py-2 text-xs sm:text-sm text-white placeholder:text-slate-500 font-sans transition outline-none disabled:opacity-50"
             />
             <button
               type="button"
@@ -189,11 +197,11 @@ export default function LoginCard({
           </button>
         </div>
 
-        {/* Primary Action Button: ENTER COMMAND CENTER */}
+        {/* Primary Action Button */}
         <button
           type="submit"
           disabled={authLoading || isUnlocked}
-          className={`w-full py-3 px-4 rounded-xl text-xs sm:text-sm font-black tracking-wide shadow-2xl transition-all duration-300 flex items-center justify-center gap-2 mt-2 disabled:cursor-not-allowed uppercase ${
+          className={`w-full py-2.5 px-4 rounded-xl text-xs sm:text-sm font-black tracking-wide shadow-2xl transition-all duration-300 flex items-center justify-center gap-2 mt-2 disabled:cursor-not-allowed uppercase ${
             isUnlocked
               ? 'bg-emerald-500 text-white shadow-[0_0_35px_rgba(52,211,153,0.85)]'
               : authLoading
@@ -218,8 +226,85 @@ export default function LoginCard({
             </>
           )}
         </button>
+
+        {/* Distinct 4 Portals: 1 Admin + 3 Unique User Logins */}
+        <div className="pt-3 border-t border-slate-800/80 space-y-2">
+          <div className="text-[10px] font-mono font-bold text-slate-400 flex items-center justify-between">
+            <span className="text-cyan-400">SELECT 1-CLICK AUTH PORTAL:</span>
+            <span className="text-[9px] text-slate-400 font-mono">ADMIN + 3 CUSTOMERS</span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2">
+            {/* 1. Admin Login Portal */}
+            <button
+              type="button"
+              onClick={() => {
+                setEmail('admin@fraudlens.internal')
+                setPassword('AdminSecure@2026!')
+                sound.playBlip()
+              }}
+              className="p-2.5 rounded-xl bg-slate-900/90 hover:bg-purple-950/70 border border-slate-800 hover:border-purple-500/70 text-slate-300 hover:text-purple-300 transition flex flex-col items-center justify-center text-center gap-1 group shadow-md"
+            >
+              <div className="flex items-center gap-1.5">
+                <ShieldCheck className="w-4 h-4 text-purple-400 group-hover:scale-110 transition-transform" />
+                <span className="font-bold text-xs text-white group-hover:text-purple-300 font-mono">Admin</span>
+              </div>
+              <span className="text-[10px] text-purple-300/80 font-mono">Full Audit Access</span>
+            </button>
+
+            {/* 2. User 1: Monisha (Safe Habitual) */}
+            <button
+              type="button"
+              onClick={() => {
+                setEmail('monisha@fraudlens.ai')
+                setPassword('Customer@1234')
+                sound.playBlip()
+              }}
+              className="p-2.5 rounded-xl bg-slate-900/90 hover:bg-emerald-950/70 border border-slate-800 hover:border-emerald-500/70 text-slate-300 hover:text-emerald-300 transition flex flex-col items-center justify-center text-center gap-1 group shadow-md"
+            >
+              <div className="flex items-center gap-1.5">
+                <UserCheck className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" />
+                <span className="font-bold text-xs text-white group-hover:text-emerald-300 font-mono">Monisha</span>
+              </div>
+              <span className="text-[10px] text-emerald-400/80 font-mono">User 1 • Safe Account</span>
+            </button>
+
+            {/* 3. User 2: Mohana (Elevated Velocity) */}
+            <button
+              type="button"
+              onClick={() => {
+                setEmail('mohana@fraudlens.ai')
+                setPassword('Customer@1234')
+                sound.playBlip()
+              }}
+              className="p-2.5 rounded-xl bg-slate-900/90 hover:bg-amber-950/70 border border-slate-800 hover:border-amber-500/70 text-slate-300 hover:text-amber-300 transition flex flex-col items-center justify-center text-center gap-1 group shadow-md"
+            >
+              <div className="flex items-center gap-1.5">
+                <User className="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform" />
+                <span className="font-bold text-xs text-white group-hover:text-amber-300 font-mono">Mohana</span>
+              </div>
+              <span className="text-[10px] text-amber-400/80 font-mono">User 2 • Step-Up OTP</span>
+            </button>
+
+            {/* 4. User 3: Sowmiya (Botnet ATO Attack) */}
+            <button
+              type="button"
+              onClick={() => {
+                setEmail('sowmiya@fraudlens.ai')
+                setPassword('Customer@1234')
+                sound.playBlip()
+              }}
+              className="p-2.5 rounded-xl bg-slate-900/90 hover:bg-rose-950/70 border border-slate-800 hover:border-rose-500/70 text-slate-300 hover:text-rose-300 transition flex flex-col items-center justify-center text-center gap-1 group shadow-md"
+            >
+              <div className="flex items-center gap-1.5">
+                <ShieldAlert className="w-4 h-4 text-rose-400 group-hover:scale-110 transition-transform" />
+                <span className="font-bold text-xs text-white group-hover:text-rose-300 font-mono">Sowmiya</span>
+              </div>
+              <span className="text-[10px] text-rose-400/80 font-mono">User 3 • ATO Defense</span>
+            </button>
+          </div>
+        </div>
       </form>
     </div>
   )
 }
-

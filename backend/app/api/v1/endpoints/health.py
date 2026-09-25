@@ -106,3 +106,19 @@ def get_readiness(db: Session = Depends(get_db)):
             event_broadcaster=evt_status,
         ),
     )
+
+
+@router.get(
+    "/health/model",
+    summary="ML Runtime Health and Metadata Status",
+    description="Returns detailed runtime diagnostics for the ML pipeline including active model, version, threshold, candidate models, and feature counts.",
+)
+def get_model_health() -> Dict[str, Any]:
+    """Retrieve detailed ML engine health probe."""
+    pred_svc = FraudPredictionService.get_instance()
+    return {
+        "status": "healthy" if pred_svc.is_ready and pred_svc.model is not None else "degraded",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "model_runtime": pred_svc.get_model_status(),
+    }
+

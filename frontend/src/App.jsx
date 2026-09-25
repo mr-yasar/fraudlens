@@ -8,6 +8,11 @@ import {
   XCircle,
   ArrowLeft,
   LogOut,
+  BookOpen,
+  Zap,
+  CreditCard,
+  Bot,
+  Volume2,
 } from 'lucide-react'
 
 import { AuthProvider, useAuth } from './context/AuthContext'
@@ -15,43 +20,58 @@ import Sidebar from './components/Sidebar'
 import ErrorBoundary from './components/ErrorBoundary'
 import DashboardView from './components/DashboardView'
 import PaymentView from './components/PaymentView'
+import TransactionRiskAnalyzerView from './components/TransactionRiskAnalyzerView'
+import LiveTransactionMonitorView from './components/LiveTransactionMonitorView'
+import MerchantIntelligenceView from './components/MerchantIntelligenceView'
 import TransactionsView from './components/TransactionsView'
 import CustomersView from './components/CustomersView'
-import PredictionsView from './components/PredictionsView'
 import ExplainableAiView from './components/ExplainableAiView'
 import InvestigationsView from './components/InvestigationsView'
+import ModelLabView from './components/ModelLabView'
+import DatasetHealthView from './components/DatasetHealthView'
 import ReportsView from './components/ReportsView'
 import AuditLogsView from './components/AuditLogsView'
-import AdminMlView from './components/AdminMlView'
-import FraudIntelligenceView from './components/FraudIntelligenceView'
-import AdaptiveIntelligenceView from './components/AdaptiveIntelligenceView'
 import SettingsView from './components/SettingsView'
 import LoginScene from './components/login/LoginScene'
 import SecurityUnlockTransition from './components/SecurityUnlockTransition'
+import UserManualModal from './components/UserManualModal'
+import AiVoiceHelpModal from './components/AiVoiceHelpModal'
 import { systemApi } from './services/api'
+import { getCustomerPersona } from './utils/customerHelper'
 
 function CommandCenterApp() {
-  const { user, isAuthenticated, isAdmin, login, logout, loading: authLoading, error: authError } = useAuth()
+  const { user, isAuthenticated, isAdmin, login, register, logout, loading: authLoading, error: authError } = useAuth()
+  const isCustomer = user?.role?.toLowerCase() === 'customer' || user?.role?.toLowerCase() === 'user'
+  const customerPersona = getCustomerPersona(user)
 
   // Navigation State
   const [activeView, setActiveView] = useState('dashboard')
-  const [navHistory, setNavHistory] = useState([])  // history stack for back navigation
+  const [selectedPersona, setSelectedPersona] = useState('scenario_monisha_safe')
+  const [navHistory, setNavHistory] = useState([]) // history stack for back navigation
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [showManual, setShowManual] = useState(false)
+  const [showVoiceHelp, setShowVoiceHelp] = useState(false)
 
   // Navigate to a new view — push current view into history
   const navigateTo = useCallback((view) => {
-    setActiveView(prev => {
+    setActiveView((prev) => {
       if (prev !== view) {
-        setNavHistory(h => [...h, prev])
+        setNavHistory((h) => [...h, prev])
       }
       return view
     })
     setMobileOpen(false)
   }, [])
 
+  const handleSelectPersona = useCallback((personaId) => {
+    setSelectedPersona(personaId)
+    setActiveView('payment')
+    setMobileOpen(false)
+  }, [])
+
   // Go back to the previous view
   const navigateBack = useCallback(() => {
-    setNavHistory(prev => {
+    setNavHistory((prev) => {
       if (prev.length === 0) return prev
       const history = [...prev]
       const previous = history.pop()
@@ -72,7 +92,7 @@ function CommandCenterApp() {
     return () => window.removeEventListener('keydown', onKey)
   }, [navHistory, navigateBack])
 
-  // Cross-view context passing (e.g. inspecting specific transaction in XAI view)
+  // Cross-view context passing
   const [targetTxId, setTargetTxId] = useState(null)
 
   // Health API telemetry
@@ -115,6 +135,11 @@ function CommandCenterApp() {
     navigateTo('transactions')
   }
 
+  const handleOpenInvestigation = (txId) => {
+    setTargetTxId(txId)
+    navigateTo('investigations')
+  }
+
   const isConnected = !healthLoading && !healthError && healthData?.status === 'healthy'
   const [isTransitioning, setIsTransitioning] = useState(false)
 
@@ -127,6 +152,7 @@ function CommandCenterApp() {
           setActiveView('dashboard')
         }}
         login={login}
+        register={register}
         authLoading={authLoading}
         authError={authError}
         isConnected={isConnected}
@@ -138,31 +164,40 @@ function CommandCenterApp() {
   // AUTHENTICATED COMMAND CENTER APPLICATION SHELL
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-cyan-500/30 selection:text-cyan-200 relative overflow-hidden">
-      {/* 5-Phase Cinematic Security Access & AI Core Unlock Transition Overlay */}
+      {/* Cinematic Security Access Unlock Transition */}
       {isTransitioning && (
         <SecurityUnlockTransition
           onComplete={() => setIsTransitioning(false)}
         />
       )}
 
-      <div className={`flex flex-1 overflow-hidden transition-all duration-700 ease-out ${
-        isTransitioning ? 'opacity-75 scale-[0.99] filter blur-[0.5px]' : 'opacity-100 scale-100 filter-none'
-      }`}>
+      <div
+        className={`flex flex-1 overflow-hidden transition-all duration-700 ease-out ${
+          isTransitioning ? 'opacity-75 scale-[0.99] filter blur-[0.5px]' : 'opacity-100 scale-100 filter-none'
+        }`}
+      >
         {/* Responsive Sidebar Navigation */}
-        <Sidebar
-          activeView={activeView}
-          setActiveView={navigateTo}
-          isAdmin={isAdmin}
-          user={user}
-          logout={logout}
-          mobileOpen={mobileOpen}
-          setMobileOpen={setMobileOpen}
-        />
+        <ErrorBoundary onReset={() => setActiveView('dashboard')}>
+          <Sidebar
+            activeView={activeView}
+            setActiveView={navigateTo}
+            isAdmin={isAdmin}
+            user={user}
+            logout={logout}
+            mobileOpen={mobileOpen}
+            setMobileOpen={setMobileOpen}
+            onOpenManual={() => setShowManual(true)}
+            onOpenVoiceHelp={() => setShowVoiceHelp(true)}
+            onSelectPersona={handleSelectPersona}
+          />
+        </ErrorBoundary>
 
         {/* Main Content Layout */}
-        <div className={`flex-1 flex flex-col min-w-0 overflow-y-auto transition-transform duration-500 ${
-          isTransitioning ? 'translate-y-0.5' : 'translate-y-0'
-        }`}>
+        <div
+          className={`flex-1 flex flex-col min-w-0 overflow-y-auto transition-transform duration-500 ${
+            isTransitioning ? 'translate-y-0.5' : 'translate-y-0'
+          }`}
+        >
           {/* Top Operational Header */}
           <header className="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md sticky top-0 z-30 px-4 sm:px-6 h-16 flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -174,7 +209,7 @@ function CommandCenterApp() {
                 <Menu className="w-5 h-5" />
               </button>
 
-              {/* Back Button — appears when history exists */}
+              {/* Back Button */}
               {navHistory.length > 0 && (
                 <button
                   onClick={navigateBack}
@@ -183,21 +218,126 @@ function CommandCenterApp() {
                 >
                   <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
                   <span className="hidden sm:inline">
-                    {navHistory[navHistory.length - 1].replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+                    {navHistory[navHistory.length - 1].replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
                   </span>
                   <span className="sm:hidden">Back</span>
                 </button>
               )}
 
               <div className="font-mono text-xs text-slate-400">
-                Active View: <strong className="text-cyan-400 uppercase">{activeView.replace(/-/g, ' ')}</strong>
+                Active Module:{' '}
+                <strong className="text-cyan-400 uppercase tracking-wide">
+                  {activeView.replace(/-/g, ' ')}
+                </strong>
               </div>
+
+              {/* Real-Time Personas Header Switcher Bar (Admin sees all 3; Customer watches only their own) */}
+              {isCustomer ? (
+                <div className="hidden xl:flex items-center gap-2 px-2.5 py-1 rounded-xl bg-slate-950/80 border border-emerald-800/80 shadow-inner">
+                  <span className="text-[10px] font-mono text-emerald-400 uppercase font-bold flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    Verified Customer:
+                  </span>
+                  <span className="text-[11px] font-mono font-bold text-white">
+                    {customerPersona.name} ({customerPersona.customerId})
+                  </span>
+                  <span className="text-[10px] font-mono font-bold bg-emerald-950 px-1.5 py-0.5 rounded text-emerald-300 border border-emerald-800">
+                    {customerPersona.fraudRate} Baseline
+                  </span>
+                </div>
+              ) : (
+                <div className="hidden xl:flex items-center gap-1.5 px-2 py-1 rounded-xl bg-slate-950/80 border border-slate-800/80 shadow-inner">
+                  <span className="text-[10px] font-mono text-cyan-400 uppercase font-bold flex items-center gap-1 mr-1">
+                    <Zap className="w-3 h-3 text-cyan-400 animate-pulse" />
+                    Personas:
+                  </span>
+                  <button
+                    onClick={() => handleSelectPersona('scenario_monisha_safe')}
+                    className={`px-2 py-0.5 rounded-lg text-[10px] font-mono font-bold transition flex items-center gap-1 border ${
+                      activeView === 'payment' && selectedPersona === 'scenario_monisha_safe'
+                        ? 'bg-emerald-900 border-emerald-500 text-white shadow-sm'
+                        : 'bg-emerald-950/70 hover:bg-emerald-900/80 border-emerald-800/60 text-emerald-300'
+                    }`}
+                    title="Monisha (3% Fraud Rate) - Clean Habitual Baseline -> ALLOW"
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                    Monisha (3%)
+                  </button>
+                  <button
+                    onClick={() => handleSelectPersona('scenario_mohana_review')}
+                    className={`px-2 py-0.5 rounded-lg text-[10px] font-mono font-bold transition flex items-center gap-1 border ${
+                      activeView === 'payment' && selectedPersona === 'scenario_mohana_review'
+                        ? 'bg-amber-900 border-amber-500 text-white shadow-sm'
+                        : 'bg-amber-950/70 hover:bg-amber-900/80 border-amber-800/60 text-amber-300'
+                    }`}
+                    title="Mohana (12% Fraud Rate) - Unfamiliar Device/Region -> REVIEW (OTP)"
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                    Mohana (12%)
+                  </button>
+                  <button
+                    onClick={() => handleSelectPersona('scenario_sowmiya_block')}
+                    className={`px-2 py-0.5 rounded-lg text-[10px] font-mono font-bold transition flex items-center gap-1 border ${
+                      activeView === 'payment' && selectedPersona === 'scenario_sowmiya_block'
+                        ? 'bg-rose-900 border-rose-500 text-white shadow-sm'
+                        : 'bg-rose-950/70 hover:bg-rose-900/80 border-rose-800/60 text-rose-300'
+                    }`}
+                    title="Sowmiya (26% Fraud Rate) - Botnet ATO Attack -> BLOCK"
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
+                    Sowmiya (26%)
+                  </button>
+                </div>
+              )}
             </div>
 
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-2.5">
+              {/* Direct Payment Gateway Shortcut */}
+              <button
+                onClick={() => navigateTo('payment')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition border ${
+                  activeView === 'payment'
+                    ? 'bg-cyan-600 text-white border-cyan-400 shadow-md shadow-cyan-900/50'
+                    : 'bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border-slate-700'
+                }`}
+                title="Open Pre-Auth Payment Gateway"
+              >
+                <CreditCard className="w-3.5 h-3.5 text-cyan-400" />
+                <span className="hidden sm:inline">Payment Gateway</span>
+              </button>
+
+              {/* AI Voice Help: What is Fraud? Shortcut */}
+              <button
+                onClick={() => setShowVoiceHelp(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-cyan-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold shadow-lg shadow-purple-950/40 transition border border-purple-400/50 group"
+                title="Launch AI Voice Help & What is Fraud? (Siri & Google Voice)"
+              >
+                <Bot className="w-3.5 h-3.5 group-hover:scale-110 transition-transform animate-pulse" />
+                <span className="hidden lg:inline">AI Voice Help</span>
+                <span className="lg:hidden">Voice AI</span>
+                <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-purple-950/90 text-purple-200 border border-purple-700/80">
+                  Siri
+                </span>
+              </button>
+
+              {/* User Manual & Guide Button */}
+              <button
+                onClick={() => setShowManual(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-bold shadow-lg shadow-cyan-950/40 transition"
+                title="Open Easy User Manual"
+              >
+                <BookOpen className="w-3.5 h-3.5" />
+                <span className="hidden md:inline">User Manual</span>
+                <span className="md:hidden">Guide</span>
+              </button>
+
               {/* Backend Connectivity Status */}
               <div className="hidden sm:flex items-center space-x-2 bg-slate-900/80 px-3 py-1.5 rounded-full border border-slate-800 text-xs">
-                <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-400 animate-pulse' : 'bg-rose-500'}`} />
+                <span
+                  className={`w-2 h-2 rounded-full ${
+                    isConnected ? 'bg-emerald-400 animate-pulse' : 'bg-rose-500'
+                  }`}
+                />
                 <span className="font-medium text-slate-300">
                   {isConnected ? `Backend Connected (${latency}ms)` : 'Offline'}
                 </span>
@@ -209,7 +349,9 @@ function CommandCenterApp() {
                 <span className="font-semibold text-slate-200 hidden md:inline">{user?.email}</span>
                 <span
                   className={`px-1.5 py-0.5 rounded text-[10px] uppercase font-bold font-mono ${
-                    isAdmin ? 'bg-purple-950 text-purple-300 border border-purple-800' : 'bg-cyan-950 text-cyan-300 border border-cyan-800'
+                    isAdmin
+                      ? 'bg-purple-950 text-purple-300 border border-purple-800'
+                      : 'bg-cyan-950 text-cyan-300 border border-cyan-800'
                   }`}
                 >
                   {user?.role}
@@ -241,65 +383,79 @@ function CommandCenterApp() {
             <ErrorBoundary onReset={() => setActiveView('dashboard')}>
               {activeView === 'dashboard' && (
                 <DashboardView
+                  user={user}
+                  isAdmin={isAdmin}
                   onSelectTransaction={handleSelectTransaction}
                   onOpenCase={() => navigateTo('investigations')}
+                  onOpenPayment={handleSelectPersona}
                 />
               )}
 
               {activeView === 'payment' && (
                 <PaymentView
+                  user={user}
+                  isAdmin={isAdmin}
+                  initialPreset={selectedPersona}
                   onViewExplanation={handleViewExplanation}
                   onNavigateToInvestigations={() => navigateTo('investigations')}
                   onSelectTransaction={handleSelectTransaction}
                 />
               )}
 
+              {activeView === 'analyzer' && (
+                <TransactionRiskAnalyzerView user={user} isAdmin={isAdmin} />
+              )}
+
+              {activeView === 'live-monitor' && (
+                <LiveTransactionMonitorView user={user} isAdmin={isAdmin} onInvestigate={handleOpenInvestigation} />
+              )}
+
+              {activeView === 'merchants' && (
+                <MerchantIntelligenceView user={user} isAdmin={isAdmin} />
+              )}
+
               {activeView === 'transactions' && (
                 <TransactionsView
+                  user={user}
+                  isAdmin={isAdmin}
                   onViewExplanation={handleViewExplanation}
                 />
               )}
 
               {activeView === 'customers' && (
                 <CustomersView
+                  user={user}
+                  isAdmin={isAdmin}
                   onSelectTransaction={handleSelectTransaction}
-                />
-              )}
-
-              {activeView === 'predictions' && (
-                <PredictionsView
-                  onOpenExplanation={handleViewExplanation}
                 />
               )}
 
               {activeView === 'explainable-ai' && (
                 <ExplainableAiView
+                  user={user}
+                  isAdmin={isAdmin}
                   initialTransactionId={targetTxId}
-                />
-              )}
-
-              {activeView === 'fraud-intelligence' && (
-                <FraudIntelligenceView
-                  onOpenInvestigation={() => navigateTo('investigations')}
-                  onSelectTransaction={handleSelectTransaction}
-                />
-              )}
-
-              {activeView === 'adaptive-intelligence' && (
-                <AdaptiveIntelligenceView
-                  onOpenInvestigation={() => navigateTo('investigations')}
-                  onSelectTransaction={handleSelectTransaction}
                 />
               )}
 
               {activeView === 'investigations' && (
                 <InvestigationsView
+                  user={user}
+                  isAdmin={isAdmin}
                   onInspectExplanation={handleViewExplanation}
                 />
               )}
 
+              {(activeView === 'model-lab' || activeView === 'admin-models') && (
+                <ModelLabView user={user} isAdmin={isAdmin} />
+              )}
+
+              {(activeView === 'dataset-health' || activeView === 'admin-dataset') && (
+                <DatasetHealthView user={user} isAdmin={isAdmin} />
+              )}
+
               {activeView === 'reports' && (
-                <ReportsView />
+                <ReportsView user={user} isAdmin={isAdmin} />
               )}
 
               {activeView === 'audit-logs' && (
@@ -309,25 +465,40 @@ function CommandCenterApp() {
               {activeView === 'settings' && (
                 <SettingsView />
               )}
-
-              {/* Admin-Only Views */}
-              {activeView === 'admin-dataset' && isAdmin && (
-                <AdminMlView initialTab="dataset" />
-              )}
-
-              {activeView === 'admin-models' && isAdmin && (
-                <AdminMlView initialTab="models" />
-              )}
             </ErrorBoundary>
           </main>
 
           {/* Footer */}
           <footer className="border-t border-slate-800/80 py-3 px-6 bg-slate-950/80 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-2">
-            <div>Explainable AI-Based Financial Fraud and Risk Detection System</div>
-            <div className="font-mono text-[11px]">Phases 1–16 Production Architecture</div>
+            <div>FraudLens AI — Financial Fraud Detection &amp; Explainability Platform</div>
+            <div className="font-mono text-[11px]">29 Merchant Master Architecture • Real-Time AI</div>
           </footer>
         </div>
       </div>
+
+      {/* Floating AI Voice Assistant Trigger Button */}
+      <button
+        onClick={() => setShowVoiceHelp(true)}
+        className="fixed bottom-6 right-6 z-40 p-3.5 rounded-2xl bg-gradient-to-tr from-purple-600 via-indigo-600 to-cyan-500 text-white shadow-[0_0_30px_rgba(168,85,247,0.5)] hover:scale-105 active:scale-95 transition-all border border-purple-400/60 group flex items-center gap-2"
+        title="Ask AI Voice Copilot: What is Fraud? (Siri & Google Voice)"
+      >
+        <Bot className="w-5 h-5 group-hover:rotate-12 transition-transform" />
+        <span className="text-xs font-bold pr-1 hidden sm:inline">AI Voice Help</span>
+        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+      </button>
+
+      {/* Interactive Easy User Manual & Guide Modal */}
+      <UserManualModal
+        isOpen={showManual}
+        onClose={() => setShowManual(false)}
+        onOpenVoiceHelp={() => setShowVoiceHelp(true)}
+      />
+
+      {/* Interactive AI Voice Help & What is Fraud Explainer Modal */}
+      <AiVoiceHelpModal
+        isOpen={showVoiceHelp}
+        onClose={() => setShowVoiceHelp(false)}
+      />
     </div>
   )
 }

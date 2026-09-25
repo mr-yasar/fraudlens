@@ -11,10 +11,17 @@ import {
   ShieldAlert,
   Sparkles,
   X,
+  Store,
+  Building2,
 } from 'lucide-react'
 import { transactionsApi, investigationsApi } from '../services/api'
+import { formatINR } from '../utils/formatters'
+import { getCustomerPersona } from '../utils/customerHelper'
 
-export default function TransactionsView({ onViewExplanation }) {
+export default function TransactionsView({ onViewExplanation, user, isAdmin }) {
+  const customerPersona = getCustomerPersona(user)
+  const isCustomer = customerPersona.isCustomer
+
   const [transactions, setTransactions] = useState([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
@@ -60,6 +67,7 @@ export default function TransactionsView({ onViewExplanation }) {
         risk_level: riskFilter,
         prediction: predictionFilter,
         search: searchQuery,
+        customer_id: isCustomer ? customerPersona.customerId : undefined,
       })
       setTransactions(data.items || [])
       setTotal(data.total || 0)
@@ -135,12 +143,24 @@ export default function TransactionsView({ onViewExplanation }) {
       {/* Top Header & Simulation Action */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${
+              isCustomer ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' : 'bg-purple-950 text-purple-300 border border-purple-800'
+            }`}>
+              {isCustomer ? `ACCOUNT: ${customerPersona.customerName} (${customerPersona.customerId})` : 'ADMIN MASTER AUDIT MODE'}
+            </span>
+            <span className="text-[10px] font-mono text-slate-400">
+              {isCustomer ? 'Personal Account Isolation Active (My Data Only)' : 'Full Multi-Merchant Audit (29,009 Records Across 29 Merchants)'}
+            </span>
+          </div>
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <CreditCard className="w-5 h-5 text-cyan-400" />
-            Transaction Management &amp; Real-Time Evaluation
+            {isCustomer ? <CreditCard className="w-5 h-5 text-emerald-400" /> : <Store className="w-5 h-5 text-purple-400" />}
+            {isCustomer ? 'My Account Transactions' : 'All Merchant Transactions & Master Audit Stream'}
           </h2>
           <p className="text-xs text-slate-400 mt-0.5">
-            Query real PostgreSQL financial transactions, inspect multi-factor risk scores, and evaluate live requests.
+            {isCustomer
+              ? `Real-time ledger of authorized payments, personal risk scores, and telemetry for ${customerPersona.customerName} (${customerPersona.fraudRate} fraud baseline).`
+              : 'Audit 29,009 master financial transactions across all 29 certified merchants, evaluate multi-factor risk scores, and investigate flagged cases.'}
           </p>
         </div>
 
@@ -251,6 +271,7 @@ export default function TransactionsView({ onViewExplanation }) {
                 <tr>
                   <th className="py-3 px-4">Transaction ID</th>
                   <th className="py-3 px-4">Customer</th>
+                  {!isCustomer && <th className="py-3 px-4">Target Merchant</th>}
                   <th className="py-3 px-4">Amount</th>
                   <th className="py-3 px-4">Category</th>
                   <th className="py-3 px-4">Country</th>
@@ -272,8 +293,16 @@ export default function TransactionsView({ onViewExplanation }) {
                         {t.transaction_id}
                       </td>
                       <td className="py-3 px-4 font-mono text-slate-300">{t.customer_id}</td>
+                      {!isCustomer && (
+                        <td className="py-3 px-4 font-medium text-purple-300">
+                          <div className="flex items-center gap-1.5 truncate max-w-[170px]">
+                            <Store className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+                            <span className="truncate">{t.beneficiary || 'NovaMart Fresh'}</span>
+                          </div>
+                        </td>
+                      )}
                       <td className="py-3 px-4 font-mono font-bold text-white">
-                        ${Number(t.amount).toFixed(2)}
+                        {formatINR(t.amount)}
                       </td>
                       <td className="py-3 px-4 capitalize text-slate-300">{t.merchant_category || 'N/A'}</td>
                       <td className="py-3 px-4 font-mono text-slate-400">{t.transaction_country || 'US'}</td>
@@ -405,7 +434,7 @@ export default function TransactionsView({ onViewExplanation }) {
               </div>
               <div className="p-3 bg-slate-950/70 border border-slate-800 rounded-xl">
                 <span className="text-[10px] text-slate-400 uppercase font-mono block">Amount</span>
-                <span className="font-mono font-bold text-white text-sm">${Number(selectedTx.amount).toFixed(2)}</span>
+                <span className="font-mono font-bold text-white text-sm">{formatINR(selectedTx.amount)}</span>
               </div>
               <div className="p-3 bg-slate-950/70 border border-slate-800 rounded-xl">
                 <span className="text-[10px] text-slate-400 uppercase font-mono block">Merchant Category</span>
@@ -509,7 +538,7 @@ export default function TransactionsView({ onViewExplanation }) {
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-medium text-slate-400 mb-1">Amount ($)</label>
+                  <label className="block text-[11px] font-medium text-slate-400 mb-1">Amount (₹ INR)</label>
                   <input
                     type="number"
                     step="0.01"

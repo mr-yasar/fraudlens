@@ -11,6 +11,7 @@ import {
   ArrowRight,
 } from 'lucide-react'
 import { transactionsApi, dashboardApi } from '../services/api'
+import { formatINR } from '../utils/formatters'
 
 export default function PredictionsView({ onOpenExplanation }) {
   const [predictions, setPredictions] = useState([])
@@ -129,7 +130,7 @@ export default function PredictionsView({ onOpenExplanation }) {
           </div>
 
           <div>
-            <label className="block text-[10px] font-mono uppercase text-slate-400 mb-1">Amount ($)</label>
+            <label className="block text-[10px] font-mono uppercase text-slate-400 mb-1">Amount (₹ INR)</label>
             <input
               type="number"
               step="0.01"
@@ -342,7 +343,7 @@ export default function PredictionsView({ onOpenExplanation }) {
                       </td>
                       <td className="py-3 px-4 font-mono text-slate-300">{p.customer_id}</td>
                       <td className="py-3 px-4 font-mono font-bold text-white">
-                        ${Number(p.amount).toFixed(2)}
+                        {formatINR(p.amount)}
                       </td>
                       <td className="py-3 px-4 font-mono">
                         <div className="flex items-center gap-2">

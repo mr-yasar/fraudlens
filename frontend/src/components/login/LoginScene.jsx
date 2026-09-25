@@ -21,6 +21,7 @@ import { sound } from './soundEffects'
 export default function LoginScene({
   onLoginSuccess,
   login,
+  register,
   authLoading,
   authError,
   isConnected,
@@ -28,6 +29,7 @@ export default function LoginScene({
 }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [name, setName] = useState('')
   const [mouseOffset, setMouseOffset] = useState({ x: 0, y: 0 })
   const [isMuted, setIsMuted] = useState(() => sound.getMuted())
 
@@ -69,7 +71,7 @@ export default function LoginScene({
 
   // Real authentication & handoff to SecurityUnlockTransition
   const handleLoginSubmit = async (e) => {
-    e.preventDefault()
+    e?.preventDefault?.()
     if (authLoading) return
 
     setSequenceStage('AUTHENTICATING')
@@ -79,6 +81,24 @@ export default function LoginScene({
       await login(email, password)
       sound.playVerified()
       // 2. Handoff to SecurityUnlockTransition overlay
+      onLoginSuccess && onLoginSuccess()
+    } catch {
+      sound.playError()
+      setSequenceStage('IDLE')
+      setIsUnlocked(false)
+    }
+  }
+
+  // Real registration & handoff to SecurityUnlockTransition
+  const handleRegisterSubmit = async (e) => {
+    e?.preventDefault?.()
+    if (authLoading) return
+
+    setSequenceStage('AUTHENTICATING')
+
+    try {
+      await register(name, email, password)
+      sound.playVerified()
       onLoginSuccess && onLoginSuccess()
     } catch {
       sound.playError()
@@ -179,11 +199,14 @@ export default function LoginScene({
           ========================================================================= */}
       <main className="relative z-20 flex-1 w-full px-4 sm:px-8 py-3 flex items-center justify-center lg:justify-end">
         <LoginCard
+          name={name}
+          setName={setName}
           email={email}
           setEmail={setEmail}
           password={password}
           setPassword={setPassword}
           onSubmit={handleLoginSubmit}
+          onRegister={handleRegisterSubmit}
           authLoading={authLoading || sequenceStage === 'AUTHENTICATING'}
           authError={authError}
           isUnlocked={isUnlocked}

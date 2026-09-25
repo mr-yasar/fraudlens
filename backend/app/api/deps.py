@@ -17,6 +17,29 @@ oauth2_scheme = OAuth2PasswordBearer(
     auto_error=True,
 )
 
+oauth2_scheme_optional = OAuth2PasswordBearer(
+    tokenUrl=f"{settings.API_V1_PREFIX}/auth/login",
+    auto_error=False,
+)
+
+
+def get_optional_current_user(
+    db: Session = Depends(get_db),
+    token: Optional[str] = Depends(oauth2_scheme_optional),
+) -> Optional[User]:
+    """Validate bearer token if provided, returning None if unauthenticated or invalid without raising 401."""
+    if not token or str(token).lower() in ("null", "undefined", "none"):
+        return None
+    try:
+        payload = decode_access_token(token)
+        user_id_str: Optional[str] = payload.get("sub")
+        if user_id_str is None:
+            return None
+        user_id = int(user_id_str)
+        return db.query(User).filter(User.id == user_id).first()
+    except Exception:
+        return None
+
 
 def get_current_user(
     db: Session = Depends(get_db),

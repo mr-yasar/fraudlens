@@ -12,8 +12,13 @@ import {
   FileText,
   X,
   UserCheck,
+  Bot,
+  Sparkles,
+  Volume2,
+  Mic,
 } from 'lucide-react'
 import { investigationsApi } from '../services/api'
+import AiInvestigationModal from './AiInvestigationModal'
 
 export default function InvestigationsView({ onInspectExplanation }) {
   const [cases, setCases] = useState([])
@@ -23,6 +28,9 @@ export default function InvestigationsView({ onInspectExplanation }) {
   const [statusFilter, setStatusFilter] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+
+  // AI Copilot Modal State
+  const [aiModalCaseId, setAiModalCaseId] = useState(null)
 
   // Case Detail modal state
   const [selectedCase, setSelectedCase] = useState(null)
@@ -170,7 +178,7 @@ export default function InvestigationsView({ onInspectExplanation }) {
                   <th className="py-3 px-4">Status</th>
                   <th className="py-3 px-4">Adjudication</th>
                   <th className="py-3 px-4">Assigned Investigator</th>
-                  <th className="py-3 px-4 text-right">Inspect</th>
+                  <th className="py-3 px-4 text-right">Actions &amp; AI</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60">
@@ -223,12 +231,22 @@ export default function InvestigationsView({ onInspectExplanation }) {
                         {c.investigator_name || (c.investigator_id ? `Analyst #${c.investigator_id}` : 'Unassigned')}
                       </td>
                       <td className="py-3 px-4 text-right">
-                        <button
-                          onClick={() => handleOpenCase(c.case_id)}
-                          className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-slate-700 text-xs font-medium transition"
-                        >
-                          Manage &rarr;
-                        </button>
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => setAiModalCaseId(c.case_id)}
+                            className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-purple-700 via-indigo-700 to-cyan-700 hover:from-purple-600 hover:to-cyan-600 text-white text-xs font-bold shadow flex items-center gap-1.5 transition active:scale-95"
+                            title="Launch AI Forensic Copilot (Gemini, Grok, Siri Voice & Attack Diagrams)"
+                          >
+                            <Bot className="w-3.5 h-3.5 text-cyan-300" />
+                            <span>AI Copilot &amp; Siri</span>
+                          </button>
+                          <button
+                            onClick={() => handleOpenCase(c.case_id)}
+                            className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-xs font-medium transition"
+                          >
+                            Manage &rarr;
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   )
@@ -295,6 +313,34 @@ export default function InvestigationsView({ onInspectExplanation }) {
                   <X className="w-4 h-4" />
                 </button>
               </div>
+            </div>
+
+            {/* AI Copilot & Voice Briefing Feature Banner */}
+            <div className="p-3.5 rounded-xl bg-gradient-to-r from-purple-950/80 via-indigo-950/70 to-slate-900 border border-purple-700/60 flex flex-wrap items-center justify-between gap-3 shadow-lg">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-purple-600/30 border border-purple-500/40 flex items-center justify-center text-purple-300 shadow-inner shrink-0">
+                  <Bot className="w-5 h-5 animate-pulse text-cyan-300" />
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-white flex items-center gap-2">
+                    <span>Autonomous AI Forensic Agent &amp; Diagrams</span>
+                    <span className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-cyan-950 text-cyan-300 border border-cyan-800">
+                      Gemini 1.5 Pro &bull; Grok-2 &bull; Siri Voice
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-300 mt-0.5">
+                    Generate attack kill-chain diagrams, hear spoken audio briefings, and file regulatory SARs.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAiModalCaseId(selectedCase.case_id)}
+                className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 text-white text-xs font-bold shadow-lg flex items-center gap-1.5 transition active:scale-95 shrink-0"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                <span>Launch AI Briefing &amp; Voice</span>
+              </button>
             </div>
 
             {updateMsg && (
@@ -416,6 +462,25 @@ export default function InvestigationsView({ onInspectExplanation }) {
           </div>
         </div>
       )}
+
+      {/* Autonomous AI Copilot, Diagrams & Voice Briefing Modal */}
+      <AiInvestigationModal
+        isOpen={Boolean(aiModalCaseId)}
+        caseId={aiModalCaseId}
+        onClose={() => setAiModalCaseId(null)}
+        onDecisionApplied={(appliedDecision, newStatus) => {
+          fetchCases()
+          if (selectedCase && selectedCase.case_id === aiModalCaseId) {
+            setSelectedCase((prev) => ({
+              ...prev,
+              decision: appliedDecision,
+              status: newStatus,
+            }))
+            setEditStatus(newStatus)
+            setEditDecision(appliedDecision)
+          }
+        }}
+      />
     </div>
   )
 }
