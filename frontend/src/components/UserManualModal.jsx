@@ -28,12 +28,37 @@ import {
   ArrowRight,
   Clock,
   ExternalLink,
+  Lock,
+  UserCheck,
 } from 'lucide-react'
+import { getCustomerPersona } from '../utils/customerHelper'
 
-export default function UserManualModal({ isOpen, onClose, onOpenVoiceHelp }) {
-  const [activeTab, setActiveTab] = useState('quickstart') // 'quickstart' | 'otp' | 'ai_copilot' | 'analyzer'
+export default function UserManualModal({ isOpen, onClose, onOpenVoiceHelp, user, isAdmin }) {
+  const isCustomer = !isAdmin && (user?.role?.toLowerCase() === 'customer' || user?.role?.toLowerCase() === 'user')
+  const customerPersona = getCustomerPersona(user)
+
+  // Default active tab based on role
+  const [activeTab, setActiveTab] = useState(isCustomer ? 'cust_security' : 'quickstart')
 
   if (!isOpen) return null
+
+  // Customer navigation tabs (Strictly isolated - No cross-customer fraud rates)
+  const customerTabs = [
+    { id: 'cust_security', label: '1. Account Privacy & Security', icon: ShieldCheck },
+    { id: 'cust_otp', label: '2. Mobile Phone OTP Verification', icon: Smartphone },
+    { id: 'cust_xai', label: '3. Explainable AI & Receipts', icon: BrainCircuit },
+    { id: 'cust_voice', label: '4. Sweet AI Voice Assistant', icon: Volume2 },
+  ]
+
+  // Admin navigation tabs (Enterprise overview & 29 merchants)
+  const adminTabs = [
+    { id: 'quickstart', label: '1. Governance & Privacy Architecture', icon: Users },
+    { id: 'otp', label: '2. Mobile Phone OTP Workflow', icon: Smartphone },
+    { id: 'ai_copilot', label: '3. Admin AI Copilot & Voice', icon: Bot },
+    { id: 'analyzer', label: '4. 29 Merchants & SHAP Benchmark', icon: BrainCircuit },
+  ]
+
+  const currentTabs = isCustomer ? customerTabs : adminTabs
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fadeIn">
@@ -56,29 +81,32 @@ export default function UserManualModal({ isOpen, onClose, onOpenVoiceHelp }) {
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-xl font-black text-white tracking-tight">
-                FraudLens AI — Master Operations Manual
+                {isCustomer
+                  ? `FraudLens AI — Customer Security Guide (${customerPersona.name})`
+                  : 'FraudLens AI — Master Operations Manual'}
               </h2>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-cyan-950 text-cyan-300 border border-cyan-800">
-                v2.6 Enterprise
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold ${
+                isCustomer
+                  ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
+                  : 'bg-cyan-950 text-cyan-300 border border-cyan-800'
+              }`}>
+                {isCustomer ? 'Private Account Portal' : 'v2.6 Enterprise'}
               </span>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-950 text-emerald-300 border border-emerald-800">
                 ₹ INR
               </span>
             </div>
             <p className="text-xs text-slate-400 mt-0.5">
-              Explainable AI, Phone SMS OTP Step-Up, Autonomous Forensic Copilot &amp; Siri/Google Voice Assistant.
+              {isCustomer
+                ? 'Your personal security guide: Private account isolation, instant phone SMS OTP, and transparent AI receipts.'
+                : 'Explainable AI, Phone SMS OTP Step-Up, Autonomous Forensic Copilot & Siri/Google Voice Assistant.'}
             </p>
           </div>
         </div>
 
         {/* Navigation Tabs */}
         <div className="flex flex-wrap gap-2 pb-1 border-b border-slate-800/80">
-          {[
-            { id: 'quickstart', label: '1. Quick Start & Roles', icon: Users },
-            { id: 'otp', label: '2. Mobile Phone OTP Workflow', icon: Smartphone },
-            { id: 'ai_copilot', label: '3. Admin AI Copilot & Voice', icon: Bot },
-            { id: 'analyzer', label: '4. 29 Merchants & SHAP', icon: BrainCircuit },
-          ].map((tab) => {
+          {currentTabs.map((tab) => {
             const Icon = tab.icon
             const isActive = activeTab === tab.id
             return (
@@ -98,151 +126,261 @@ export default function UserManualModal({ isOpen, onClose, onOpenVoiceHelp }) {
           })}
         </div>
 
-        {/* Tab 1: Access Architecture & Privacy Protection */}
-        {activeTab === 'quickstart' && (
+        {/* ========================================================================= */}
+        {/* CUSTOMER TABS (Strict Privacy - Zero other customer data visible)         */}
+        {/* ========================================================================= */}
+
+        {/* Customer Tab 1: Privacy & Security */}
+        {isCustomer && activeTab === 'cust_security' && (
           <div className="space-y-4 animate-fadeIn">
-            <div>
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                Data Privacy, Confidentiality &amp; Access Architecture
-              </h3>
-              <p className="text-xs text-slate-400 mt-1">
-                FraudLens AI strictly enforces enterprise confidentiality and row-level database isolation. <strong>Personal customer data, cardholder histories, and private credentials are never shared or accessible to unauthorized parties.</strong>
+            <div className="p-4 rounded-2xl bg-emerald-950/30 border border-emerald-800/50 space-y-2">
+              <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm">
+                <ShieldCheck className="w-5 h-5" />
+                <span>Strict Personal Account Privacy &amp; Data Encryption</span>
+              </div>
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Welcome, <strong>{customerPersona.name}</strong>. FraudLens AI operates under bank-grade zero-trust privacy.
+                Your account identifier (<code>{customerPersona.customerId}</code>), transaction histories, card tokens, and risk evaluations
+                are strictly isolated. <strong>No other customer can ever see your transactions, account balance, or security records.</strong>
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 text-xs">
-              {/* Customer Portal Space */}
-              <div className="p-4 rounded-2xl bg-cyan-950/30 border border-cyan-800/50 space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-cyan-300 flex items-center gap-1.5">
-                    <Users className="w-4 h-4 text-cyan-400" />
-                    Customer Banking Portal
-                  </span>
-                  <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-cyan-900/60 text-cyan-200 border border-cyan-700">
-                    ISOLATED PRIVACY
-                  </span>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+              <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 space-y-1.5">
+                <div className="flex items-center gap-2 text-cyan-300 font-bold">
+                  <Lock className="w-4 h-4" />
+                  <span>Row-Level Database Isolation</span>
                 </div>
-                <div className="p-2.5 rounded-xl bg-slate-950/80 border border-cyan-900/40 text-[11px] space-y-1.5">
-                  <div className="text-slate-300 font-semibold flex items-center gap-1.5">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Private Customer Data Scope</span>
-                  </div>
-                  <p className="text-slate-400 leading-relaxed">
-                    Cardholders can <strong>only</strong> view their own payment transactions, personal spend velocity, and step-up security approvals. Access to any other customer's profile is strictly prohibited by database query filtering.
-                  </p>
-                </div>
-                <ul className="text-[11px] text-slate-400 space-y-1 pl-1">
-                  <li>• Encrypted token authentication with session-bound tokens</li>
-                  <li>• Masked card numbers &amp; hashed customer identifiers</li>
-                  <li>• Direct real-time SMS push notifications for suspicious activity</li>
-                </ul>
+                <p className="text-[11px] text-slate-400">
+                  Every query executed by your session is cryptographically scoped to your user ID. Cross-tenant queries are blocked at the database kernel.
+                </p>
               </div>
 
-              {/* Admin Portal Space */}
-              <div className="p-4 rounded-2xl bg-purple-950/30 border border-purple-800/50 space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-purple-300 flex items-center gap-1.5">
-                    <ShieldCheck className="w-4 h-4 text-purple-400" />
-                    Security Officer &amp; Admin Suite
-                  </span>
-                  <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-purple-900/60 text-purple-200 border border-purple-700">
-                    FRAUD OPERATIONS
-                  </span>
+              <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 space-y-1.5">
+                <div className="flex items-center gap-2 text-emerald-300 font-bold">
+                  <UserCheck className="w-4 h-4" />
+                  <span>Sub-4ms Pre-Authorization Protection</span>
                 </div>
-                <div className="p-2.5 rounded-xl bg-slate-950/80 border border-purple-900/40 text-[11px] space-y-1.5">
-                  <div className="text-slate-300 font-semibold flex items-center gap-1.5">
-                    <ShieldAlert className="w-3.5 h-3.5 text-purple-400" />
-                    <span>Merchant &amp; Attack Surveillance</span>
-                  </div>
-                  <p className="text-slate-400 leading-relaxed">
-                    Security personnel monitor high-level merchant risk across all 29 master merchants, review explainable AI attributions, and adjudicate cases without exposing private customer credentials.
-                  </p>
-                </div>
-                <ul className="text-[11px] text-slate-400 space-y-1 pl-1">
-                  <li>• Multi-model AI Copilot (Gemini 1.5 Pro &amp; xAI Grok-2)</li>
-                  <li>• Attack architecture diagrams &amp; Siri/Google voice briefings</li>
-                  <li>• Regulatory Suspicious Activity Report (SAR) auto-drafting</li>
-                </ul>
+                <p className="text-[11px] text-slate-400">
+                  Every payment intent you initiate is analyzed in real-time. Safe routine purchases approve immediately with zero interruption.
+                </p>
               </div>
-            </div>
-
-            {/* Privacy Compliance Banner */}
-            <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 space-y-2 text-xs">
-              <h4 className="font-bold text-slate-200 flex items-center gap-2">
-                <Database className="w-4 h-4 text-emerald-400" />
-                Zero Data Leakage &amp; Regulatory Compliance
-              </h4>
-              <p className="text-slate-400 text-[11px] leading-relaxed">
-                In compliance with global financial data protection standards (RBI Digital Payment Guidelines, PCI-DSS, and DPDP), FraudLens AI isolates telemetry at the service layer. No sensitive personal identifiable information (PII) is displayed in operational guides or shared across customer accounts.
-              </p>
             </div>
           </div>
         )}
 
-        {/* Tab 2: Mobile Phone OTP Workflow */}
-        {activeTab === 'otp' && (
+        {/* Customer Tab 2: Mobile Phone OTP */}
+        {isCustomer && activeTab === 'cust_otp' && (
           <div className="space-y-4 animate-fadeIn">
             <div>
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
                 <Smartphone className="w-4 h-4 text-cyan-400" />
-                Live Mobile Phone SMS &amp; Step-Up OTP Verification
+                How Your Mobile Phone OTP Protects Your Money
               </h3>
               <p className="text-xs text-slate-400 mt-1">
-                When an anomalous or high-risk transaction is submitted through the Payment Gateway, FraudLens triggers an interactive multi-factor challenge.
+                FraudLens AI uses adaptive authentication so you are not bothered with passwords on safe routine purchases.
               </p>
             </div>
 
-            <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-xl bg-cyan-950 border border-cyan-800 flex items-center justify-center text-cyan-300 font-bold text-xs">
-                  1
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+              <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 space-y-1.5">
+                <div className="text-cyan-400 font-bold flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>1. Safe Payments</span>
                 </div>
-                <div>
-                  <h4 className="text-xs font-bold text-white">Realistic Smartphone SMS Notification</h4>
-                  <p className="text-[11px] text-slate-400">
-                    A phone push notification banner slides into view showing the real 6-digit security code (e.g. <span className="font-mono text-cyan-300">849201</span>), merchant name, and transaction amount in ₹ INR.
-                  </p>
-                </div>
+                <p className="text-[11px] text-slate-400">
+                  Routine groceries or known merchant payments from your usual device approve immediately in under 4ms.
+                </p>
               </div>
 
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-xl bg-cyan-950 border border-cyan-800 flex items-center justify-center text-cyan-300 font-bold text-xs">
-                  2
+              <div className="p-3.5 rounded-2xl bg-amber-950/30 border border-amber-800/50 space-y-1.5">
+                <div className="text-amber-400 font-bold flex items-center gap-1.5">
+                  <Smartphone className="w-4 h-4" />
+                  <span>2. Phone SMS Alert</span>
                 </div>
-                <div>
-                  <h4 className="text-xs font-bold text-white">Interactive 6-Digit PIN Match</h4>
-                  <p className="text-[11px] text-slate-400">
-                    Enter the code into the auto-advancing verification boxes. The system verifies the code with strict matching and a 5-minute security countdown.
-                  </p>
-                </div>
+                <p className="text-[11px] text-slate-400">
+                  If an unusual high-value transaction or unfamiliar device appears, an instant 6-digit SMS OTP is sent to your phone.
+                </p>
               </div>
 
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-xl bg-cyan-950 border border-cyan-800 flex items-center justify-center text-cyan-300 font-bold text-xs">
-                  3
+              <div className="p-3.5 rounded-2xl bg-emerald-950/30 border border-emerald-800/50 space-y-1.5">
+                <div className="text-emerald-400 font-bold flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4" />
+                  <span>3. Money Protected</span>
                 </div>
-                <div>
-                  <h4 className="text-xs font-bold text-white">Dual Adjudication Outcomes</h4>
-                  <p className="text-[11px] text-slate-400">
-                    Click <strong>"Verify &amp; Authorize"</strong> to confirm the purchase and log the approval. Or click <strong>"Reject &amp; Freeze Account"</strong> if you suspect unauthorized access.
-                  </p>
-                </div>
+                <p className="text-[11px] text-slate-400">
+                  Funds remain safely locked in escrow until you verify the exact 6-digit code on your screen.
+                </p>
               </div>
             </div>
+          </div>
+        )}
 
-            {/* Quick Demo Pro-Tip */}
-            <div className="p-3.5 rounded-xl bg-cyan-950/40 border border-cyan-800/60 text-xs text-cyan-200 flex items-start gap-2.5">
-              <Sparkles className="w-4 h-4 text-cyan-300 shrink-0 mt-0.5" />
+        {/* Customer Tab 3: Explainable AI & Receipts */}
+        {isCustomer && activeTab === 'cust_xai' && (
+          <div className="space-y-4 animate-fadeIn">
+            <div>
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <BrainCircuit className="w-4 h-4 text-purple-400" />
+                Transparent AI Receipts: Know Exactly Why Any Payment Was Evaluated
+              </h3>
+              <p className="text-xs text-slate-400 mt-1">
+                Under <strong>Explainable AI &amp; SHAP</strong>, you can view the exact mathematical reasons behind any of your transactions.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+              <div className="p-3.5 rounded-2xl bg-emerald-950/30 border border-emerald-800/50 space-y-1.5">
+                <strong className="text-emerald-400 block font-bold">🟢 Green Protective Factors (Low Risk)</strong>
+                <p className="text-[11px] text-slate-300">
+                  Signals like transacting from your verified smartphone, familiar daytime hours, normal merchant category, and good account tenure pull your risk down.
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-rose-950/30 border border-rose-800/50 space-y-1.5">
+                <strong className="text-rose-400 block font-bold">🔴 Red Risk Factors (Triggers Alert)</strong>
+                <p className="text-[11px] text-slate-300">
+                  Signals like sudden midnight checkout, untrusted browser, high transaction velocity, or unusual ticket size push the risk up to protect you from theft.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Customer Tab 4: Sweet AI Voice Assistant */}
+        {isCustomer && activeTab === 'cust_voice' && (
+          <div className="space-y-4 animate-fadeIn">
+            <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <strong>How to test this live:</strong> Go to <strong>Payment Gateway (Pre-Auth)</strong>, select <em>CircuitBay Electronics</em> or <em>Aurelia Gold House</em>, enter ₹75,000, and click <em>Pay &amp; Verify Risk Decision</em>.
+                <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                  <Volume2 className="w-4 h-4 text-cyan-400" />
+                  Sweet AI Voice Assistant: Hear Your Transaction Explanations
+                </h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  Enjoy warm, crystal-clear spoken voice explanations of your payments and security status.
+                </p>
+              </div>
+
+              {onOpenVoiceHelp && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose && onClose()
+                    onOpenVoiceHelp()
+                  }}
+                  className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-cyan-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold shadow-md shadow-purple-950/50 transition flex items-center gap-1.5"
+                >
+                  <Bot className="w-3.5 h-3.5 animate-pulse" />
+                  <span>Launch Voice Assistant</span>
+                </button>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+              <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 space-y-1.5">
+                <div className="flex items-center gap-2 text-cyan-300 font-bold">
+                  <Volume2 className="w-4 h-4" />
+                  <span>Listen to Spoken Receipts</span>
+                </div>
+                <p className="text-[11px] text-slate-400">
+                  In <strong>Explainable AI &amp; SHAP</strong>, click <strong>"Listen to AI Voice Explanation"</strong> to hear a sweet, friendly voice explaining your transaction.
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 space-y-1.5">
+                <div className="flex items-center gap-2 text-purple-300 font-bold">
+                  <Mic className="w-4 h-4" />
+                  <span>Speak Hands-Free Questions</span>
+                </div>
+                <p className="text-[11px] text-slate-400">
+                  Click the microphone icon and ask: <em>"What is fraud?"</em> or <em>"Is my account safe?"</em> to receive an instant spoken answer.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================================= */}
+        {/* ADMIN TABS (Enterprise Governance, 29 Merchants & Persona Stress-Testing) */}
+        {/* ========================================================================= */}
+
+        {/* Tab 1: Access Architecture & Privacy Protection (Admin View) */}
+        {!isCustomer && activeTab === 'quickstart' && (
+          <div className="space-y-4 animate-fadeIn">
+            <div>
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                Enterprise Data Privacy, Confidentiality &amp; Access Architecture
+              </h3>
+              <p className="text-xs text-slate-400 mt-1">
+                FraudLens AI strictly enforces enterprise confidentiality and row-level database isolation. <strong>Personal customer data, cardholder histories, and private credentials are never shared across tenants.</strong>
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+              <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 space-y-2">
+                <div className="flex items-center gap-2 text-cyan-300 font-bold">
+                  <ShieldCheck className="w-4 h-4" />
+                  <span>Administrator &amp; Security Analyst Access</span>
+                </div>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  Oversees platform health, 29 merchant risk scores, multi-model tournaments, and investigation case queues. 
+                  Audit trails are cryptographically immutable.
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 space-y-2">
+                <div className="flex items-center gap-2 text-emerald-300 font-bold">
+                  <UserCheck className="w-4 h-4" />
+                  <span>Customer Isolated Portal</span>
+                </div>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  Individual customers only have visibility into their own transactions, personal risk score, and real-time security alerts with zero cross-tenant leakage.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Tab 2: Mobile Phone OTP Workflow (Admin View) */}
+        {!isCustomer && activeTab === 'otp' && (
+          <div className="space-y-4 animate-fadeIn">
+            <div>
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <Smartphone className="w-4 h-4 text-cyan-400" />
+                Phone SMS OTP Step-Up Authentication Workflow
+              </h3>
+              <p className="text-xs text-slate-400 mt-1">
+                Transactions scoring between 30 and 70 risk points trigger an automatic real-time Mobile SMS OTP challenge.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+              <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 space-y-1.5">
+                <div className="flex items-center gap-2 text-cyan-300 font-bold">
+                  <Smartphone className="w-4 h-4" />
+                  <span>1. Real-Time Phone SMS Dispatched</span>
+                </div>
+                <p className="text-[11px] text-slate-400">
+                  When a payment intent is flagged as <strong>REVIEW</strong>, an SMS alert is dispatched with a unique 6-digit code.
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 space-y-1.5">
+                <div className="flex items-center gap-2 text-emerald-300 font-bold">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>2. Strict PIN Matching</span>
+                </div>
+                <p className="text-[11px] text-slate-400">
+                  Customer enters the exact code on their phone simulator. If valid, the payment intent commits immediately.
+                </p>
               </div>
             </div>
           </div>
         )}
 
         {/* Tab 3: Admin AI Copilot & Voice */}
-        {activeTab === 'ai_copilot' && (
+        {!isCustomer && activeTab === 'ai_copilot' && (
           <div className="space-y-4 animate-fadeIn">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
@@ -251,7 +389,7 @@ export default function UserManualModal({ isOpen, onClose, onOpenVoiceHelp }) {
                   Admin AI Copilot: Gemini, Grok, Siri Voice &amp; Attack Diagrams
                 </h3>
                 <p className="text-xs text-slate-400 mt-1">
-                  Located in Admin Mode under <strong>Fraud Investigations</strong> and directly accessible via the <strong>AI Voice Help</strong> button on any page.
+                  Located under <strong>Fraud Investigations</strong> and directly accessible via the <strong>AI Voice Help</strong> button anytime.
                 </p>
               </div>
 
@@ -271,55 +409,31 @@ export default function UserManualModal({ isOpen, onClose, onOpenVoiceHelp }) {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-              {/* Feature 1 */}
               <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 space-y-1.5">
                 <div className="flex items-center gap-2 text-cyan-300 font-bold">
                   <Bot className="w-4 h-4" />
                   <span>Google Gemini &amp; xAI Grok Switcher</span>
                 </div>
                 <p className="text-[11px] text-slate-400">
-                  Switch between <strong>Google Gemini 1.5 Pro</strong> (contextual root-cause attribution) and <strong>xAI Grok-2 Enterprise</strong> (adversarial botnet reasoning) with instant dossier re-synthesis.
+                  Switch between <strong>Google Gemini 1.5 Pro</strong> and <strong>xAI Grok-2 Enterprise</strong> with instant dossier re-synthesis.
                 </p>
               </div>
 
-              {/* Feature 2 */}
               <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 space-y-1.5">
                 <div className="flex items-center gap-2 text-indigo-300 font-bold">
                   <Volume2 className="w-4 h-4" />
                   <span>Siri / Google Voice Spoken Briefings</span>
                 </div>
                 <p className="text-[11px] text-slate-400">
-                  Click <strong>"Listen to Briefing"</strong> to hear natural spoken audio narration of the case, complete with animated neon soundwave visualizer and voice selection.
-                </p>
-              </div>
-
-              {/* Feature 3 */}
-              <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 space-y-1.5">
-                <div className="flex items-center gap-2 text-purple-300 font-bold">
-                  <Mic className="w-4 h-4" />
-                  <span>Hands-Free Microphone Voice Commands</span>
-                </div>
-                <p className="text-[11px] text-slate-400">
-                  Speak into your mic: <em>"Summarize case"</em>, <em>"Attack diagram"</em>, or <em>"Confirm fraud and freeze"</em> to operate case adjudications hands-free.
-                </p>
-              </div>
-
-              {/* Feature 4 */}
-              <div className="p-3.5 rounded-2xl bg-slate-950 border border-slate-800 space-y-1.5">
-                <div className="flex items-center gap-2 text-emerald-300 font-bold">
-                  <GitBranch className="w-4 h-4" />
-                  <span>4-Stage Attack Architecture Diagram</span>
-                </div>
-                <p className="text-[11px] text-slate-400">
-                  Interactive Kill-Chain diagram mapping: <strong>Threat Origin &rarr; Target Intent &rarr; AI Gatekeeper &rarr; Outcome</strong>, with copyable Mermaid syntax for academic viva slides.
+                  Hear natural spoken audio narration of the case, complete with animated neon soundwave visualizer.
                 </p>
               </div>
             </div>
           </div>
         )}
 
-        {/* Tab 4: 29 Merchants & SHAP */}
-        {activeTab === 'analyzer' && (
+        {/* Tab 4: 29 Merchants & SHAP Benchmark (Admin View) */}
+        {!isCustomer && activeTab === 'analyzer' && (
           <div className="space-y-4 animate-fadeIn">
             <div>
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
@@ -327,35 +441,10 @@ export default function UserManualModal({ isOpen, onClose, onOpenVoiceHelp }) {
                 29 Master Merchants &amp; TreeSHAP Mathematical Attribution
               </h3>
               <p className="text-xs text-slate-400 mt-1">
-                Every merchant profile has tailored ticket sizes, baseline transaction velocity, and historical fraud incidence.
+                Every merchant profile has tailored ticket sizes, baseline transaction velocity, and historical fraud incidence across 10 categories.
               </p>
             </div>
 
-            {/* Presets */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-              <div className="p-3.5 rounded-2xl bg-emerald-950/30 border border-emerald-800/50 space-y-1">
-                <strong className="text-emerald-400 block font-bold">Normal Household Purchase</strong>
-                <p className="text-[11px] text-slate-400">
-                  NovaMart Fresh (M001) for ₹1,250. Known mobile device, normal 2 PM hour, baseline velocity. Result: <strong>ALLOW</strong>.
-                </p>
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-amber-950/30 border border-amber-800/50 space-y-1">
-                <strong className="text-amber-400 block font-bold">Velocity Spike Anomaly</strong>
-                <p className="text-[11px] text-slate-400">
-                  CircuitBay Electronics (M002) for ₹45,000 at 3 AM with 8 txs in 1 hour. Result: <strong>REVIEW (Step-Up OTP)</strong>.
-                </p>
-              </div>
-
-              <div className="p-3.5 rounded-2xl bg-rose-950/30 border border-rose-800/50 space-y-1">
-                <strong className="text-rose-400 block font-bold">High-Value Account Takeover</strong>
-                <p className="text-[11px] text-slate-400">
-                  Aurelia Gold House (M004) for ₹85,000 with location jump and 3 failed logins. Result: <strong>BLOCK</strong>.
-                </p>
-              </div>
-            </div>
-
-            {/* TreeSHAP Explanation Bar Guide */}
             <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-2 text-xs">
               <h4 className="font-bold text-slate-200 flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-cyan-400" />
@@ -384,7 +473,7 @@ export default function UserManualModal({ isOpen, onClose, onOpenVoiceHelp }) {
             onClick={onClose}
             className="px-6 py-2.5 rounded-2xl bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-cyan-950/50 transition uppercase tracking-wider"
           >
-            Close Operations Manual
+            Close Guide
           </button>
         </div>
 

@@ -492,6 +492,8 @@ function CommandCenterApp() {
         isOpen={showManual}
         onClose={() => setShowManual(false)}
         onOpenVoiceHelp={() => setShowVoiceHelp(true)}
+        user={user}
+        isAdmin={isAdmin}
       />
 
       {/* Interactive AI Voice Help & What is Fraud Explainer Modal */}
