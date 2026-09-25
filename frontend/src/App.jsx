@@ -36,6 +36,7 @@ import LoginScene from './components/login/LoginScene'
 import SecurityUnlockTransition from './components/SecurityUnlockTransition'
 import UserManualModal from './components/UserManualModal'
 import AiVoiceHelpModal from './components/AiVoiceHelpModal'
+import AiAssistantPanel from './components/AiAssistantPanel'
 import { systemApi } from './services/api'
 import { getCustomerPersona } from './utils/customerHelper'
 
@@ -476,16 +477,13 @@ function CommandCenterApp() {
         </div>
       </div>
 
-      {/* Floating AI Voice Assistant Trigger Button */}
-      <button
-        onClick={() => setShowVoiceHelp(true)}
-        className="fixed bottom-6 right-6 z-40 p-3.5 rounded-2xl bg-gradient-to-tr from-purple-600 via-indigo-600 to-cyan-500 text-white shadow-[0_0_30px_rgba(168,85,247,0.5)] hover:scale-105 active:scale-95 transition-all border border-purple-400/60 group flex items-center gap-2"
-        title="Ask AI Voice Copilot: What is Fraud? (Siri & Google Voice)"
-      >
-        <Bot className="w-5 h-5 group-hover:rotate-12 transition-transform" />
-        <span className="text-xs font-bold pr-1 hidden sm:inline">AI Voice Help</span>
-        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-      </button>
+      {/* Floating AI Assistant Panel — Gemini + Grok Chat */}
+      <AiAssistantPanel
+        user={user}
+        isAdmin={isAdmin}
+        currentView={activeView}
+        currentTransactionId={''}
+      />
 
       {/* Interactive Easy User Manual & Guide Modal */}
       <UserManualModal

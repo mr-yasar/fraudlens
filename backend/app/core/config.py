@@ -38,6 +38,11 @@ class Settings(BaseSettings):
     INITIAL_INVESTIGATOR_EMAIL: str = "investigator@fraudlens.internal"
     INITIAL_INVESTIGATOR_PASSWORD: str = "Investigator@2026!"
 
+    # LLM API Keys (Google Gemini + xAI Grok)
+    GEMINI_API_KEY: str = ""
+    GROK_API_KEY: str = ""
+    DEFAULT_LLM_PROVIDER: str = "gemini"  # 'gemini' | 'grok'
+
     model_config = SettingsConfigDict(
         env_file=os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), ".env"),
         env_file_encoding="utf-8",

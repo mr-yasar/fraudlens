@@ -24,6 +24,7 @@ from backend.app.api.v1.endpoints.intelligence import router as intelligence_rou
 from backend.app.api.v1.endpoints.adaptive_intelligence import router as adaptive_intelligence_router
 from backend.app.api.v1.endpoints.merchants import router as merchants_router
 from backend.app.api.v1.endpoints.governance import router as governance_router
+from backend.app.api.v1.endpoints.ai_assistant import router as ai_assistant_router
 
 api_router = APIRouter()
 
@@ -51,5 +52,6 @@ api_router.include_router(investigations_router, prefix="/investigations", tags=
 api_router.include_router(admin_ml_router, prefix="/admin", tags=["Admin ML & Dataset Management"])
 api_router.include_router(dashboard_router, prefix="/dashboard", tags=["Dashboard & Analytics"])
 api_router.include_router(audit_logs_router, prefix="/audit-logs", tags=["Audit Logging"])
+api_router.include_router(ai_assistant_router, prefix="/ai", tags=["AI Assistant (Gemini + Grok)"])
 
 
