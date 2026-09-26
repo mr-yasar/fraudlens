@@ -207,6 +207,131 @@
   background: rgba(6, 182, 212, 0.7);
 }
 
+/* ==========================================================================
+   FRAUDLENS AI INTELLIGENCE WORKSPACE — PREMIUM CHATBOT ANIMATIONS
+   ========================================================================== */
+
+/* Warm-light scanning beam that sweeps across the header */
+@keyframes warmBeamSweep {
+  0%   { transform: translateX(-100%); opacity: 0; }
+  15%  { opacity: 1; }
+  85%  { opacity: 1; }
+  100% { transform: translateX(300%); opacity: 0; }
+}
+
+.animate-warm-beam {
+  animation: warmBeamSweep 2.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+/* Glass shimmer reflection across panel surfaces */
+@keyframes glassShimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.glass-shimmer {
+  background-image: linear-gradient(
+    110deg,
+    transparent 25%,
+    rgba(255, 253, 245, 0.04) 37%,
+    rgba(255, 253, 245, 0.08) 50%,
+    rgba(255, 253, 245, 0.04) 63%,
+    transparent 75%
+  );
+  background-size: 200% 100%;
+  animation: glassShimmer 6s ease-in-out infinite;
+}
+
+/* Message entrance animation (slide in + fade) */
+@keyframes msgEnter {
+  0%   { opacity: 0; transform: translateY(16px) scale(0.97); }
+  60%  { opacity: 1; transform: translateY(-2px) scale(1.005); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.animate-msg-enter {
+  animation: msgEnter 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* AI processing stage sequencer: Searching → Scanning → Analysing → Processing */
+@keyframes stageGlow {
+  0%, 100% { opacity: 0.4; text-shadow: none; }
+  50%      { opacity: 1; text-shadow: 0 0 8px rgba(6, 182, 212, 0.6); }
+}
+
+.animate-stage-glow {
+  animation: stageGlow 1.6s ease-in-out infinite;
+}
+
+/* Orb ambient breathing glow for the chat header */
+@keyframes orbBreathe {
+  0%, 100% { box-shadow: 0 0 12px rgba(6, 182, 212, 0.25), 0 0 24px rgba(6, 182, 212, 0.08); }
+  50%      { box-shadow: 0 0 20px rgba(6, 182, 212, 0.5), 0 0 40px rgba(6, 182, 212, 0.15); }
+}
+
+.animate-orb-breathe {
+  animation: orbBreathe 4s ease-in-out infinite;
+}
+
+/* Premium glass panel depth effect */
+.premium-glass {
+  background: linear-gradient(
+    165deg,
+    rgba(11, 20, 45, 0.97) 0%,
+    rgba(7, 13, 30, 0.98) 40%,
+    rgba(11, 20, 45, 0.95) 100%
+  );
+  backdrop-filter: blur(24px) saturate(1.3);
+  -webkit-backdrop-filter: blur(24px) saturate(1.3);
+  box-shadow:
+    0 0 0 1px rgba(255, 253, 245, 0.06) inset,
+    0 1px 0 0 rgba(255, 253, 245, 0.08) inset,
+    0 25px 60px rgba(0, 0, 0, 0.85),
+    0 0 80px rgba(6, 182, 212, 0.12);
+}
+
+/* Frosted top reflection for assistant message cards */
+.frosted-card {
+  background: linear-gradient(
+    180deg,
+    rgba(15, 23, 50, 0.95) 0%,
+    rgba(11, 20, 45, 0.92) 100%
+  );
+  border-top: 1px solid rgba(255, 253, 245, 0.12);
+  box-shadow:
+    0 0 0 1px rgba(6, 182, 212, 0.15),
+    0 4px 16px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 253, 245, 0.06);
+}
+
+/* Provider mode indicator pulse */
+@keyframes modePulse {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.15); }
+}
+
+.animate-mode-pulse {
+  animation: modePulse 2s ease-in-out infinite;
+}
+
+/* Smooth fadeIn for banners */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+/* Input focus warm glow */
+.input-warm-focus:focus {
+  box-shadow:
+    0 0 0 2px rgba(6, 182, 212, 0.3),
+    0 0 20px rgba(6, 182, 212, 0.1),
+    inset 0 0 12px rgba(6, 182, 212, 0.05);
+}
+
 /* Reduced Motion Override */
 @media (prefers-reduced-motion: reduce) {
   *, ::before, ::after {
@@ -221,7 +346,13 @@
   .animate-holo-pulse,
   .animate-shockwave,
   .animate-beam-scan,
-  .animate-fade-in-up {
+  .animate-fade-in-up,
+  .animate-warm-beam,
+  .animate-msg-enter,
+  .animate-stage-glow,
+  .animate-orb-breathe,
+  .animate-mode-pulse,
+  .glass-shimmer {
     animation: none !important;
   }
 }

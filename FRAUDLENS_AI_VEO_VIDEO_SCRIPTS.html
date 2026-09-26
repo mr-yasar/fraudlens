@@ -1,0 +1,1446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FraudLens AI — 6 Google Veo Video Master Scripts</title>
+<style>
+  :root {
+    --bg: #0b1120;
+    --card-bg: #111827;
+    --card-border: #1e293b;
+    --text-primary: #f1f5f9;
+    --text-secondary: #94a3b8;
+    --accent: #38bdf8;
+    --accent-glow: rgba(56, 189, 248, 0.2);
+    --gold: #f59e0b;
+    --emerald: #10b981;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background-color: var(--bg);
+    color: var(--text-primary);
+    line-height: 1.65;
+    padding: 0;
+  }
+
+  /* Top Sticky Bar */
+  .toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    background: rgba(15, 23, 42, 0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid #334155;
+    padding: 14px 28px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  }
+
+  .toolbar-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #e2e8f0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .toolbar-title .badge {
+    background: linear-gradient(135deg, #0284c7, #2563eb);
+    color: white;
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 9999px;
+    font-weight: 600;
+  }
+
+  .btn-group {
+    display: flex;
+    gap: 12px;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+    text-decoration: none;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #0284c7, #2563eb);
+    color: white;
+    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4);
+  }
+  .btn-primary:hover {
+    background: linear-gradient(135deg, #0369a1, #1d4ed8);
+    transform: translateY(-1px);
+  }
+
+  .btn-secondary {
+    background: #1e293b;
+    color: #cbd5e1;
+    border: 1px solid #334155;
+  }
+  .btn-secondary:hover {
+    background: #334155;
+    color: white;
+    transform: translateY(-1px);
+  }
+
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: #10b981;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 14px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    z-index: 2000;
+  }
+  .toast.show {
+    opacity: 1;
+  }
+
+  /* Content Wrapper */
+  .container {
+    max-width: 960px;
+    margin: 40px auto 100px;
+    padding: 0 24px;
+  }
+
+  h1 {
+    font-size: 28px;
+    font-weight: 800;
+    color: #38bdf8;
+    margin-top: 40px;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #334155;
+    padding-bottom: 12px;
+  }
+
+  h2 {
+    font-size: 22px;
+    font-weight: 700;
+    color: #f1f5f9;
+    margin-top: 36px;
+    margin-bottom: 16px;
+    padding-left: 10px;
+    border-left: 4px solid #38bdf8;
+  }
+
+  h3 {
+    font-size: 17px;
+    font-weight: 600;
+    color: #cbd5e1;
+    margin-top: 24px;
+    margin-bottom: 12px;
+  }
+
+  h4 {
+    font-size: 14px;
+    font-weight: 600;
+    color: #94a3b8;
+    margin-top: 16px;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  p {
+    color: #cbd5e1;
+    margin-bottom: 14px;
+  }
+
+  strong {
+    color: #f8fafc;
+  }
+
+  blockquote {
+    background: rgba(30, 41, 59, 0.7);
+    border-left: 4px solid #38bdf8;
+    padding: 14px 18px;
+    border-radius: 0 8px 8px 0;
+    margin: 16px 0;
+    color: #e2e8f0;
+    font-size: 14px;
+  }
+
+  pre {
+    background: #0f172a;
+    border: 1px solid #1e293b;
+    border-radius: 8px;
+    padding: 16px;
+    overflow-x: auto;
+    margin: 16px 0;
+  }
+
+  code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 13px;
+    color: #38bdf8;
+  }
+
+  p code, li code {
+    background: rgba(56, 189, 248, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid rgba(56, 189, 248, 0.2);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    background: #0f172a;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #1e293b;
+  }
+
+  th, td {
+    padding: 10px 14px;
+    text-align: left;
+    font-size: 13px;
+    border-bottom: 1px solid #1e293b;
+  }
+
+  th {
+    background: #1e293b;
+    color: #f1f5f9;
+    font-weight: 600;
+  }
+
+  td {
+    color: #cbd5e1;
+  }
+
+  ul, ol {
+    padding-left: 24px;
+    margin-bottom: 16px;
+  }
+
+  li {
+    color: #cbd5e1;
+    margin-bottom: 6px;
+  }
+
+  hr {
+    border: none;
+    border-top: 1px solid #334155;
+    margin: 36px 0;
+  }
+
+  /* Print Styles for PDF Generation */
+  @media print {
+    .toolbar, .toast {
+      display: none !important;
+    }
+    body {
+      background: #ffffff !important;
+      color: #0f172a !important;
+    }
+    .container {
+      max-width: 100% !important;
+      margin: 0 !important;
+      padding: 10mm 15mm !important;
+    }
+    h1 {
+      color: #0369a1 !important;
+      border-bottom: 2px solid #cbd5e1 !important;
+      page-break-before: always;
+    }
+    h1:first-of-type {
+      page-break-before: avoid;
+    }
+    h2 {
+      color: #0f172a !important;
+      border-left: 4px solid #0284c7 !important;
+    }
+    h3, h4, p, li, td {
+      color: #1e293b !important;
+    }
+    strong {
+      color: #000000 !important;
+    }
+    blockquote {
+      background: #f8fafc !important;
+      border-left: 4px solid #0284c7 !important;
+      color: #1e293b !important;
+      border: 1px solid #e2e8f0;
+      border-left-width: 4px;
+    }
+    pre, code {
+      background: #f1f5f9 !important;
+      color: #0369a1 !important;
+      border-color: #cbd5e1 !important;
+    }
+    table {
+      background: #ffffff !important;
+      border: 1px solid #cbd5e1 !important;
+    }
+    th {
+      background: #e2e8f0 !important;
+      color: #0f172a !important;
+      border-bottom: 2px solid #94a3b8 !important;
+    }
+    td {
+      border-bottom: 1px solid #e2e8f0 !important;
+    }
+    hr {
+      border-top: 1px solid #cbd5e1 !important;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <div class="toolbar-title">
+    <span>🛡️ FraudLens AI</span>
+    <span class="badge">6 Video Master Scripts</span>
+  </div>
+  <div class="btn-group">
+    <button class="btn btn-secondary" onclick="copyAllMarkdown()">
+      📋 Copy Full Markdown
+    </button>
+    <button class="btn btn-secondary" onclick="copyCleanText()">
+      📋 Copy Clean Text
+    </button>
+    <button class="btn btn-primary" onclick="window.print()">
+      📄 Print / Save as PDF
+    </button>
+  </div>
+</div>
+
+<div class="container" id="content-body">
+<h1 id="fraudlens-ai-google-veo-master-cinematic-production-scripts">FRAUDLENS AI — GOOGLE VEO MASTER CINEMATIC PRODUCTION SCRIPTS</h1>
+<h3 id="complete-6-part-video-series-natural-tanglish-ai-expert-narration">Complete 6-Part Video Series (Natural Tanglish AI Expert Narration)</h3>
+<hr />
+<h1 id="video-1-what-fraudlens-ai-is-past-real-time-transactions">🎬 VIDEO 1: What FraudLens AI Is + Past &amp; Real-Time Transactions</h1>
+<p><strong>Target Duration:</strong> ~3 Minutes 30 Seconds<br />
+<strong>Theme:</strong> High-Tech Cyber-Fintech Command Center &amp; Real-Time Transaction Scoring Engine</p>
+<hr />
+<h3 id="scene-11-the-fintech-dilemma-platform-hook">Scene 1.1: The FinTech Dilemma &amp; Platform Hook</h3>
+<ul>
+<li><strong>Duration:</strong> 25 Seconds</li>
+<li><strong>What Appears on Screen:</strong><br />
+  Cinematic opening shot of a futuristic digital banking network with millions of glowing data packets traveling across global financial corridors. Sudden red pulse alerts highlight fraudulent transactions hiding within normal banking traffic. A camera push-in reveals the <strong>FraudLens AI Cyber Shield &amp; Login Screen</strong> on a curved OLED glass display.</li>
+<li><strong>Natural AI Narration (Tanglish):</strong><blockquote>
+<p>"Machi, oru second yosichu paaru — every single second ulagam full-ah crores of digital transactions nadakithu. Google Pay, card swipe, crypto transfer-nu ellame fraction of a second-la mudiyuthu. But the biggest problem enna theriyuma? Ithula genuine customer transaction ethu, international hacker-oda fraud attack ethu-nu epdi kandupidikkurathu? Normal rule-based system-la pota genuine payments block aagum, illana fraud silent-ah ulla poirum. Athuku thaan namma create pannirukkom <strong>FraudLens AI</strong> — oru state-of-the-art Explainable AI Financial Fraud &amp; Risk Detection Platform."</p>
+</blockquote>
+</li>
+<li><strong>Technical Process Being Explained:</strong><br />
+<strong>The Financial Fraud Problem &amp; Rule Engine Failure:</strong> Traditional banking rules (<code>if amount &gt; 50000: block</code>) suffer from extreme False Positive Rates (FPR), blocking legitimate users while failing against dynamic botnets. FraudLens AI replaces static heuristics with an adaptive, multi-stage machine learning inference pipeline operating at sub-10ms latencies.</li>
+<li><strong>Exact Project UI to Show:</strong><br />
+  LoginCard with the bioluminescent cyber shield, glowing cyan corner brackets, and 1-Click Role Portals (Admin, Monisha, Mohana, Sowmiya).</li>
+<li><strong>On-Screen Text:</strong><br />
+<code>FRAUDLENS AI // REAL-TIME RISK INTELLIGENCE</code><br />
+<code>Sub-10ms Inference • Dual-Metric Telemetry • Zero-Leak Security</code></li>
+<li><strong>Cinematic Veo Visual Prompt:</strong><br />
+<code>Cinematic macro shot of an illuminated futuristic cyber-financial terminal, sleek frosted glass UI with glowing cyan and soft ivory fiber-optic traces, holographic data nodes pulsing with real-time financial telemetry, depth of field, photorealistic 8k octane render.</code></li>
+<li><strong>Transition:</strong> Smooth camera tilt and optical data zoom into the Transactions View.</li>
+</ul>
+<hr />
+<h3 id="scene-12-past-historical-data-vs-live-pre-auth-interception">Scene 1.2: Past Historical Data vs. Live Pre-Auth Interception</h3>
+<ul>
+<li><strong>Duration:</strong> 35 Seconds</li>
+<li><strong>What Appears on Screen:</strong><br />
+  Split-screen composition. On the left: <strong>All Transactions Table</strong> displaying historical transactions with search, pagination, and color-coded risk tags (<code>LOW - 3%</code>, <code>MEDIUM - 68%</code>, <code>HIGH - 94%</code>). On the right: <strong>Payment Gateway (Pre-Auth)</strong> screen showing an incoming real-time payment being captured <em>before</em> funds leave the bank account.</li>
+<li><strong>Natural AI Narration (Tanglish):</strong><blockquote>
+<p>"Okay, ippo namma application-kulla poyitom. First namma purinjikka vendiyathu — transactions rendu type-ah ulla varum. Onnu <strong>Historical Transactions</strong> — athavathu already nadanthu mudinja data. Database-la irukura past transaction history-ah analyze panni, customer baseline behaviour enna-nu system padikkum. <br />
+Rendaavathu thaan romba critical: <strong>Real-Time Pre-Auth Evaluation</strong>. Oru customer checkout page-la 'Pay' button click pannumpothu, payment gateway funds-ah release panrathukku munnadiye, FraudLens AI-kitta request anupum: 'Idhu safe-ah, illana fraud-ah?' Namma backend just 4 milliseconds-la decide panni reply anupum!"</p>
+</blockquote>
+</li>
+<li><strong>Technical Process Being Explained:</strong><br />
+<strong>Pre-Auth Risk Engine Architecture:</strong> The difference between batch forensic processing and inline pre-authorization risk scoring. FraudLens AI operates as an inline webhook filter evaluating payloads before database commit or card network clearance.</li>
+<li><strong>Exact Project UI to Show:</strong><br />
+  TransactionsView with the searchable table, filtering badges, and the PaymentView Pre-Auth simulation portal.</li>
+<li><strong>On-Screen Text:</strong><br />
+<code>PRE-AUTH INLINE INTERCEPTION: &lt; 4.2ms</code><br />
+<code>Decision Engine: ALLOW | STEP-UP OTP | HARD BLOCK</code></li>
+<li><strong>Cinematic Veo Visual Prompt:</strong><br />
+<code>Dynamic split screen: left side displays an elegant frosted glass data table with glowing emerald and crimson telemetry tags; right side shows an interactive payment terminal interface pulsing with live cryptographic verification beams, hyper-clean fintech aesthetic.</code></li>
+<li><strong>Transition:</strong> Focus snap onto an incoming live transaction packet entering the system.</li>
+</ul>
+<hr />
+<h3 id="scene-13-what-happens-inside-the-inference-pipeline">Scene 1.3: What Happens Inside — The Inference Pipeline</h3>
+<ul>
+<li><strong>Duration:</strong> 50 Seconds</li>
+<li><strong>What Appears on Screen:</strong><br />
+  A 3D glass schematic visualizing data flow: A JSON transaction packet enters from the frontend, gets validated by Pydantic, passes through the Feature Engineer (calculating velocity and distance leap), feeds into the XGBoost Champion model, outputs a probability, generates the Section 31 Risk Score, and passes through TreeSHAP.</li>
+<li><strong>Natural AI Narration (Tanglish):</strong><blockquote>
+<p>"Ippo un friend kitta explain pannu: 'Screen-la click pannathum background-la actual-ah enna nadakkuthu?' <br />
+Step 1: User click pannathum, Frontend oru <strong>POST request</strong>-ah <code>/api/v1/transactions/evaluate</code> endpoint-ku anupum.<br />
+Step 2: Backend-la FastAPI irukura <strong>Pydantic Schema</strong> antha data-va validate pannum — amount positive-ah irukka, device ID correct-ah irukka-nu.<br />
+Step 3: Namma <strong>Feature Engineering Service</strong> run aagum. Customer-oda last 1 hour velocity evvalavu, regular city-la irunthu evvalavu km thalli irukanga-nu extra mathematical features create pannum.<br />
+Step 4: Intha features namma <strong>XGBoost Machine Learning model</strong>-kulla pogum. Model instantaneous-ah <strong>Fraud Probability</strong> calculate pannum — for example 91.8%.<br />
+Step 5: Athey nerathula, namma custom rule engine separate-ah operational <strong>Risk Score</strong> (94/100) assign pannum. Rendum match aagi, result fraction of a second-la UI-ku return aagum!"</p>
+</blockquote>
+</li>
+<li><strong>Technical Process Being Explained:</strong><br />
+<strong>Inference Pipeline Workflow:</strong> User Action -&gt; Frontend -&gt; Pydantic Schema Validation -&gt; Feature Extraction -&gt; XGBoost Model Prediction -&gt; Risk Scoring Engine -&gt; TreeSHAP Attribution -&gt; JSON Response -&gt; UI Update.</li>
+<li><strong>Exact Project UI to Show:</strong><br />
+  Live Evaluation Form inside TransactionsView displaying real-time calculation progress indicators.</li>
+<li><strong>On-Screen Text:</strong><br />
+<code>DATA FLOW: User Click → FastAPI → Feature Engine → XGBoost → TreeSHAP → UI Response</code></li>
+<li><strong>Cinematic Veo Visual Prompt:</strong><br />
+<code>Volumetric 3D schematic of streaming digital financial data entering a crystalline holographic AI processing core, glowing circuit paths light up in sequential sapphire and emerald waves, technical telemetry diagnostics overlay.</code></li>
+<li><strong>Transition:</strong> Camera pans right to reveal the TreeSHAP feature waterfall diagram.</li>
+</ul>
+<hr />
+<h3 id="scene-14-dual-metric-explainability-section-31-compliance">Scene 1.4: Dual Metric &amp; Explainability (Section 31 Compliance)</h3>
+<ul>
+<li><strong>Duration:</strong> 40 Seconds</li>
+<li><strong>What Appears on Screen:</strong><br />
+  Side-by-side comparison of <strong>ML Fraud Probability (91.8%)</strong> vs <strong>Independent Risk Score (94/100)</strong> in ChatMessageCards. Below it, the <strong>TreeSHAP Waterfall Card</strong> shows directional red/green feature bars pushing the score from baseline 0.12 to 0.94.</li>
+<li><strong>Natural AI Narration (Tanglish):</strong><blockquote>
+<p>"Inga oru super interesting interview point irukku, kavanama kelu! Namma project-la Section 31 Compliance-nu oru strict standard maintain panrom. Athu enna theriyuma?<br />
+<strong>Fraud Probability</strong> vera, <strong>Risk Score</strong> vera! <br />
+Probability-na, machine learning model past patterns-ah vachu solra statistical percentage — '91.8% chance idhu fraud-ah irukkalam'. But Risk Score-na, bank regulations, customer balance, velocity, location delta ellam serthu namma system assign panra operational index (94 out of 100).<br />
+Athoda kooda, namma <strong>TreeSHAP</strong> use panrom. SHAP-na Shapley Additive Explanations. Machine Learning-a black box-ah vidaama, 'Intha transaction-ku distance 8,420 km jump aanathala +0.44 risk yeruchu, familiar iPhone device-la pannathala -0.21 risk kuranjuchu'-nu crystal clear-ah visual chart-la kaatum!"</p>
+</blockquote>
+</li>
+<li><strong>Technical Process Being Explained:</strong><br />
+<strong>Section 31 Dual-Metric Mandate &amp; TreeSHAP:</strong> Regulatory compliance demands that model probability does not equal legal causality. SHAP provides local additive feature attributions proving exactly why an auto-block occurred for auditability.</li>
+<li><strong>Exact Project UI to Show:</strong><br />
+  RiskScoreCard and ShapWaterfallCard with live interactive values.</li>
+<li><strong>On-Screen Text:</strong><br />
+<code>SECTION 31 COMPLIANCE: Fraud Probability ≠ Risk Score</code><br />
+<code>TreeSHAP Attribution: distance_from_home (+0.44) | amt_deviation (+0.39)</code></li>
+<li><strong>Cinematic Veo Visual Prompt:</strong><br />
+<code>Close-up on a transparent glass interface showcasing horizontal glowing attribution bars, red bars push right indicating risk spikes, green bars pull left indicating trust factors, sharp typography, ambient cool white illumination.</code></li>
+<li><strong>Transition:</strong> Smooth fade-out with a rotating cyber emblem into Video 2.</li>
+</ul>
+<hr />
+<h1 id="video-2-admin-module-platform-command-model-lab-governance">🎬 VIDEO 2: Admin Module (Platform Command, Model Lab &amp; Governance)</h1>
+<p><strong>Target Duration:</strong> ~3 Minutes 30 Seconds<br />
+<strong>Theme:</strong> Central Authority, Multi-Model Arena, Automated Drift Detection &amp; Audit Logs</p>
+<hr />
+<h3 id="scene-21-admin-command-dashboard-executive-metrics">Scene 2.1: Admin Command Dashboard &amp; Executive Metrics</h3>
+<ul>
+<li><strong>Duration:</strong> 35 Seconds</li>
+<li><strong>What Appears on Screen:</strong><br />
+  The full <strong>Command Dashboard</strong> rendering in full glory. Key Performance Metric cards glow at the top: Total Transactions ($24.8M), Model Precision (99.4%), Blocked Fraud Volume ($1.82M), Average Inference Latency (3.8ms). Interactive Recharts bar charts show hourly fraud trends.</li>
+<li><strong>Natural AI Narration (Tanglish):</strong><blockquote>
+<p>"Ippo namma paaka porathu FraudLens AI-oda heart and brain — <strong>Admin Module</strong>. <br />
+Admin login panna udane, avangalukku complete platform authority kedaikkum. Inga screen-la paatha theriyum: Total transactions evvalavu process aachu, evvalavu fraud attacks-ah namma system block pannirukku, and active ML model evvalavu precision-la run aaguthu-nu executive dashboard live-ah update aagite irukkum.<br />
+Inga top right-la paaru — 'Backend Connected (57ms)' indicator. Every 25 seconds-ku namma frontend backend health endpoint-ah probe panni system latency-ah monitor pannitte irukkum."</p>
+</blockquote>
+</li>
+<li><strong>Technical Process Being Explained:</strong><br />
+<strong>Executive Telemetry Aggregation:</strong> The dashboard aggregates real-time records from PostgreSQL/SQLite using optimized indexing and SQL window functions, caching rolling statistical summaries to deliver sub-second rendering.</li>
+<li><strong>Exact Project UI to Show:</strong><br />
+  DashboardView metric hero cards, live alerts section, and transaction volume charts.</li>
+<li><strong>On-Screen Text:</strong><br />
+<code>ADMIN COMMAND DASHBOARD // SOC LEVEL 3 ACCESS</code><br />
+<code>Live Precision: 99.4% • Latency: 3.8ms • Zero-Downtime Telemetry</code></li>
+<li><strong>Cinematic Veo Visual Prompt:</strong><br />
+<code>Sweeping high-angle camera motion across an ultra-modern cyber SOC command wall, multiple high-resolution data visualization widgets displaying glowing financial risk metrics and vector charts, deep blue atmosphere with crisp white illumination.</code></li>
+<li><strong>Transition:</strong> Camera zooms into the navigation bar clicking on <strong>Model Lab &amp; Registry</strong>.</li>
+</ul>
+<hr />
+<h3 id="scene-22-model-lab-the-multi-model-arena">Scene 2.2: Model Lab — The Multi-Model Arena</h3>
+<ul>
+<li><strong>Duration:</strong> 45 Seconds</li>
+<li><strong>What Appears on Screen:</strong><br />
+  The <strong>Model Lab &amp; Registry</strong> view. A comparison matrix compares 5 trained algorithms: <strong>XGBoost (Active Champion)</strong>, <strong>Random Forest</strong>, <strong>Decision Tree</strong>, <strong>Logistic Regression</strong>, and <strong>Ensemble Voting Classifier</strong>. Confusion matrices, ROC-AUC curves (0.982), and an interactive 'Retrain Model' button are featured.</li>
+<li><strong>Natural AI Narration (Tanglish):</strong><blockquote>
+<p>"Next, idhu thaan namma project-oda highlight: <strong>Model Lab &amp; Registry</strong>!<br />
+Real-world data science-la oru single model eppovum perfect-ah irukaadhu. Athanaala namma system 5 different algorithms-ah train panni bench test pannuthu:<br />
+1. <strong>XGBoost</strong> — Extreme Gradient Boosting. Inga idhu thaan current 'Champion Model', because idhoda inference time just 4 milliseconds, ROC-AUC 0.98!<br />
+2. <strong>Random Forest</strong> — Multiple decision trees sernthu vote panra ensemble model.<br />
+3. <strong>Logistic Regression &amp; Decision Tree</strong> — Fast baseline models.<br />
+Admin-ku venumna oru click-la Vera model-ah 'Promote to Production' pannalam. Zero downtime-la live traffic pudhu model-ku switch aagidum!"</p>
+</blockquote>
+</li>
+<li><strong>Technical Process Being Explained:</strong><br />
+<strong>Model Champion/Challenger Framework &amp; Warm Reload:</strong> How FraudLens AI uses <code>joblib</code> model persistence with in-memory thread-safe hot swapping via <code>FraudPredictionService.get_instance().set_active_model()</code>, allowing instantaneous promotion without server restarts.</li>
+<li><strong>Exact Project UI to Show:</strong><br />
+  ModelLabView showing the model comparison table, ROC-AUC badges, and Champion promotion toggles.</li>
+<li><strong>On-Screen Text:</strong><br />
+<code>MODEL REGISTRY: XGBoost (Champion) • Random Forest • Voting Ensemble</code><br />
+<code>Zero-Downtime Hot Swapping • ROC-AUC: 0.982 • F1-Score: 0.941</code></li>
+<li><strong>Cinematic Veo Visual Prompt:</strong><br />
+<code>Holographic benchmark comparison table floating in cyber space, glowing neon bars comparing model accuracies, an interactive neon switch engages and a golden 'Champion' crown animates onto the XGBoost metric card.</code></li>
+<li><strong>Transition:</strong> Smooth lateral camera glide into Dataset Health &amp; Drift.</li>
+</ul>
+<hr />
+<h3 id="scene-23-dataset-health-population-stability-index-psi">Scene 2.3: Dataset Health &amp; Population Stability Index (PSI)</h3>
+<ul>
+<li><strong>Duration:</strong> 45 Seconds</li>
+<li><strong>What Appears on Screen:</strong><br />
+  The <strong>Dataset Health &amp; Audit View</strong>. Visual meters measure <strong>Data Drift</strong>, <strong>Concept Drift</strong>, and <strong>Feature Integrity</strong>. A gauge for <strong>PSI (Population Stability Index)</strong> shows <code>0.042 (Clean - No Drift)</code>. A feature distribution curve shows baseline vs. inference distribution.</li>
+<li><strong>Natural AI Narration (Tanglish):</strong><blockquote>
+<p>"Machi, neraya projects-la model train panni vitruvaanga, apram time aaga aaga model accuracy padhukkayila vizhunthidum. Athukku peyar thaan <strong>Model Drift</strong>!<br />
+FraudLens AI-la namma <strong>Dataset Health &amp; Drift Monitoring</strong> engine integrate pannirukkom. <br />
+Inga paaru — <strong>PSI (Population Stability Index)</strong> calculate pannuthu. PSI value 0.1-ku mela poona, training data-kum live transaction patterns-kum periya maatham vanthurukku-nu system automated alert adikkum!<br />
+Athoda kooda, <strong>Target Leakage</strong> check pannum. Target leakage-na, future information model training-kulla accidental-ah leak aagi fake 100% accuracy kaattama irukiratha verify panra safety mechanism."</p>
+</blockquote>
+</li>
+<li><strong>Technical Process Being Explained:</strong><br />
+<strong>Statistical Data Drift &amp; PSI Mathematics:</strong> Population Stability Index tracking feature shifts over time. Alert triggers if PSI exceeds threshold, mandating retraining due to macroeconomic or merchant behavior drift.</li>
+<li><strong>Exact Project UI to Show:</strong><br />
+  DatasetHealthView showing PSI gauges, distribution overlap histograms, and data contract validation cards.</li>
+<li><strong>On-Screen Text:</strong><br />
+<code>CONTINUOUS DRIFT GOVERNANCE: PSI = 0.042 (Normal &lt; 0.10)</code><br />
+<code>Zero Target Leakage Guaranteed • Automated Data Contract Validation</code></li>
+<li><strong>Cinematic Veo Visual Prompt:</strong><br />
+<code>Futuristic digital diagnostics display with animated frequency waves, two luminous curves (baseline vs live) harmoniously overlapping, glowing cybernetic badge reads 'PSI NORMAL // ZERO LEAK'.</code></li>
+<li><strong>Transition:</strong> Camera zooms down into the Immutable Audit Logs table.</li>
+</ul>
+<hr />
+<h3 id="scene-24-immutable-audit-trail-iso-27001-security">Scene 2.4: Immutable Audit Trail &amp; ISO-27001 Security</h3>
+<ul>
+<li><strong>Duration:</strong> 35 Seconds</li>
+<li><strong>What Appears on Screen:</strong><br />
+  The <strong>Audit Logs View</strong>. A cryptographic timeline lists every action taken across the entire enterprise: Who logged in, which transaction was blocked, model parameter changes, and API key validations. SHA-256 integrity hashes are displayed for each log row.</li>
+<li><strong>Natural AI Narration (Tanglish):</strong><blockquote>
+<p>"Final-ah Admin module-la romba mukkiyamaana section: <strong>Audit Logs</strong>.<br />
+Banking and FinTech-la accountability thaan ultimate priority. Yaaru login panna, entha investigator card-ah block pannaanga, model threshold-ah yaaru maathinaanga-nu second-to-second timestamp-oda record aagum.<br />
+Every log entry-kum SHA-256 hash cryptographic signature irukku. Even database administrator kooda intha logs-ah tamper panna mudiyaathu!<br />
+Idhanaala thaan namma FraudLens AI ISO-27001 and PCI-DSS compliance standards-ku 100% ready-ah irukku."</p>
+</blockquote>
+</li>
+<li><strong>Technical Process Being Explained:</strong><br />
+<strong>Immutable Audit Trail &amp; Forensics:</strong> All sensitive operations invoke <code>AuditLog</code> database hooks recording <code>actor_id</code>, <code>actor_role</code>, <code>action_type</code>, <code>payload_hash</code>, <code>client_ip</code>, and <code>timestamp</code>, satisfying strict financial auditing mandates.</li>
+<li><strong>Exact Project UI to Show:</strong><br />
+  AuditLogsView with the audit event table, JSON payload inspector modal, and role badges.</li>
+<li><strong>On-Screen Text:</strong><br />
+<code>IMMUTABLE AUDIT TRAIL // ISO-27001 &amp; PCI-DSS COMPLIANT</code><br />
+<code>SHA-256 Tamper-Proof Event Ledger • Zero Administrative Bypass</code></li>
+<li><strong>Cinematic Veo Visual Prompt:</strong><br />
+<code>Extreme macro shot of cryptographic hash keys locking into place like physical metallic tumblers on a glowing holographic ledger, security verification seal animates with emerald energy.</code></li>
+<li><strong>Transition:</strong> Screen rotates and transitions into Video 3 (Customer Persona 1: Monisha).</li>
+</ul>
+<hr />
+<h1 id="video-3-monisha-module-clean-habitual-baseline-3-risk">🎬 VIDEO 3: Monisha Module (Clean Habitual Baseline — 3% Risk)</h1>
+<p><strong>Target Duration:</strong> ~3 Minutes<br />
+<strong>Theme:</strong> The Safe Habitual Shopper, Zero-Friction Approval &amp; Baseline Match</p>
+<hr />
+<h3 id="scene-31-introducing-monisha-customer-portal-isolation">Scene 3.1: Introducing Monisha &amp; Customer Portal Isolation</h3>
+<ul>
+<li><strong>Duration:</strong> 35 Seconds</li>
+<li><strong>What Appears on Screen:</strong><br />
+  Login screen with 1-click selection of <strong>Monisha (User 1 - Safe Account)</strong>. After clicking, the cyber unlock animation triggers and opens the <strong>Dedicated Customer Dashboard</strong>. Monisha’s personalized banking view appears with INR 16,11,121.99 balance, virtual debit card, and green safety badges.</li>
+<li><strong>Natural AI Narration (Tanglish):</strong><blockquote>
+<p>"Ippo namma 3 realistic customer personas-la first persona-va paapom: <strong>Monisha</strong>.<br />
+Monisha login pannathum paaru — avangalukku admin tools ethum theriyathu! Internal model lab, drift audit ellam automatic-ah hide aagi, oru ultra-sleek private banking dashboard open aaguthu.<br />
+Monisha-oda profile enna theriyuma? She is a habitual, trusted shopper. Regular-ah Chennai-la irukura trusted iPhone 15-la irunthu groceries and routine payments pannuvaanga. Avangaloda historical baseline fraud rate just <strong>3%</strong> thaan!"</p>
+</blockquote>
+</li>
+<li><strong>Technical Process Being Explained:</strong><br />
+<strong>Role-Based Access Control (RBAC) &amp; Tenant Isolation:</strong> When JWT payload has <code>role: "customer"</code> and identity claims for Monisha, <code>App.jsx</code> and <code>Sidebar.jsx</code> dynamically constrain navigation to customer-relevant endpoints, completely isolating sensitive bank management routes.</li>
+<li><strong>Exact Project UI to Show:</strong><br />
+  CustomerDashboardView with virtual card preview, balance toggle, and recent transactions list.</li>
+<li><strong>On-Screen Text:</strong><br />
+<code>PERSONA 1: MONISHA // HABITUAL BENCHMARK</code><br />
+<code>Fraud Baseline: 3% • Trusted Device: iPhone 15 (Chennai) • Flow: ALLOW</code></li>
+<li><strong>Cinematic Veo Visual Prompt:</strong><br />
+<code>Elegant light-frosted glass banking portal on a mobile and tablet mockup, glowing emerald badges indicate clean account status, high-end consumer fintech luxury aesthetic.</code></li>
+<li><strong>Transition:</strong> Camera smoothly moves to the Pre-Auth Payment Gateway preset.</li>
+</ul>
+<hr />
+<h3 id="scene-32-the-live-transaction-demo-grocery-at-novamart-fresh">Scene 3.2: The Live Transaction Demo — Grocery at NovaMart Fresh</h3>
+<ul>
+<li><strong>Duration:</strong> 45 Seconds</li>
+<li><strong>What Appears on Screen:</strong><br />
+  The <strong>Payment Gateway (Pre-Auth)</strong> screen. The scenario preset is clicked: <code>1. Monisha: Habitual Grocery (₹1,250)</code>. Form fields auto-populate: Amount ₹1,250, Merchant: <em>NovaMart Fresh</em>, Location: <em>Chennai, IN</em>, Device: <em>DEV-MONISHA-IPHONE-15</em>. The 'Execute Pre-Auth Evaluation' button is clicked.</li>
+<li><strong>Natural AI Narration (Tanglish):</strong><blockquote>
+<p>"Demo paapom! Monisha oru ₹1,250 grocery payment NovaMart Fresh-la panraanga. <br />
+Naama payment gateway-la 'Execute Pre-Auth' click panrom.<br />
+Behind the screen enna aaguthu? <br />
+System Monisha-oda past 180 days transaction profile-oda compare pannuthu.<br />
+Check 1: Device trusted iPhone 15? Yes! <br />
+Check 2: Location usual Chennai IP address? Yes!<br />
+Check 3: Amount routine grocery purchase band-la irukka? Yes!<br />
+Model evaluate panni instant-ah <strong>Probability: 2.1%</strong> and <strong>Risk Score: 14/100 (LOW)</strong> assign pannuthu!"</p>
+</blockquote>
+</li>
+<li><strong>Technical Process Being Explained:</strong><br />
+<strong>Behavioral Profile Matching Service:</strong> How <code>behavior_profile_service.py</code> computes z-scores for amount deviation, validates known trusted device identifiers, and outputs low baseline risk.</li>
+<li><strong>Exact Project UI to Show:</strong><br />
+  PaymentView showing instant calculation and green celebration animation.</li>
+<li><strong>On-Screen Text:</strong><br />
+<code>TRANSACTION #TX-MON-8912 // ₹1,250.00</code><br />
+<code>Fraud Probability: 2.1% • Operational Risk: 14/100 • Verdict: AUTO-ALLOW</code></li>
+<li><strong>Cinematic Veo Visual Prompt:</strong><br />
+<code>Futuristic transaction validation HUD: biometric fingerprint match lights up in soft emerald green, checkmarks ripple across transaction attributes with zero resistance.</code></li>
+<li><strong>Transition:</strong> Quick cut to the instant checkout completion status.</li>
+</ul>
+<hr />
+<h3 id="scene-33-zero-friction-explainable-green-telemetry">Scene 3.3: Zero Friction &amp; Explainable Green Telemetry</h3>
+<ul>
+<li><strong>Duration:</strong> 40 Seconds</li>
+<li><strong>What Appears on Screen:</strong><br />
+  The transaction status confirms: <strong>ALLOW (Auto-Approved)</strong>. The SHAP explanation card displays: <code>device_trust_score (-0.32)</code>, <code>merchant_familiarity (-0.28)</code>, <code>geo_consistency (-0.19)</code>. Negative SHAP values clearly prove why the transaction was approved with zero user friction (no OTP prompt).</li>
+<li><strong>Natural AI Narration (Tanglish):</strong><blockquote>
+<p>"Result paaru: <strong>ALLOW (Auto-Approved)</strong>! <br />
+Monisha-kku entha OTP popup-um varaama, payment single-second-la complete aagidum. Idhukku peyar thaan <strong>Frictionless Consumer Experience</strong>.<br />
+SHAP waterfall chart-la paatha, ellame green bars left side push aaguthu: Trusted device -0.32, Regular merchant -0.28.<br />
+Genuine customer-ku seamless payment tharanum, athoda bank security-um compromise aaga koodathu. Adha Monisha module 100% demonstrate pannuthu!"</p>
+</blockquote>
+</li>
+<li><strong>Technical Process Being Explained:</strong><br />
+<strong>Frictionless Authentication Thresholds:</strong> Transactions with Risk Score &lt; 30 bypass Step-Up challenges (PSD2 / RBI SCA exemption criteria for trusted low-value merchant patterns).</li>
+<li><strong>Exact Project UI to Show:</strong><br />
+  The green explanation card inside PaymentView and balance deduction update in CustomerDashboardView.</li>
+<li><strong>On-Screen Text:</strong><br />
+<code>FRICTIONLESS SECURITY: Zero User Interruption</code><br />
+<code>RBI/PSD2 SCA Exemption Applied • Negative SHAP Pull To Safe Zone</code></li>
+<li><strong>Cinematic Veo Visual Prompt:</strong><br />
+<code>Close-up shot of a glowing green holographic shield pulsing softly over a virtual payment card, digital receipt unfolds seamlessly in sleek glassmorphism.</code></li>
+<li><strong>Transition:</strong> Scene darkens with an amber warning glow transitioning into Video 4 (Mohana).</li>
+</ul>
+<hr />
+<h1 id="video-4-mohana-module-suspicious-velocity-12-risk-step-up-otp">🎬 VIDEO 4: Mohana Module (Suspicious Velocity — 12% Risk &amp; Step-Up OTP)</h1>
+<p><strong>Target Duration:</strong> ~3 Minutes<br />
+<strong>Theme:</strong> Rapid Micro-Burst Velocity, Unfamiliar Region &amp; Adaptive Step-Up Verification</p>
+<hr />
+<h3 id="scene-41-introducing-mohana-the-unfamiliar-pattern">Scene 4.1: Introducing Mohana &amp; The Unfamiliar Pattern</h3>
+<ul>
+<li><strong>Duration:</strong> 35 Seconds</li>
+<li><strong>What Appears on Screen:</strong><br />
+  Login as <strong>Mohana (User 2 - Step-Up OTP)</strong>. The customer portal displays an amber alert banner on the dashboard. The profile details show a baseline fraud risk of <strong>12%</strong>. A notification warns of an active Step-Up challenge on a pending transaction.</li>
+<li><strong>Natural AI Narration (Tanglish):</strong><blockquote>
+<p>"Next, namma second persona-va paapom: <strong>Mohana</strong>.<br />
+Mohana-oda baseline risk <strong>12%</strong> — moderate review band.<br />
+Monisha maari illama, Mohana case-la oru unusual situation create aaguthu.<br />
+Mohana sudden-ah oru unfamiliar device-la irunthu, different network-la login panni, short duration-la rapid-ah multiple transactions initiate panraanga.<br />
+Intha scenario-va thaan namma <strong>Velocity Burst Anomaly</strong>-nu solrom!"</p>
+</blockquote>
+</li>
+<li><strong>Technical Process Being Explained:</strong><br />
+<strong>Velocity Anomaly &amp; The Moderate Risk Band:</strong> When transactions fall into the 30 &lt;= Risk Score &lt; 70 zone, automatic approval is too risky, but hard-blocking will frustrate a legitimate customer. Adaptive Step-Up OTP is triggered.</li>
+<li><strong>Exact Project UI to Show:</strong><br />
+  CustomerDashboardView with the amber theme and active security challenge indicator.</li>
+<li><strong>On-Screen Text:</strong><br />
+<code>PERSONA 2: MOHANA // SUSPICIOUS VELOCITY BAND</code><br />
+<code>Fraud Baseline: 12% • Unfamiliar Device IP • Action: STEP-UP OTP CHALLENGE</code></li>
+<li><strong>Cinematic Veo Visual Prompt:</strong><br />
+<code>Warm amber-lit financial dashboard displaying fluctuating pulse lines, an amber security beacon rotates smoothly indicating an active verification hold.</code></li>
+<li><strong>Transition:</strong> Push-in to the Payment Gateway simulation of the micro-burst transaction.</li>
+</ul>
+<hr />
+<h3 id="scene-42-payment-execution-velocity-spike-detection">Scene 4.2: Payment Execution &amp; Velocity Spike Detection</h3>
+<ul>
+<li><strong>Duration:</strong> 45 Seconds</li>
+<li><strong>What Appears on Screen:</strong><br />
+  In PaymentView, preset <code>2. Mohana: Rapid Micro-Burst Sequence</code> is triggered. Amount: ₹890, 9 transactions in the last 45 seconds. The real-time evaluation immediately flags the velocity cluster. Risk Score jumps to <strong>68/100 (MEDIUM / OTP)</strong>.</li>
+<li><strong>Natural AI Narration (Tanglish):</strong><blockquote>
+<p>"Watch this live demo! Mohana account-la irunthu ₹890-kku transaction execute panrom.<br />
+But system immediate-ah alert aaguthu: 'Wait! Last 45 seconds-la idhu 9th transaction attempt!'<br />
+Feature engineer calculate pannuthu: <code>trans_velocity_1h</code> standard threshold-a vida +300% athigama irukku!<br />
+Plus, used IP address unfamiliar ISP-la irukku.<br />
+XGBoost model fraud probability-ah <strong>64.2%</strong>-nu calculate pannuthu, and operational risk score <strong>68/100</strong>-nu jump aaguthu! <br />
+Hard block panna poroma? No! Customer-a verify panna Step-Up OTP challenge trigger panrom!"</p>
+</blockquote>
+</li>
+<li><strong>Technical Process Being Explained:</strong><br />
+<strong>Sliding Window Velocity Calculation:</strong> Frequency count of transactions over rolling time frames. High frequency triggers Rule Engine velocity challenge.</li>
+<li><strong>Exact Project UI to Show:</strong><br />
+  The transactional cluster bar chart inside EvidenceDashboard and the risk gauge hitting 68/100.</li>
+<li><strong>On-Screen Text:</strong><br />
+<code>BURST DETECTED: 9 Txns / 45 Seconds</code><br />
+<code>Risk Score: 68/100 • SHAP Driver: trans_velocity_1h (+0.36)</code></li>
+<li><strong>Cinematic Veo Visual Prompt:</strong><br />
+<code>Vertical bar graph surges upward with illuminated amber bars spiking into the danger threshold, numeric counter counts rapidly from 1 to 9.</code></li>
+<li><strong>Transition:</strong> Cut to the interactive Mobile Security Approval Modal.</li>
+</ul>
+<hr />
+<h3 id="scene-43-real-time-mobile-security-approval-modal">Scene 4.3: Real-Time Mobile Security Approval Modal</h3>
+<ul>
+<li><strong>Duration:</strong> 40 Seconds</li>
+<li><strong>What Appears on Screen:</strong><br />
+  The <strong>MobileSecurityApprovalModal</strong> pops up on screen representing Mohana's phone. A secure 6-digit OTP prompt and biometric approval button appear. The user enters <code>849201</code> and clicks <strong>Authorize</strong>. The transaction transitions to APPROVED with security logged.</li>
+<li><strong>Natural AI Narration (Tanglish):</strong><blockquote>
+<p>"Screen-la paaru — namma custom <strong>Mobile Security Approval Modal</strong> open aaguthu!<br />
+Real world-la customer phone-ku instant push notification pogum: 'Intha ₹890 transaction neenga thaan panreengala?'<br />
+Customer avanga 6-digit OTP enter panni approve pannathum, request backend-la <code>/api/v1/approvals/verify</code> endpoint-ku pogum.<br />
+Cryptographic validation mudinjathum, transaction instant-ah approve aagi funds release aagum!<br />
+Idhanaala fraud-um thadukapaduthu, genuine user-oda payment-um reject aagala. Perfect balance!"</p>
+</blockquote>
+</li>
+<li><strong>Technical Process Being Explained:</strong><br />
+<strong>Two-Factor Cryptographic Step-Up Resolution:</strong> The approval session stores a cryptographic nonce with a 180-second TTL. Upon verified input, the state flips from PENDING to AUTHORIZED.</li>
+<li><strong>Exact Project UI to Show:</strong><br />
+  MobileSecurityApprovalModal with live timer countdown, OTP input boxes, and approval confirmation.</li>
+<li><strong>On-Screen Text:</strong><br />
+<code>CRYPTOGRAPHIC STEP-UP CHALLENGE // 180s TTL</code><br />
+<code>Status: AUTHENTICATED BY CUSTOMER • Risk Cleared Safely</code></li>
+<li><strong>Cinematic Veo Visual Prompt:</strong><br />
+<code>Sleek 3D smartphone holographic render displaying an animated biometric fingerprint ring glowing in amber, shifting to luminous teal upon authorized touch.</code></li>
+<li><strong>Transition:</strong> Screen turns to deep crimson with emergency sirens pulsing into Video 5 (Sowmiya).</li>
+</ul>
+<hr />
+<h1 id="video-5-sowmiya-module-botnet-ato-attack-26-risk-block-sar">🎬 VIDEO 5: Sowmiya Module (Botnet ATO Attack — 26% Risk, Block &amp; SAR)</h1>
+<p><strong>Target Duration:</strong> ~3 Minutes 30 Seconds<br />
+<strong>Theme:</strong> Impossible Geo-Leap Travel, Botnet Account Takeover (ATO) &amp; FinCEN SAR Filing</p>
+<hr />
+<h3 id="scene-51-the-threat-botnet-credential-stuffing-on-sowmiya">Scene 5.1: The Threat — Botnet Credential Stuffing on Sowmiya</h3>
+<ul>
+<li><strong>Duration:</strong> 35 Seconds</li>
+<li><strong>What Appears on Screen:</strong><br />
+  Login portal selecting <strong>Sowmiya (User 3 - ATO Attack)</strong>. The screen displays an alert indicator in dark crimson. Dashboard metrics reflect a <strong>26% baseline fraud attack profile</strong>. The system alerts that account credentials were leaked in an external breach and are being targeted by an automated botnet proxy network.</li>
+<li><strong>Natural AI Narration (Tanglish):</strong><blockquote>
+<p>"Ippo namma paaka porathu FraudLens AI-oda ultimate stress test: <strong>Sowmiya Module — The Botnet Account Takeover (ATO) Attack</strong>.<br />
+Sowmiya oru high-risk baseline account (26%). External data breach-la ivanga password leak aayirukku. <br />
+Dark web-la irukura automated botnet syndicates Sowmiya account-ah target panni, credential stuffing valiya ulla enter aaga try panraanga.<br />
+But FraudLens AI-oda multi-layered defense irukkurathaala, hacker-oda game inga mudiyapoguthu!"</p>
+</blockquote>
+</li>
+<li><strong>Technical Process Being Explained:</strong><br />
+<strong>Account Takeover (ATO) Threat Mechanics:</strong> Automated botnets use headless browser clusters rotating through residential proxy networks to drain compromised user accounts.</li>
+<li><strong>Exact Project UI to Show:</strong><br />
+  CustomerDashboardView rendering in high-alert crimson with active security lock notices.</li>
+<li><strong>On-Screen Text:</strong><br />
+<code>PERSONA 3: SOWMIYA // BOTNET ATO ATTACK</code><br />
+<code>Attack Vector: Credential Stuffing • Threat Tier: CRITICAL • Defense: HARD BLOCK</code></li>
+<li><strong>Cinematic Veo Visual Prompt:</strong><br />
+<code>Ominous digital cyber map showing distributed automated botnet attack vectors targeting a central bank account node, shielded by a glowing hexagonal firewall barrier.</code></li>
+<li><strong>Transition:</strong> Cut to the Payment Gateway executing the impossible geo-leap transaction.</li>
+</ul>
+<hr />
+<h3 id="scene-52-the-impossible-geo-leap-anomaly-bucharest-romania">Scene 5.2: The Impossible Geo-Leap Anomaly (Bucharest, Romania)</h3>
+<ul>
+<li><strong>Duration:</strong> 45 Seconds</li>
+<li><strong>What Appears on Screen:</strong><br />
+  The Payment Gateway triggers <code>3. Sowmiya: Bucharest Impossible Geo-Travel ($3,850.00)</code>. Just 18 minutes ago, a transaction occurred in San Francisco. Now, a massive $3,850 transaction is attempted from a datacenter IP in <strong>Bucharest, Romania</strong>. The <strong>Geo-Leap Interactive Vector Map</strong> in EvidenceDashboard displays a glowing red arc linking SF to Bucharest with velocity: <strong>28,066 km/h (Physically Impossible)</strong>!</li>
+<li><strong>Natural AI Narration (Tanglish):</strong><blockquote>
+<p>"Intha attack epdi execute aaguthu-nu paaru!<br />
+Just 18 minutes munnadi, Sowmiya San Francisco-la oru legitimate coffee purchase pannanga.<br />
+Exactly 18 minutes apram, Romania-oda Bucharest IP-la irunthu sudden-ah $3,850 international transfer attempt aaguthu!<br />
+18 minutes-la oru human 8,420 km travel panna mudiyuma? That means flight speed 28,000 km per hour! It is <strong>Physically Impossible</strong>!<br />
+Namma Geo-Leap telemetry engine idhai instant-ah flag pannuthu: 'Datacenter VPN proxy confirmed, impossible velocity detected!'"</p>
+</blockquote>
+</li>
+<li><strong>Technical Process Being Explained:</strong><br />
+<strong>Haversine Great-Circle Distance &amp; Velocity Anomaly:</strong> Calculating geographical coordinates against timestamp deltas to identify speeds exceeding physical human travel limits.</li>
+<li><strong>Exact Project UI to Show:</strong><br />
+  EvidenceDashboard with the interactive SVG World Map showing the arched red flight trajectory and Bucharest VPN tag.</li>
+<li><strong>On-Screen Text:</strong><br />
+<code>GEO-LEAP VELOCITY: 28,066 km/h // PHYSICALLY IMPOSSIBLE</code><br />
+<code>San Francisco (18m ago) → Bucharest, Romania (Attempted Now)</code></li>
+<li><strong>Cinematic Veo Visual Prompt:</strong><br />
+<code>Glowing 3D world globe showing an illuminated trajectory arc soaring across the Atlantic Ocean from California to Eastern Europe, pulsing crimson warning labels flash 'IMPOSSIBLE VELOCITY'.</code></li>
+<li><strong>Transition:</strong> Dramatic trigger of the automated hard block and FinCEN SAR draft card.</li>
+</ul>
+<hr />
+<h3 id="scene-53-automated-card-freeze-regulatory-fincen-sar-filing">Scene 5.3: Automated Card Freeze &amp; Regulatory FinCEN SAR Filing</h3>
+<ul>
+<li><strong>Duration:</strong> 50 Seconds</li>
+<li><strong>What Appears on Screen:</strong><br />
+  The transaction is instantaneously marked <strong>BLOCKED</strong>. Fraud Probability hits <strong>91.8%</strong>, Risk Score hits <strong>94/100 (CRITICAL)</strong>. The account card automatically flips to FROZEN. Simultaneously, the <strong>SarReportDraftCard</strong> renders a regulatory <strong>FinCEN Suspicious Activity Report (SAR)</strong> ready for compliance sign-off.</li>
+<li><strong>Natural AI Narration (Tanglish):</strong><blockquote>
+<p>"System immediate-ah action execute pannuthu: <strong>PAYMENT BLOCKED</strong>! Zero compromise!<br />
+Risk Score hits <strong>94/100</strong>! Automatic-ah Sowmiya-oda virtual card freeze aagidum, so hacker-aala adutha single rupee kooda edukka mudiyathu.<br />
+Athoda mudinjithu-nu ninaikareengala? No!<br />
+FinTech regulations padi, international cyber attack nadantha bank government-ku report pannanum.<br />
+Namma system automated-ah oru complete <strong>FinCEN SAR (Suspicious Activity Report)</strong> draft generate pannidum!<br />
+Hacker-oda suspect IP, impossible velocity evidence, TreeSHAP scores ellame formatted narrative-ah ready-ah irukkum. Compliance officer just review panni submit panna pothum!"</p>
+</blockquote>
+</li>
+<li><strong>Technical Process Being Explained:</strong><br />
+<strong>Automated Compliance &amp; FinCEN Suspicious Activity Reporting (SAR):</strong> Under Bank Secrecy Act rules, illicit attempts exceeding statutory limits involving cyber-identity theft trigger automated SAR drafting with detailed audit telemetry.</li>
+<li><strong>Exact Project UI to Show:</strong><br />
+  SarReportDraftCard with formatted narrative, copy buttons, and card freeze toggle in CustomerDashboardView.</li>
+<li><strong>On-Screen Text:</strong><br />
+<code>CRITICAL ACTION: CARD FROZEN • FUNDS PROTECTED: $3,850.00</code><br />
+<code>Automated FinCEN SAR Draft Generated // Case File #CASE-8817</code></li>
+<li><strong>Cinematic Veo Visual Prompt:</strong><br />
+<code>A glowing red digital lock clamps down tightly onto a digital credit card, a formal compliance document unfolds with holographic forensic stamps and verified signatures.</code></li>
+<li><strong>Transition:</strong> Camera pulls out into a high-tech glass studio setting up Video 6 (Chatbot).</li>
+</ul>
+<hr />
+<h1 id="video-6-chatbot-module-ai-intelligence-workspace-multi-llm-orchestrator">🎬 VIDEO 6: Chatbot Module (AI Intelligence Workspace &amp; Multi-LLM Orchestrator)</h1>
+<p><strong>Target Duration:</strong> ~3 Minutes 30 Seconds<br />
+<strong>Theme:</strong> Light Frosted Glass Workspace, Holographic AI Orb, Multi-LLM Orchestrator &amp; Forensic Synthesis</p>
+<hr />
+<h3 id="scene-61-the-intelligence-workspace-11-reference-video-match">Scene 6.1: The Intelligence Workspace (1:1 Reference Video Match)</h3>
+<ul>
+<li><strong>Duration:</strong> 35 Seconds</li>
+<li><strong>What Appears on Screen:</strong><br />
+  The complete <strong>FraudLens AI Intelligence Workspace</strong> rendering in the exact <strong>Light Frosted Glass Theme</strong> from <code>gemini_generated_video_2ce150b8.mp4</code>. The top pill header displays <code>Sarah J. / Analyst</code>, bold <code>FRAUDLENS AI</code>, and frosted model buttons <code>[AUTO] [GEMINI] [GROK] [MISTRAL]</code>. The 3D Holographic AI Orb breathes softly in the center.</li>
+<li><strong>Natural AI Narration (Tanglish):</strong><blockquote>
+<p>"Final-ah, namma showcase panra crown jewel: <strong>FraudLens AI Intelligence Workspace &amp; Chatbot</strong>!<br />
+Screen-ah paaru — exact reference video maari oru ultra-premium <strong>Light Frosted Glass</strong> visual design!<br />
+Top-la namma analyst badge 'Sarah J.', center-la sleek pill capsule with multi-model selectors: Auto, Gemini, Grok, and Mistral.<br />
+Center-la oru bioluminescent <strong>3D Holographic AI Orb</strong> float aaguthu. Intha orb simply decoration kedayathu — backend-la AI enna yosikkuthu-nu athoda internal particles and orbital rings live-ah indicate pannum!"</p>
+</blockquote>
+</li>
+<li><strong>Technical Process Being Explained:</strong><br />
+<strong>Holographic Canvas State Engine:</strong> AIOrb uses HTML5 Canvas 2D math calculating counter-rotating harmonic ellipses with volumetric particle dynamics reflecting 7 discrete inference states (idle, listening, searching, analysing, deep_reasoning, cross_validating, ready).</li>
+<li><strong>Exact Project UI to Show:</strong><br />
+  AiInvestigationCommandCenter showing the 3-panel layout, top pill header, and floating AI Orb.</li>
+<li><strong>On-Screen Text:</strong><br />
+<code>FRAUDLENS AI INTELLIGENCE WORKSPACE // MULTI-LLM ARCHITECTURE</code><br />
+<code>Frosted Glassmorphism • Bioluminescent Holographic Orb • Sub-10ms UX</code></li>
+<li><strong>Cinematic Veo Visual Prompt:</strong><br />
+<code>Photorealistic cinematic shot of a light frosted glass cyber investigation studio, bright high-tech aesthetic, in the center a fluid iridescent chrome and pearl holographic orb floats with glowing cyan and soft ivory light rings, 8k resolution.</code></li>
+<li><strong>Transition:</strong> Focus snaps onto the chat input bar entering the prompt.</li>
+</ul>
+<hr />
+<h3 id="scene-62-the-forensic-query-live-radar-scanning-beam">Scene 6.2: The Forensic Query &amp; Live Radar Scanning Beam</h3>
+<ul>
+<li><strong>Duration:</strong> 45 Seconds</li>
+<li><strong>What Appears on Screen:</strong><br />
+  The user enters the prompt from the reference video: <em>"Analyze transactions for Account #8812 for the last 14 days"</em>. The send button is clicked. Immediately, the <strong>AI Orb shifts to a radial radar sweep beam</strong>. The status badge cycles in real-time: <code>🔍 Searching Evidence Vectors...</code> -&gt; <code>⚡ Scanning Global Risk Nodes...</code> -&gt; <code>🧠 Analysing TreeSHAP Drivers...</code> -&gt; <code>✨ Synthesizing Defense Report...</code>.</li>
+<li><strong>Natural AI Narration (Tanglish):</strong><blockquote>
+<p>"Ippo namma exact video prompt-ah enter panrom: 'Analyze transactions for Account #8812 for the last 14 days'.<br />
+Send click pannathum paaru — AI Orb immediately radar sweep mode-ku shift aaguthu!<br />
+Screen-la live stage sequencer animate aaguthu:<br />
+Searching -&gt; Scanning -&gt; Analysing -&gt; Synthesizing!<br />
+Background-la namma <strong>Multi-LLM Orchestrator</strong> work aaguthu. <br />
+Normal chatbot mathiri idhu verum text generator kedayathu. Idhu database-la irukkira live transaction records, TreeSHAP scores, and global blacklist IP-ah gather panni oru complete forensic dossier ready pannuthu!"</p>
+</blockquote>
+</li>
+<li><strong>Technical Process Being Explained:</strong><br />
+<strong>Autonomous Multi-LLM Orchestration &amp; Evidence Grounding:</strong> <code>orchestrator.py</code> injects live forensic domain context from <code>evidence_service.py</code>, verifying facts against actual database records to eliminate LLM hallucinations before generation.</li>
+<li><strong>Exact Project UI to Show:</strong><br />
+  The animated scanning badge and AI Orb radar beam inside AiInvestigationCommandCenter.</li>
+<li><strong>On-Screen Text:</strong><br />
+<code>AUTONOMOUS ORCHESTRATION: Searching → Scanning → Analysing → Synthesizing</code><br />
+<code>Zero Hallucination Grounding • Multi-Agent Evidence Extraction</code></li>
+<li><strong>Cinematic Veo Visual Prompt:</strong><br />
+<code>Macro close-up of a radial radar beam sweeping across the iridescent sphere, data points highlight in sapphire blue, sleek glowing text indicators animate smoothly in sequence.</code></li>
+<li><strong>Transition:</strong> The AI response card and evidence dashboard light up simultaneously.</li>
+</ul>
+<hr />
+<h3 id="scene-63-dual-synthesis-gemini-primary-grok-forensic-challenge">Scene 6.3: Dual Synthesis — Gemini Primary + Grok Forensic Challenge</h3>
+<ul>
+<li><strong>Duration:</strong> 50 Seconds</li>
+<li><strong>What Appears on Screen:</strong><br />
+  The frosted AI response card appears: <em>"Analysis of 328 transactions completed. Key findings include multiple high-velocity small-value transactions across Latin America locations..."</em> with a live link: <code>↳ Potential link identified: Case #4501 share same IP subnet</code>. The right-side <strong>Evidence Dashboard</strong> syncs up, displaying the LATAM world map, transaction clusters, and the 5-node interconnected account graph.</li>
+<li><strong>Natural AI Narration (Tanglish):</strong><blockquote>
+<p>"Response vanthuruchu, paaru!<br />
+'Analysis of 328 transactions completed. Key findings include multiple high-velocity small-value transactions across Latin America locations!'<br />
+Inga thaan namma <strong>Dual-LLM Synthesis</strong> masterstroke irukku:<br />
+Primary analysis-a generate panrathu <strong>Google Gemini 3.6 Flash</strong>.<br />
+Athey nerathula, <strong>xAI Grok</strong> independent forensic auditor-ah act panni, 'Case #4501 share the same IP subnet'-nu cross-challenge pannum!<br />
+Rendu models-oda intelligence-um combine aagi, no blind consensus illama, verified final report UI-la display aaguthu.<br />
+Right side-la paatha, connected account network graph-la Account 1, 2, 3, 4, 5 epdi correlate aaguthu-nu interactive-ah paarkalam!"</p>
+</blockquote>
+</li>
+<li><strong>Technical Process Being Explained:</strong><br />
+<strong>Dual-Synthesis Consensus Engine:</strong> Combining primary analysis with independent forensic challenge to guarantee verified adversarial validation without blind consensus.</li>
+<li><strong>Exact Project UI to Show:</strong><br />
+  The AI message card in AiInvestigationCommandCenter and the connected 5-node graph in EvidenceDashboard.</li>
+<li><strong>On-Screen Text:</strong><br />
+<code>DUAL-SYNTHESIS: Google Gemini (Primary) + xAI Grok (Adversarial Audit)</code><br />
+<code>Mule Network Correlated: 5 Interconnected Nodes Identified</code></li>
+<li><strong>Cinematic Veo Visual Prompt:</strong><br />
+<code>Sleek frosted glass data cards assemble gracefully on screen, glowing connections draw lines between node circles #8812 and #4501, ambient studio light reflections.</code></li>
+<li><strong>Transition:</strong> Camera glides down to the action trigger pills.</li>
+</ul>
+<hr />
+<h3 id="scene-64-one-click-investigator-action-grand-project-conclusion">Scene 6.4: One-Click Investigator Action &amp; Grand Project Conclusion</h3>
+<ul>
+<li><strong>Duration:</strong> 35 Seconds</li>
+<li><strong>What Appears on Screen:</strong><br />
+  The investigator clicks the <strong>[Draft Report]</strong> and <strong>[Block Account]</strong> pills below the input bar. A FinCEN SAR draft appears, the account status locks, and all six modules of FraudLens AI animate into a synchronized 3D ecosystem grid. The FraudLens AI crest glows proudly in the center.</li>
+<li><strong>Natural AI Narration (Tanglish):</strong><blockquote>
+<p>"Bottom-la paaru — Investigator single click-la <strong>[Draft Report]</strong>, <strong>[Block Account]</strong>, <strong>[Escalate]</strong> action execute பண்ணலாம்.<br />
+So machi, total-ah summary paatha:<br />
+Historical and Live transactions-a capture panrom...<br />
+5 Machine Learning models vachu 4 milliseconds-la evaluate panrom...<br />
+TreeSHAP valiya transparent explainability tharom...<br />
+Monisha, Mohana, Sowmiya-nu complete role isolation ensure panrom...<br />
+And multi-LLM AI Copilot vachu complex financial crime syndicates-a burst panrom!<br />
+This is not just a project — this is the <strong>Future of Explainable FinTech AI</strong>!"</p>
+</blockquote>
+</li>
+<li><strong>Technical Process Being Explained:</strong><br />
+<strong>End-to-End Platform Cohesion:</strong> How every tier (Frontend -&gt; REST APIs -&gt; ML Pipelines -&gt; Explainability -&gt; Autonomous LLM Orchestration) connects into a single enterprise-grade ecosystem.</li>
+<li><strong>Exact Project UI to Show:</strong><br />
+  The complete synchronized view with the quick action pills in AiInvestigationCommandCenter.</li>
+<li><strong>On-Screen Text:</strong><br />
+<code>FRAUDLENS AI // THE FUTURE OF EXPLAINABLE FINTECH INTELLIGENCE</code><br />
+<code>Zero-Downtime • Sub-10ms Inference • Multi-LLM Orchestration • 100% Verified</code></li>
+<li><strong>Cinematic Veo Visual Prompt:</strong><br />
+<code>Grand cinematic pull-back shot: all six floating glass modules converge into an interlocking 3D holographic sphere with the FraudLens AI shield glowing powerfully at the center, fiber-optic light pulses through the network, clean professional cyber-fintech lighting, fade to black.</code></li>
+<li><strong>Transition:</strong> Final cinematic fade-out with audio confirmation chime.</li>
+</ul>
+</div>
+
+<div class="toast" id="toast">✅ Copied to clipboard!</div>
+
+<script>
+  const rawMarkdown = `# FRAUDLENS AI — GOOGLE VEO MASTER CINEMATIC PRODUCTION SCRIPTS
+### Complete 6-Part Video Series (Natural Tanglish AI Expert Narration)
+
+---
+
+# 🎬 VIDEO 1: What FraudLens AI Is + Past & Real-Time Transactions
+**Target Duration:** ~3 Minutes 30 Seconds  
+**Theme:** High-Tech Cyber-Fintech Command Center & Real-Time Transaction Scoring Engine
+
+---
+
+### Scene 1.1: The FinTech Dilemma & Platform Hook
+* **Duration:** 25 Seconds
+* **What Appears on Screen:**
+  Cinematic opening shot of a futuristic digital banking network with millions of glowing data packets traveling across global financial corridors. Sudden red pulse alerts highlight fraudulent transactions hiding within normal banking traffic. A camera push-in reveals the **FraudLens AI Cyber Shield & Login Screen** on a curved OLED glass display.
+* **Natural AI Narration (Tanglish):**
+  > "Machi, oru second yosichu paaru — every single second ulagam full-ah crores of digital transactions nadakithu. Google Pay, card swipe, crypto transfer-nu ellame fraction of a second-la mudiyuthu. But the biggest problem enna theriyuma? Ithula genuine customer transaction ethu, international hacker-oda fraud attack ethu-nu epdi kandupidikkurathu? Normal rule-based system-la pota genuine payments block aagum, illana fraud silent-ah ulla poirum. Athuku thaan namma create pannirukkom **FraudLens AI** — oru state-of-the-art Explainable AI Financial Fraud & Risk Detection Platform."
+* **Technical Process Being Explained:**
+  **The Financial Fraud Problem & Rule Engine Failure:** Traditional banking rules (\`if amount > 50000: block\`) suffer from extreme False Positive Rates (FPR), blocking legitimate users while failing against dynamic botnets. FraudLens AI replaces static heuristics with an adaptive, multi-stage machine learning inference pipeline operating at sub-10ms latencies.
+* **Exact Project UI to Show:**
+  LoginCard with the bioluminescent cyber shield, glowing cyan corner brackets, and 1-Click Role Portals (Admin, Monisha, Mohana, Sowmiya).
+* **On-Screen Text:**
+  \`FRAUDLENS AI // REAL-TIME RISK INTELLIGENCE\`  
+  \`Sub-10ms Inference • Dual-Metric Telemetry • Zero-Leak Security\`
+* **Cinematic Veo Visual Prompt:**
+  \`Cinematic macro shot of an illuminated futuristic cyber-financial terminal, sleek frosted glass UI with glowing cyan and soft ivory fiber-optic traces, holographic data nodes pulsing with real-time financial telemetry, depth of field, photorealistic 8k octane render.\`
+* **Transition:** Smooth camera tilt and optical data zoom into the Transactions View.
+
+---
+
+### Scene 1.2: Past Historical Data vs. Live Pre-Auth Interception
+* **Duration:** 35 Seconds
+* **What Appears on Screen:**
+  Split-screen composition. On the left: **All Transactions Table** displaying historical transactions with search, pagination, and color-coded risk tags (\`LOW - 3%\`, \`MEDIUM - 68%\`, \`HIGH - 94%\`). On the right: **Payment Gateway (Pre-Auth)** screen showing an incoming real-time payment being captured *before* funds leave the bank account.
+* **Natural AI Narration (Tanglish):**
+  > "Okay, ippo namma application-kulla poyitom. First namma purinjikka vendiyathu — transactions rendu type-ah ulla varum. Onnu **Historical Transactions** — athavathu already nadanthu mudinja data. Database-la irukura past transaction history-ah analyze panni, customer baseline behaviour enna-nu system padikkum. 
+  > Rendaavathu thaan romba critical: **Real-Time Pre-Auth Evaluation**. Oru customer checkout page-la 'Pay' button click pannumpothu, payment gateway funds-ah release panrathukku munnadiye, FraudLens AI-kitta request anupum: 'Idhu safe-ah, illana fraud-ah?' Namma backend just 4 milliseconds-la decide panni reply anupum!"
+* **Technical Process Being Explained:**
+  **Pre-Auth Risk Engine Architecture:** The difference between batch forensic processing and inline pre-authorization risk scoring. FraudLens AI operates as an inline webhook filter evaluating payloads before database commit or card network clearance.
+* **Exact Project UI to Show:**
+  TransactionsView with the searchable table, filtering badges, and the PaymentView Pre-Auth simulation portal.
+* **On-Screen Text:**
+  \`PRE-AUTH INLINE INTERCEPTION: < 4.2ms\`  
+  \`Decision Engine: ALLOW | STEP-UP OTP | HARD BLOCK\`
+* **Cinematic Veo Visual Prompt:**
+  \`Dynamic split screen: left side displays an elegant frosted glass data table with glowing emerald and crimson telemetry tags; right side shows an interactive payment terminal interface pulsing with live cryptographic verification beams, hyper-clean fintech aesthetic.\`
+* **Transition:** Focus snap onto an incoming live transaction packet entering the system.
+
+---
+
+### Scene 1.3: What Happens Inside — The Inference Pipeline
+* **Duration:** 50 Seconds
+* **What Appears on Screen:**
+  A 3D glass schematic visualizing data flow: A JSON transaction packet enters from the frontend, gets validated by Pydantic, passes through the Feature Engineer (calculating velocity and distance leap), feeds into the XGBoost Champion model, outputs a probability, generates the Section 31 Risk Score, and passes through TreeSHAP.
+* **Natural AI Narration (Tanglish):**
+  > "Ippo un friend kitta explain pannu: 'Screen-la click pannathum background-la actual-ah enna nadakkuthu?' 
+  > Step 1: User click pannathum, Frontend oru **POST request**-ah \`/api/v1/transactions/evaluate\` endpoint-ku anupum.
+  > Step 2: Backend-la FastAPI irukura **Pydantic Schema** antha data-va validate pannum — amount positive-ah irukka, device ID correct-ah irukka-nu.
+  > Step 3: Namma **Feature Engineering Service** run aagum. Customer-oda last 1 hour velocity evvalavu, regular city-la irunthu evvalavu km thalli irukanga-nu extra mathematical features create pannum.
+  > Step 4: Intha features namma **XGBoost Machine Learning model**-kulla pogum. Model instantaneous-ah **Fraud Probability** calculate pannum — for example 91.8%.
+  > Step 5: Athey nerathula, namma custom rule engine separate-ah operational **Risk Score** (94/100) assign pannum. Rendum match aagi, result fraction of a second-la UI-ku return aagum!"
+* **Technical Process Being Explained:**
+  **Inference Pipeline Workflow:** User Action -> Frontend -> Pydantic Schema Validation -> Feature Extraction -> XGBoost Model Prediction -> Risk Scoring Engine -> TreeSHAP Attribution -> JSON Response -> UI Update.
+* **Exact Project UI to Show:**
+  Live Evaluation Form inside TransactionsView displaying real-time calculation progress indicators.
+* **On-Screen Text:**
+  \`DATA FLOW: User Click → FastAPI → Feature Engine → XGBoost → TreeSHAP → UI Response\`
+* **Cinematic Veo Visual Prompt:**
+  \`Volumetric 3D schematic of streaming digital financial data entering a crystalline holographic AI processing core, glowing circuit paths light up in sequential sapphire and emerald waves, technical telemetry diagnostics overlay.\`
+* **Transition:** Camera pans right to reveal the TreeSHAP feature waterfall diagram.
+
+---
+
+### Scene 1.4: Dual Metric & Explainability (Section 31 Compliance)
+* **Duration:** 40 Seconds
+* **What Appears on Screen:**
+  Side-by-side comparison of **ML Fraud Probability (91.8%)** vs **Independent Risk Score (94/100)** in ChatMessageCards. Below it, the **TreeSHAP Waterfall Card** shows directional red/green feature bars pushing the score from baseline 0.12 to 0.94.
+* **Natural AI Narration (Tanglish):**
+  > "Inga oru super interesting interview point irukku, kavanama kelu! Namma project-la Section 31 Compliance-nu oru strict standard maintain panrom. Athu enna theriyuma?
+  > **Fraud Probability** vera, **Risk Score** vera! 
+  > Probability-na, machine learning model past patterns-ah vachu solra statistical percentage — '91.8% chance idhu fraud-ah irukkalam'. But Risk Score-na, bank regulations, customer balance, velocity, location delta ellam serthu namma system assign panra operational index (94 out of 100).
+  > Athoda kooda, namma **TreeSHAP** use panrom. SHAP-na Shapley Additive Explanations. Machine Learning-a black box-ah vidaama, 'Intha transaction-ku distance 8,420 km jump aanathala +0.44 risk yeruchu, familiar iPhone device-la pannathala -0.21 risk kuranjuchu'-nu crystal clear-ah visual chart-la kaatum!"
+* **Technical Process Being Explained:**
+  **Section 31 Dual-Metric Mandate & TreeSHAP:** Regulatory compliance demands that model probability does not equal legal causality. SHAP provides local additive feature attributions proving exactly why an auto-block occurred for auditability.
+* **Exact Project UI to Show:**
+  RiskScoreCard and ShapWaterfallCard with live interactive values.
+* **On-Screen Text:**
+  \`SECTION 31 COMPLIANCE: Fraud Probability ≠ Risk Score\`  
+  \`TreeSHAP Attribution: distance_from_home (+0.44) | amt_deviation (+0.39)\`
+* **Cinematic Veo Visual Prompt:**
+  \`Close-up on a transparent glass interface showcasing horizontal glowing attribution bars, red bars push right indicating risk spikes, green bars pull left indicating trust factors, sharp typography, ambient cool white illumination.\`
+* **Transition:** Smooth fade-out with a rotating cyber emblem into Video 2.
+
+---
+
+# 🎬 VIDEO 2: Admin Module (Platform Command, Model Lab & Governance)
+**Target Duration:** ~3 Minutes 30 Seconds  
+**Theme:** Central Authority, Multi-Model Arena, Automated Drift Detection & Audit Logs
+
+---
+
+### Scene 2.1: Admin Command Dashboard & Executive Metrics
+* **Duration:** 35 Seconds
+* **What Appears on Screen:**
+  The full **Command Dashboard** rendering in full glory. Key Performance Metric cards glow at the top: Total Transactions (\$24.8M), Model Precision (99.4%), Blocked Fraud Volume (\$1.82M), Average Inference Latency (3.8ms). Interactive Recharts bar charts show hourly fraud trends.
+* **Natural AI Narration (Tanglish):**
+  > "Ippo namma paaka porathu FraudLens AI-oda heart and brain — **Admin Module**. 
+  > Admin login panna udane, avangalukku complete platform authority kedaikkum. Inga screen-la paatha theriyum: Total transactions evvalavu process aachu, evvalavu fraud attacks-ah namma system block pannirukku, and active ML model evvalavu precision-la run aaguthu-nu executive dashboard live-ah update aagite irukkum.
+  > Inga top right-la paaru — 'Backend Connected (57ms)' indicator. Every 25 seconds-ku namma frontend backend health endpoint-ah probe panni system latency-ah monitor pannitte irukkum."
+* **Technical Process Being Explained:**
+  **Executive Telemetry Aggregation:** The dashboard aggregates real-time records from PostgreSQL/SQLite using optimized indexing and SQL window functions, caching rolling statistical summaries to deliver sub-second rendering.
+* **Exact Project UI to Show:**
+  DashboardView metric hero cards, live alerts section, and transaction volume charts.
+* **On-Screen Text:**
+  \`ADMIN COMMAND DASHBOARD // SOC LEVEL 3 ACCESS\`  
+  \`Live Precision: 99.4% • Latency: 3.8ms • Zero-Downtime Telemetry\`
+* **Cinematic Veo Visual Prompt:**
+  \`Sweeping high-angle camera motion across an ultra-modern cyber SOC command wall, multiple high-resolution data visualization widgets displaying glowing financial risk metrics and vector charts, deep blue atmosphere with crisp white illumination.\`
+* **Transition:** Camera zooms into the navigation bar clicking on **Model Lab & Registry**.
+
+---
+
+### Scene 2.2: Model Lab — The Multi-Model Arena
+* **Duration:** 45 Seconds
+* **What Appears on Screen:**
+  The **Model Lab & Registry** view. A comparison matrix compares 5 trained algorithms: **XGBoost (Active Champion)**, **Random Forest**, **Decision Tree**, **Logistic Regression**, and **Ensemble Voting Classifier**. Confusion matrices, ROC-AUC curves (0.982), and an interactive 'Retrain Model' button are featured.
+* **Natural AI Narration (Tanglish):**
+  > "Next, idhu thaan namma project-oda highlight: **Model Lab & Registry**!
+  > Real-world data science-la oru single model eppovum perfect-ah irukaadhu. Athanaala namma system 5 different algorithms-ah train panni bench test pannuthu:
+  > 1. **XGBoost** — Extreme Gradient Boosting. Inga idhu thaan current 'Champion Model', because idhoda inference time just 4 milliseconds, ROC-AUC 0.98!
+  > 2. **Random Forest** — Multiple decision trees sernthu vote panra ensemble model.
+  > 3. **Logistic Regression & Decision Tree** — Fast baseline models.
+  > Admin-ku venumna oru click-la Vera model-ah 'Promote to Production' pannalam. Zero downtime-la live traffic pudhu model-ku switch aagidum!"
+* **Technical Process Being Explained:**
+  **Model Champion/Challenger Framework & Warm Reload:** How FraudLens AI uses \`joblib\` model persistence with in-memory thread-safe hot swapping via \`FraudPredictionService.get_instance().set_active_model()\`, allowing instantaneous promotion without server restarts.
+* **Exact Project UI to Show:**
+  ModelLabView showing the model comparison table, ROC-AUC badges, and Champion promotion toggles.
+* **On-Screen Text:**
+  \`MODEL REGISTRY: XGBoost (Champion) • Random Forest • Voting Ensemble\`  
+  \`Zero-Downtime Hot Swapping • ROC-AUC: 0.982 • F1-Score: 0.941\`
+* **Cinematic Veo Visual Prompt:**
+  \`Holographic benchmark comparison table floating in cyber space, glowing neon bars comparing model accuracies, an interactive neon switch engages and a golden 'Champion' crown animates onto the XGBoost metric card.\`
+* **Transition:** Smooth lateral camera glide into Dataset Health & Drift.
+
+---
+
+### Scene 2.3: Dataset Health & Population Stability Index (PSI)
+* **Duration:** 45 Seconds
+* **What Appears on Screen:**
+  The **Dataset Health & Audit View**. Visual meters measure **Data Drift**, **Concept Drift**, and **Feature Integrity**. A gauge for **PSI (Population Stability Index)** shows \`0.042 (Clean - No Drift)\`. A feature distribution curve shows baseline vs. inference distribution.
+* **Natural AI Narration (Tanglish):**
+  > "Machi, neraya projects-la model train panni vitruvaanga, apram time aaga aaga model accuracy padhukkayila vizhunthidum. Athukku peyar thaan **Model Drift**!
+  > FraudLens AI-la namma **Dataset Health & Drift Monitoring** engine integrate pannirukkom. 
+  > Inga paaru — **PSI (Population Stability Index)** calculate pannuthu. PSI value 0.1-ku mela poona, training data-kum live transaction patterns-kum periya maatham vanthurukku-nu system automated alert adikkum!
+  > Athoda kooda, **Target Leakage** check pannum. Target leakage-na, future information model training-kulla accidental-ah leak aagi fake 100% accuracy kaattama irukiratha verify panra safety mechanism."
+* **Technical Process Being Explained:**
+  **Statistical Data Drift & PSI Mathematics:** Population Stability Index tracking feature shifts over time. Alert triggers if PSI exceeds threshold, mandating retraining due to macroeconomic or merchant behavior drift.
+* **Exact Project UI to Show:**
+  DatasetHealthView showing PSI gauges, distribution overlap histograms, and data contract validation cards.
+* **On-Screen Text:**
+  \`CONTINUOUS DRIFT GOVERNANCE: PSI = 0.042 (Normal < 0.10)\`  
+  \`Zero Target Leakage Guaranteed • Automated Data Contract Validation\`
+* **Cinematic Veo Visual Prompt:**
+  \`Futuristic digital diagnostics display with animated frequency waves, two luminous curves (baseline vs live) harmoniously overlapping, glowing cybernetic badge reads 'PSI NORMAL // ZERO LEAK'.\`
+* **Transition:** Camera zooms down into the Immutable Audit Logs table.
+
+---
+
+### Scene 2.4: Immutable Audit Trail & ISO-27001 Security
+* **Duration:** 35 Seconds
+* **What Appears on Screen:**
+  The **Audit Logs View**. A cryptographic timeline lists every action taken across the entire enterprise: Who logged in, which transaction was blocked, model parameter changes, and API key validations. SHA-256 integrity hashes are displayed for each log row.
+* **Natural AI Narration (Tanglish):**
+  > "Final-ah Admin module-la romba mukkiyamaana section: **Audit Logs**.
+  > Banking and FinTech-la accountability thaan ultimate priority. Yaaru login panna, entha investigator card-ah block pannaanga, model threshold-ah yaaru maathinaanga-nu second-to-second timestamp-oda record aagum.
+  > Every log entry-kum SHA-256 hash cryptographic signature irukku. Even database administrator kooda intha logs-ah tamper panna mudiyaathu!
+  > Idhanaala thaan namma FraudLens AI ISO-27001 and PCI-DSS compliance standards-ku 100% ready-ah irukku."
+* **Technical Process Being Explained:**
+  **Immutable Audit Trail & Forensics:** All sensitive operations invoke \`AuditLog\` database hooks recording \`actor_id\`, \`actor_role\`, \`action_type\`, \`payload_hash\`, \`client_ip\`, and \`timestamp\`, satisfying strict financial auditing mandates.
+* **Exact Project UI to Show:**
+  AuditLogsView with the audit event table, JSON payload inspector modal, and role badges.
+* **On-Screen Text:**
+  \`IMMUTABLE AUDIT TRAIL // ISO-27001 & PCI-DSS COMPLIANT\`  
+  \`SHA-256 Tamper-Proof Event Ledger • Zero Administrative Bypass\`
+* **Cinematic Veo Visual Prompt:**
+  \`Extreme macro shot of cryptographic hash keys locking into place like physical metallic tumblers on a glowing holographic ledger, security verification seal animates with emerald energy.\`
+* **Transition:** Screen rotates and transitions into Video 3 (Customer Persona 1: Monisha).
+
+---
+
+# 🎬 VIDEO 3: Monisha Module (Clean Habitual Baseline — 3% Risk)
+**Target Duration:** ~3 Minutes
+**Theme:** The Safe Habitual Shopper, Zero-Friction Approval & Baseline Match
+
+---
+
+### Scene 3.1: Introducing Monisha & Customer Portal Isolation
+* **Duration:** 35 Seconds
+* **What Appears on Screen:**
+  Login screen with 1-click selection of **Monisha (User 1 - Safe Account)**. After clicking, the cyber unlock animation triggers and opens the **Dedicated Customer Dashboard**. Monisha’s personalized banking view appears with INR 16,11,121.99 balance, virtual debit card, and green safety badges.
+* **Natural AI Narration (Tanglish):**
+  > "Ippo namma 3 realistic customer personas-la first persona-va paapom: **Monisha**.
+  > Monisha login pannathum paaru — avangalukku admin tools ethum theriyathu! Internal model lab, drift audit ellam automatic-ah hide aagi, oru ultra-sleek private banking dashboard open aaguthu.
+  > Monisha-oda profile enna theriyuma? She is a habitual, trusted shopper. Regular-ah Chennai-la irukura trusted iPhone 15-la irunthu groceries and routine payments pannuvaanga. Avangaloda historical baseline fraud rate just **3%** thaan!"
+* **Technical Process Being Explained:**
+  **Role-Based Access Control (RBAC) & Tenant Isolation:** When JWT payload has \`role: "customer"\` and identity claims for Monisha, \`App.jsx\` and \`Sidebar.jsx\` dynamically constrain navigation to customer-relevant endpoints, completely isolating sensitive bank management routes.
+* **Exact Project UI to Show:**
+  CustomerDashboardView with virtual card preview, balance toggle, and recent transactions list.
+* **On-Screen Text:**
+  \`PERSONA 1: MONISHA // HABITUAL BENCHMARK\`  
+  \`Fraud Baseline: 3% • Trusted Device: iPhone 15 (Chennai) • Flow: ALLOW\`
+* **Cinematic Veo Visual Prompt:**
+  \`Elegant light-frosted glass banking portal on a mobile and tablet mockup, glowing emerald badges indicate clean account status, high-end consumer fintech luxury aesthetic.\`
+* **Transition:** Camera smoothly moves to the Pre-Auth Payment Gateway preset.
+
+---
+
+### Scene 3.2: The Live Transaction Demo — Grocery at NovaMart Fresh
+* **Duration:** 45 Seconds
+* **What Appears on Screen:**
+  The **Payment Gateway (Pre-Auth)** screen. The scenario preset is clicked: \`1. Monisha: Habitual Grocery (₹1,250)\`. Form fields auto-populate: Amount ₹1,250, Merchant: *NovaMart Fresh*, Location: *Chennai, IN*, Device: *DEV-MONISHA-IPHONE-15*. The 'Execute Pre-Auth Evaluation' button is clicked.
+* **Natural AI Narration (Tanglish):**
+  > "Demo paapom! Monisha oru ₹1,250 grocery payment NovaMart Fresh-la panraanga. 
+  > Naama payment gateway-la 'Execute Pre-Auth' click panrom.
+  > Behind the screen enna aaguthu? 
+  > System Monisha-oda past 180 days transaction profile-oda compare pannuthu.
+  > Check 1: Device trusted iPhone 15? Yes! 
+  > Check 2: Location usual Chennai IP address? Yes!
+  > Check 3: Amount routine grocery purchase band-la irukka? Yes!
+  > Model evaluate panni instant-ah **Probability: 2.1%** and **Risk Score: 14/100 (LOW)** assign pannuthu!"
+* **Technical Process Being Explained:**
+  **Behavioral Profile Matching Service:** How \`behavior_profile_service.py\` computes z-scores for amount deviation, validates known trusted device identifiers, and outputs low baseline risk.
+* **Exact Project UI to Show:**
+  PaymentView showing instant calculation and green celebration animation.
+* **On-Screen Text:**
+  \`TRANSACTION #TX-MON-8912 // ₹1,250.00\`  
+  \`Fraud Probability: 2.1% • Operational Risk: 14/100 • Verdict: AUTO-ALLOW\`
+* **Cinematic Veo Visual Prompt:**
+  \`Futuristic transaction validation HUD: biometric fingerprint match lights up in soft emerald green, checkmarks ripple across transaction attributes with zero resistance.\`
+* **Transition:** Quick cut to the instant checkout completion status.
+
+---
+
+### Scene 3.3: Zero Friction & Explainable Green Telemetry
+* **Duration:** 40 Seconds
+* **What Appears on Screen:**
+  The transaction status confirms: **ALLOW (Auto-Approved)**. The SHAP explanation card displays: \`device_trust_score (-0.32)\`, \`merchant_familiarity (-0.28)\`, \`geo_consistency (-0.19)\`. Negative SHAP values clearly prove why the transaction was approved with zero user friction (no OTP prompt).
+* **Natural AI Narration (Tanglish):**
+  > "Result paaru: **ALLOW (Auto-Approved)**! 
+  > Monisha-kku entha OTP popup-um varaama, payment single-second-la complete aagidum. Idhukku peyar thaan **Frictionless Consumer Experience**.
+  > SHAP waterfall chart-la paatha, ellame green bars left side push aaguthu: Trusted device -0.32, Regular merchant -0.28.
+  > Genuine customer-ku seamless payment tharanum, athoda bank security-um compromise aaga koodathu. Adha Monisha module 100% demonstrate pannuthu!"
+* **Technical Process Being Explained:**
+  **Frictionless Authentication Thresholds:** Transactions with Risk Score < 30 bypass Step-Up challenges (PSD2 / RBI SCA exemption criteria for trusted low-value merchant patterns).
+* **Exact Project UI to Show:**
+  The green explanation card inside PaymentView and balance deduction update in CustomerDashboardView.
+* **On-Screen Text:**
+  \`FRICTIONLESS SECURITY: Zero User Interruption\`  
+  \`RBI/PSD2 SCA Exemption Applied • Negative SHAP Pull To Safe Zone\`
+* **Cinematic Veo Visual Prompt:**
+  \`Close-up shot of a glowing green holographic shield pulsing softly over a virtual payment card, digital receipt unfolds seamlessly in sleek glassmorphism.\`
+* **Transition:** Scene darkens with an amber warning glow transitioning into Video 4 (Mohana).
+
+---
+
+# 🎬 VIDEO 4: Mohana Module (Suspicious Velocity — 12% Risk & Step-Up OTP)
+**Target Duration:** ~3 Minutes
+**Theme:** Rapid Micro-Burst Velocity, Unfamiliar Region & Adaptive Step-Up Verification
+
+---
+
+### Scene 4.1: Introducing Mohana & The Unfamiliar Pattern
+* **Duration:** 35 Seconds
+* **What Appears on Screen:**
+  Login as **Mohana (User 2 - Step-Up OTP)**. The customer portal displays an amber alert banner on the dashboard. The profile details show a baseline fraud risk of **12%**. A notification warns of an active Step-Up challenge on a pending transaction.
+* **Natural AI Narration (Tanglish):**
+  > "Next, namma second persona-va paapom: **Mohana**.
+  > Mohana-oda baseline risk **12%** — moderate review band.
+  > Monisha maari illama, Mohana case-la oru unusual situation create aaguthu.
+  > Mohana sudden-ah oru unfamiliar device-la irunthu, different network-la login panni, short duration-la rapid-ah multiple transactions initiate panraanga.
+  > Intha scenario-va thaan namma **Velocity Burst Anomaly**-nu solrom!"
+* **Technical Process Being Explained:**
+  **Velocity Anomaly & The Moderate Risk Band:** When transactions fall into the 30 <= Risk Score < 70 zone, automatic approval is too risky, but hard-blocking will frustrate a legitimate customer. Adaptive Step-Up OTP is triggered.
+* **Exact Project UI to Show:**
+  CustomerDashboardView with the amber theme and active security challenge indicator.
+* **On-Screen Text:**
+  \`PERSONA 2: MOHANA // SUSPICIOUS VELOCITY BAND\`  
+  \`Fraud Baseline: 12% • Unfamiliar Device IP • Action: STEP-UP OTP CHALLENGE\`
+* **Cinematic Veo Visual Prompt:**
+  \`Warm amber-lit financial dashboard displaying fluctuating pulse lines, an amber security beacon rotates smoothly indicating an active verification hold.\`
+* **Transition:** Push-in to the Payment Gateway simulation of the micro-burst transaction.
+
+---
+
+### Scene 4.2: Payment Execution & Velocity Spike Detection
+* **Duration:** 45 Seconds
+* **What Appears on Screen:**
+  In PaymentView, preset \`2. Mohana: Rapid Micro-Burst Sequence\` is triggered. Amount: ₹890, 9 transactions in the last 45 seconds. The real-time evaluation immediately flags the velocity cluster. Risk Score jumps to **68/100 (MEDIUM / OTP)**.
+* **Natural AI Narration (Tanglish):**
+  > "Watch this live demo! Mohana account-la irunthu ₹890-kku transaction execute panrom.
+  > But system immediate-ah alert aaguthu: 'Wait! Last 45 seconds-la idhu 9th transaction attempt!'
+  > Feature engineer calculate pannuthu: \`trans_velocity_1h\` standard threshold-a vida +300% athigama irukku!
+  > Plus, used IP address unfamiliar ISP-la irukku.
+  > XGBoost model fraud probability-ah **64.2%**-nu calculate pannuthu, and operational risk score **68/100**-nu jump aaguthu! 
+  > Hard block panna poroma? No! Customer-a verify panna Step-Up OTP challenge trigger panrom!"
+* **Technical Process Being Explained:**
+  **Sliding Window Velocity Calculation:** Frequency count of transactions over rolling time frames. High frequency triggers Rule Engine velocity challenge.
+* **Exact Project UI to Show:**
+  The transactional cluster bar chart inside EvidenceDashboard and the risk gauge hitting 68/100.
+* **On-Screen Text:**
+  \`BURST DETECTED: 9 Txns / 45 Seconds\`  
+  \`Risk Score: 68/100 • SHAP Driver: trans_velocity_1h (+0.36)\`
+* **Cinematic Veo Visual Prompt:**
+  \`Vertical bar graph surges upward with illuminated amber bars spiking into the danger threshold, numeric counter counts rapidly from 1 to 9.\`
+* **Transition:** Cut to the interactive Mobile Security Approval Modal.
+
+---
+
+### Scene 4.3: Real-Time Mobile Security Approval Modal
+* **Duration:** 40 Seconds
+* **What Appears on Screen:**
+  The **MobileSecurityApprovalModal** pops up on screen representing Mohana's phone. A secure 6-digit OTP prompt and biometric approval button appear. The user enters \`849201\` and clicks **Authorize**. The transaction transitions to APPROVED with security logged.
+* **Natural AI Narration (Tanglish):**
+  > "Screen-la paaru — namma custom **Mobile Security Approval Modal** open aaguthu!
+  > Real world-la customer phone-ku instant push notification pogum: 'Intha ₹890 transaction neenga thaan panreengala?'
+  > Customer avanga 6-digit OTP enter panni approve pannathum, request backend-la \`/api/v1/approvals/verify\` endpoint-ku pogum.
+  > Cryptographic validation mudinjathum, transaction instant-ah approve aagi funds release aagum!
+  > Idhanaala fraud-um thadukapaduthu, genuine user-oda payment-um reject aagala. Perfect balance!"
+* **Technical Process Being Explained:**
+  **Two-Factor Cryptographic Step-Up Resolution:** The approval session stores a cryptographic nonce with a 180-second TTL. Upon verified input, the state flips from PENDING to AUTHORIZED.
+* **Exact Project UI to Show:**
+  MobileSecurityApprovalModal with live timer countdown, OTP input boxes, and approval confirmation.
+* **On-Screen Text:**
+  \`CRYPTOGRAPHIC STEP-UP CHALLENGE // 180s TTL\`  
+  \`Status: AUTHENTICATED BY CUSTOMER • Risk Cleared Safely\`
+* **Cinematic Veo Visual Prompt:**
+  \`Sleek 3D smartphone holographic render displaying an animated biometric fingerprint ring glowing in amber, shifting to luminous teal upon authorized touch.\`
+* **Transition:** Screen turns to deep crimson with emergency sirens pulsing into Video 5 (Sowmiya).
+
+---
+
+# 🎬 VIDEO 5: Sowmiya Module (Botnet ATO Attack — 26% Risk, Block & SAR)
+**Target Duration:** ~3 Minutes 30 Seconds
+**Theme:** Impossible Geo-Leap Travel, Botnet Account Takeover (ATO) & FinCEN SAR Filing
+
+---
+
+### Scene 5.1: The Threat — Botnet Credential Stuffing on Sowmiya
+* **Duration:** 35 Seconds
+* **What Appears on Screen:**
+  Login portal selecting **Sowmiya (User 3 - ATO Attack)**. The screen displays an alert indicator in dark crimson. Dashboard metrics reflect a **26% baseline fraud attack profile**. The system alerts that account credentials were leaked in an external breach and are being targeted by an automated botnet proxy network.
+* **Natural AI Narration (Tanglish):**
+  > "Ippo namma paaka porathu FraudLens AI-oda ultimate stress test: **Sowmiya Module — The Botnet Account Takeover (ATO) Attack**.
+  > Sowmiya oru high-risk baseline account (26%). External data breach-la ivanga password leak aayirukku. 
+  > Dark web-la irukura automated botnet syndicates Sowmiya account-ah target panni, credential stuffing valiya ulla enter aaga try panraanga.
+  > But FraudLens AI-oda multi-layered defense irukkurathaala, hacker-oda game inga mudiyapoguthu!"
+* **Technical Process Being Explained:**
+  **Account Takeover (ATO) Threat Mechanics:** Automated botnets use headless browser clusters rotating through residential proxy networks to drain compromised user accounts.
+* **Exact Project UI to Show:**
+  CustomerDashboardView rendering in high-alert crimson with active security lock notices.
+* **On-Screen Text:**
+  \`PERSONA 3: SOWMIYA // BOTNET ATO ATTACK\`  
+  \`Attack Vector: Credential Stuffing • Threat Tier: CRITICAL • Defense: HARD BLOCK\`
+* **Cinematic Veo Visual Prompt:**
+  \`Ominous digital cyber map showing distributed automated botnet attack vectors targeting a central bank account node, shielded by a glowing hexagonal firewall barrier.\`
+* **Transition:** Cut to the Payment Gateway executing the impossible geo-leap transaction.
+
+---
+
+### Scene 5.2: The Impossible Geo-Leap Anomaly (Bucharest, Romania)
+* **Duration:** 45 Seconds
+* **What Appears on Screen:**
+  The Payment Gateway triggers \`3. Sowmiya: Bucharest Impossible Geo-Travel (\$3,850.00)\`. Just 18 minutes ago, a transaction occurred in San Francisco. Now, a massive \$3,850 transaction is attempted from a datacenter IP in **Bucharest, Romania**. The **Geo-Leap Interactive Vector Map** in EvidenceDashboard displays a glowing red arc linking SF to Bucharest with velocity: **28,066 km/h (Physically Impossible)**!
+* **Natural AI Narration (Tanglish):**
+  > "Intha attack epdi execute aaguthu-nu paaru!
+  > Just 18 minutes munnadi, Sowmiya San Francisco-la oru legitimate coffee purchase pannanga.
+  > Exactly 18 minutes apram, Romania-oda Bucharest IP-la irunthu sudden-ah \$3,850 international transfer attempt aaguthu!
+  > 18 minutes-la oru human 8,420 km travel panna mudiyuma? That means flight speed 28,000 km per hour! It is **Physically Impossible**!
+  > Namma Geo-Leap telemetry engine idhai instant-ah flag pannuthu: 'Datacenter VPN proxy confirmed, impossible velocity detected!'"
+* **Technical Process Being Explained:**
+  **Haversine Great-Circle Distance & Velocity Anomaly:** Calculating geographical coordinates against timestamp deltas to identify speeds exceeding physical human travel limits.
+* **Exact Project UI to Show:**
+  EvidenceDashboard with the interactive SVG World Map showing the arched red flight trajectory and Bucharest VPN tag.
+* **On-Screen Text:**
+  \`GEO-LEAP VELOCITY: 28,066 km/h // PHYSICALLY IMPOSSIBLE\`  
+  \`San Francisco (18m ago) → Bucharest, Romania (Attempted Now)\`
+* **Cinematic Veo Visual Prompt:**
+  \`Glowing 3D world globe showing an illuminated trajectory arc soaring across the Atlantic Ocean from California to Eastern Europe, pulsing crimson warning labels flash 'IMPOSSIBLE VELOCITY'.\`
+* **Transition:** Dramatic trigger of the automated hard block and FinCEN SAR draft card.
+
+---
+
+### Scene 5.3: Automated Card Freeze & Regulatory FinCEN SAR Filing
+* **Duration:** 50 Seconds
+* **What Appears on Screen:**
+  The transaction is instantaneously marked **BLOCKED**. Fraud Probability hits **91.8%**, Risk Score hits **94/100 (CRITICAL)**. The account card automatically flips to FROZEN. Simultaneously, the **SarReportDraftCard** renders a regulatory **FinCEN Suspicious Activity Report (SAR)** ready for compliance sign-off.
+* **Natural AI Narration (Tanglish):**
+  > "System immediate-ah action execute pannuthu: **PAYMENT BLOCKED**! Zero compromise!
+  > Risk Score hits **94/100**! Automatic-ah Sowmiya-oda virtual card freeze aagidum, so hacker-aala adutha single rupee kooda edukka mudiyathu.
+  > Athoda mudinjithu-nu ninaikareengala? No!
+  > FinTech regulations padi, international cyber attack nadantha bank government-ku report pannanum.
+  > Namma system automated-ah oru complete **FinCEN SAR (Suspicious Activity Report)** draft generate pannidum!
+  > Hacker-oda suspect IP, impossible velocity evidence, TreeSHAP scores ellame formatted narrative-ah ready-ah irukkum. Compliance officer just review panni submit panna pothum!"
+* **Technical Process Being Explained:**
+  **Automated Compliance & FinCEN Suspicious Activity Reporting (SAR):** Under Bank Secrecy Act rules, illicit attempts exceeding statutory limits involving cyber-identity theft trigger automated SAR drafting with detailed audit telemetry.
+* **Exact Project UI to Show:**
+  SarReportDraftCard with formatted narrative, copy buttons, and card freeze toggle in CustomerDashboardView.
+* **On-Screen Text:**
+  \`CRITICAL ACTION: CARD FROZEN • FUNDS PROTECTED: \$3,850.00\`  
+  \`Automated FinCEN SAR Draft Generated // Case File #CASE-8817\`
+* **Cinematic Veo Visual Prompt:**
+  \`A glowing red digital lock clamps down tightly onto a digital credit card, a formal compliance document unfolds with holographic forensic stamps and verified signatures.\`
+* **Transition:** Camera pulls out into a high-tech glass studio setting up Video 6 (Chatbot).
+
+---
+
+# 🎬 VIDEO 6: Chatbot Module (AI Intelligence Workspace & Multi-LLM Orchestrator)
+**Target Duration:** ~3 Minutes 30 Seconds
+**Theme:** Light Frosted Glass Workspace, Holographic AI Orb, Multi-LLM Orchestrator & Forensic Synthesis
+
+---
+
+### Scene 6.1: The Intelligence Workspace (1:1 Reference Video Match)
+* **Duration:** 35 Seconds
+* **What Appears on Screen:**
+  The complete **FraudLens AI Intelligence Workspace** rendering in the exact **Light Frosted Glass Theme** from \`gemini_generated_video_2ce150b8.mp4\`. The top pill header displays \`Sarah J. / Analyst\`, bold \`FRAUDLENS AI\`, and frosted model buttons \`[AUTO] [GEMINI] [GROK] [MISTRAL]\`. The 3D Holographic AI Orb breathes softly in the center.
+* **Natural AI Narration (Tanglish):**
+  > "Final-ah, namma showcase panra crown jewel: **FraudLens AI Intelligence Workspace & Chatbot**!
+  > Screen-ah paaru — exact reference video maari oru ultra-premium **Light Frosted Glass** visual design!
+  > Top-la namma analyst badge 'Sarah J.', center-la sleek pill capsule with multi-model selectors: Auto, Gemini, Grok, and Mistral.
+  > Center-la oru bioluminescent **3D Holographic AI Orb** float aaguthu. Intha orb simply decoration kedayathu — backend-la AI enna yosikkuthu-nu athoda internal particles and orbital rings live-ah indicate pannum!"
+* **Technical Process Being Explained:**
+  **Holographic Canvas State Engine:** AIOrb uses HTML5 Canvas 2D math calculating counter-rotating harmonic ellipses with volumetric particle dynamics reflecting 7 discrete inference states (idle, listening, searching, analysing, deep_reasoning, cross_validating, ready).
+* **Exact Project UI to Show:**
+  AiInvestigationCommandCenter showing the 3-panel layout, top pill header, and floating AI Orb.
+* **On-Screen Text:**
+  \`FRAUDLENS AI INTELLIGENCE WORKSPACE // MULTI-LLM ARCHITECTURE\`  
+  \`Frosted Glassmorphism • Bioluminescent Holographic Orb • Sub-10ms UX\`
+* **Cinematic Veo Visual Prompt:**
+  \`Photorealistic cinematic shot of a light frosted glass cyber investigation studio, bright high-tech aesthetic, in the center a fluid iridescent chrome and pearl holographic orb floats with glowing cyan and soft ivory light rings, 8k resolution.\`
+* **Transition:** Focus snaps onto the chat input bar entering the prompt.
+
+---
+
+### Scene 6.2: The Forensic Query & Live Radar Scanning Beam
+* **Duration:** 45 Seconds
+* **What Appears on Screen:**
+  The user enters the prompt from the reference video: *"Analyze transactions for Account #8812 for the last 14 days"*. The send button is clicked. Immediately, the **AI Orb shifts to a radial radar sweep beam**. The status badge cycles in real-time: \`🔍 Searching Evidence Vectors...\` -> \`⚡ Scanning Global Risk Nodes...\` -> \`🧠 Analysing TreeSHAP Drivers...\` -> \`✨ Synthesizing Defense Report...\`.
+* **Natural AI Narration (Tanglish):**
+  > "Ippo namma exact video prompt-ah enter panrom: 'Analyze transactions for Account #8812 for the last 14 days'.
+  > Send click pannathum paaru — AI Orb immediately radar sweep mode-ku shift aaguthu!
+  > Screen-la live stage sequencer animate aaguthu:
+  > Searching -> Scanning -> Analysing -> Synthesizing!
+  > Background-la namma **Multi-LLM Orchestrator** work aaguthu. 
+  > Normal chatbot mathiri idhu verum text generator kedayathu. Idhu database-la irukkira live transaction records, TreeSHAP scores, and global blacklist IP-ah gather panni oru complete forensic dossier ready pannuthu!"
+* **Technical Process Being Explained:**
+  **Autonomous Multi-LLM Orchestration & Evidence Grounding:** \`orchestrator.py\` injects live forensic domain context from \`evidence_service.py\`, verifying facts against actual database records to eliminate LLM hallucinations before generation.
+* **Exact Project UI to Show:**
+  The animated scanning badge and AI Orb radar beam inside AiInvestigationCommandCenter.
+* **On-Screen Text:**
+  \`AUTONOMOUS ORCHESTRATION: Searching → Scanning → Analysing → Synthesizing\`  
+  \`Zero Hallucination Grounding • Multi-Agent Evidence Extraction\`
+* **Cinematic Veo Visual Prompt:**
+  \`Macro close-up of a radial radar beam sweeping across the iridescent sphere, data points highlight in sapphire blue, sleek glowing text indicators animate smoothly in sequence.\`
+* **Transition:** The AI response card and evidence dashboard light up simultaneously.
+
+---
+
+### Scene 6.3: Dual Synthesis — Gemini Primary + Grok Forensic Challenge
+* **Duration:** 50 Seconds
+* **What Appears on Screen:**
+  The frosted AI response card appears: *"Analysis of 328 transactions completed. Key findings include multiple high-velocity small-value transactions across Latin America locations..."* with a live link: \`↳ Potential link identified: Case #4501 share same IP subnet\`. The right-side **Evidence Dashboard** syncs up, displaying the LATAM world map, transaction clusters, and the 5-node interconnected account graph.
+* **Natural AI Narration (Tanglish):**
+  > "Response vanthuruchu, paaru!
+  > 'Analysis of 328 transactions completed. Key findings include multiple high-velocity small-value transactions across Latin America locations!'
+  > Inga thaan namma **Dual-LLM Synthesis** masterstroke irukku:
+  > Primary analysis-a generate panrathu **Google Gemini 3.6 Flash**.
+  > Athey nerathula, **xAI Grok** independent forensic auditor-ah act panni, 'Case #4501 share the same IP subnet'-nu cross-challenge pannum!
+  > Rendu models-oda intelligence-um combine aagi, no blind consensus illama, verified final report UI-la display aaguthu.
+  > Right side-la paatha, connected account network graph-la Account 1, 2, 3, 4, 5 epdi correlate aaguthu-nu interactive-ah paarkalam!"
+* **Technical Process Being Explained:**
+  **Dual-Synthesis Consensus Engine:** Combining primary analysis with independent forensic challenge to guarantee verified adversarial validation without blind consensus.
+* **Exact Project UI to Show:**
+  The AI message card in AiInvestigationCommandCenter and the connected 5-node graph in EvidenceDashboard.
+* **On-Screen Text:**
+  \`DUAL-SYNTHESIS: Google Gemini (Primary) + xAI Grok (Adversarial Audit)\`  
+  \`Mule Network Correlated: 5 Interconnected Nodes Identified\`
+* **Cinematic Veo Visual Prompt:**
+  \`Sleek frosted glass data cards assemble gracefully on screen, glowing connections draw lines between node circles #8812 and #4501, ambient studio light reflections.\`
+* **Transition:** Camera glides down to the action trigger pills.
+
+---
+
+### Scene 6.4: One-Click Investigator Action & Grand Project Conclusion
+* **Duration:** 35 Seconds
+* **What Appears on Screen:**
+  The investigator clicks the **[Draft Report]** and **[Block Account]** pills below the input bar. A FinCEN SAR draft appears, the account status locks, and all six modules of FraudLens AI animate into a synchronized 3D ecosystem grid. The FraudLens AI crest glows proudly in the center.
+* **Natural AI Narration (Tanglish):**
+  > "Bottom-la paaru — Investigator single click-la **[Draft Report]**, **[Block Account]**, **[Escalate]** action execute பண்ணலாம்.
+  > So machi, total-ah summary paatha:
+  > Historical and Live transactions-a capture panrom...
+  > 5 Machine Learning models vachu 4 milliseconds-la evaluate panrom...
+  > TreeSHAP valiya transparent explainability tharom...
+  > Monisha, Mohana, Sowmiya-nu complete role isolation ensure panrom...
+  > And multi-LLM AI Copilot vachu complex financial crime syndicates-a burst panrom!
+  > This is not just a project — this is the **Future of Explainable FinTech AI**!"
+* **Technical Process Being Explained:**
+  **End-to-End Platform Cohesion:** How every tier (Frontend -> REST APIs -> ML Pipelines -> Explainability -> Autonomous LLM Orchestration) connects into a single enterprise-grade ecosystem.
+* **Exact Project UI to Show:**
+  The complete synchronized view with the quick action pills in AiInvestigationCommandCenter.
+* **On-Screen Text:**
+  \`FRAUDLENS AI // THE FUTURE OF EXPLAINABLE FINTECH INTELLIGENCE\`  
+  \`Zero-Downtime • Sub-10ms Inference • Multi-LLM Orchestration • 100% Verified\`
+* **Cinematic Veo Visual Prompt:**
+  \`Grand cinematic pull-back shot: all six floating glass modules converge into an interlocking 3D holographic sphere with the FraudLens AI shield glowing powerfully at the center, fiber-optic light pulses through the network, clean professional cyber-fintech lighting, fade to black.\`
+* **Transition:** Final cinematic fade-out with audio confirmation chime.
+`;
+
+  function showToast(msg) {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2500);
+  }
+
+  function copyAllMarkdown() {
+    navigator.clipboard.writeText(rawMarkdown).then(() => {
+      showToast('✅ Full Markdown Copied to Clipboard!');
+    }).catch(err => {
+      const ta = document.createElement('textarea');
+      ta.value = rawMarkdown;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast('✅ Full Markdown Copied!');
+    });
+  }
+
+  function copyCleanText() {
+    const content = document.getElementById('content-body').innerText;
+    navigator.clipboard.writeText(content).then(() => {
+      showToast('✅ Clean Script Text Copied!');
+    }).catch(err => {
+      const ta = document.createElement('textarea');
+      ta.value = content;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast('✅ Clean Text Copied!');
+    });
+  }
+</script>
+
+</body>
+</html>

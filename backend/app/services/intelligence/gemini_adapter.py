@@ -51,6 +51,12 @@ class GeminiAdapter:
     @classmethod
     def get_api_key(cls) -> str:
         key = os.getenv("GEMINI_API_KEY", "").strip()
+        if not key:
+            try:
+                from backend.app.core.config import settings
+                key = (settings.GEMINI_API_KEY or "").strip()
+            except Exception:
+                pass
         if key and key != "your_gemini_api_key_here":
             return key
         return ""

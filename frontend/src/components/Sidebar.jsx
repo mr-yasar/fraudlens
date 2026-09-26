@@ -43,21 +43,32 @@ export default function Sidebar({
   const isCustomer = user?.role?.toLowerCase() === 'customer' || user?.role?.toLowerCase() === 'user'
   const customerPersona = getCustomerPersona(user)
 
-  // All modules open for both customer and admin, with contextual labeling
-  const primaryNav = [
-    { id: 'dashboard', label: isCustomer ? 'Security Dashboard' : 'Command Dashboard', icon: LayoutDashboard },
-    { id: 'payment', label: 'Payment Gateway (Pre-Auth)', icon: CreditCard },
-    { id: 'analyzer', label: 'Transaction Risk Analyzer', icon: BrainCircuit },
-    { id: 'live-monitor', label: isCustomer ? 'Account Live Radar' : 'Live Fraud Monitor', icon: Radio },
-    { id: 'merchants', label: 'Merchant Intelligence', icon: Store },
-    { id: 'transactions', label: isCustomer ? 'My Transactions' : 'All Transactions', icon: History },
-    { id: 'customers', label: isCustomer ? 'My Customer Profile' : 'Customer Intelligence', icon: Users },
-    { id: 'explainable-ai', label: 'Explainable AI & SHAP', icon: Sparkles },
-    { id: 'investigations', label: isCustomer ? 'Security Cases & Alerts' : 'Fraud Investigations', icon: ShieldAlert },
-    { id: 'model-lab', label: 'Model Lab & Registry', icon: Cpu },
-    { id: 'dataset-health', label: 'Dataset Health & Audit', icon: Database },
-    { id: 'reports', label: isCustomer ? 'Account Security Reports' : 'Reports & Analytics', icon: BarChart3 },
-  ]
+  // Role-scoped navigation: Customers see customer banking modules; Admins/Investigators see full SOC suite
+  const primaryNav = isCustomer
+    ? [
+        { id: 'dashboard', label: 'Security Dashboard', icon: LayoutDashboard },
+        { id: 'payment', label: 'Payment Gateway (Pre-Auth)', icon: CreditCard },
+        { id: 'transactions', label: 'My Transactions', icon: History },
+        { id: 'customers', label: 'My Profile & Cards', icon: Users },
+        { id: 'investigations', label: 'Security Cases & Alerts', icon: ShieldAlert },
+        { id: 'reports', label: 'Account Security Reports', icon: BarChart3 },
+        { id: 'ai-copilot', label: 'AI Security Assistant', icon: Bot, isHighlight: true },
+      ]
+    : [
+        { id: 'dashboard', label: 'Command Dashboard', icon: LayoutDashboard },
+        { id: 'ai-copilot', label: 'AI Investigation Copilot', icon: Bot, isHighlight: true },
+        { id: 'payment', label: 'Payment Gateway (Pre-Auth)', icon: CreditCard },
+        { id: 'analyzer', label: 'Transaction Risk Analyzer', icon: BrainCircuit },
+        { id: 'live-monitor', label: 'Live Fraud Monitor', icon: Radio },
+        { id: 'merchants', label: 'Merchant Intelligence', icon: Store },
+        { id: 'transactions', label: 'All Transactions', icon: History },
+        { id: 'customers', label: 'Customer Intelligence', icon: Users },
+        { id: 'explainable-ai', label: 'Explainable AI & SHAP', icon: Sparkles },
+        { id: 'investigations', label: 'Fraud Investigations', icon: ShieldAlert },
+        { id: 'model-lab', label: 'Model Lab & Registry', icon: Cpu },
+        { id: 'dataset-health', label: 'Dataset Health & Audit', icon: Database },
+        { id: 'reports', label: 'Reports & Analytics', icon: BarChart3 },
+      ]
 
   const systemNav = [
     { id: 'audit-logs', label: 'Audit Trail & Compliance', icon: FileSpreadsheet },
@@ -149,60 +160,19 @@ export default function Sidebar({
                 </button>
               </div>
             ) : (
-              <div className="p-3 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-950/90 to-cyan-950/30 border border-cyan-800/50 shadow-lg shadow-cyan-950/30">
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-[10px] font-mono uppercase tracking-wider text-cyan-300 font-extrabold flex items-center gap-1.5">
-                    <Zap className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
-                    Personas (Admin Audit)
+              <div className="p-3 rounded-2xl bg-slate-900/60 border border-slate-800 shadow-sm">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-cyan-400 font-extrabold flex items-center gap-1.5">
+                    <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
+                    Security Clearance
                   </span>
                   <span className="text-[9px] font-mono bg-cyan-950 text-cyan-300 px-1.5 py-0.5 rounded border border-cyan-800 font-bold">
-                    All 3
+                    ISO-27001
                   </span>
                 </div>
-                <p className="text-[10px] text-slate-400 leading-tight mb-2">
-                  Admin authority: audit all 3 student customer baselines:
+                <p className="text-[10px] text-slate-400 leading-tight">
+                  Zero-leak multi-tenant account isolation active.
                 </p>
-                <div className="space-y-1">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (onSelectPersona) onSelectPersona('scenario_monisha_safe')
-                      else handleSelect('payment')
-                    }}
-                    className="w-full text-left px-2 py-1.5 rounded-lg bg-emerald-950/60 hover:bg-emerald-900/70 border border-emerald-800/70 text-emerald-300 text-xs font-semibold flex items-center justify-between transition group"
-                  >
-                    <span className="truncate">🟢 Monisha</span>
-                    <span className="text-[10px] font-mono font-bold bg-emerald-900/90 px-1.5 py-0.5 rounded text-emerald-200">
-                      3% SAFE
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (onSelectPersona) onSelectPersona('scenario_mohana_review')
-                      else handleSelect('payment')
-                    }}
-                    className="w-full text-left px-2 py-1.5 rounded-lg bg-amber-950/60 hover:bg-amber-900/70 border border-amber-800/70 text-amber-300 text-xs font-semibold flex items-center justify-between transition group"
-                  >
-                    <span className="truncate">🟡 Mohana</span>
-                    <span className="text-[10px] font-mono font-bold bg-amber-900/90 px-1.5 py-0.5 rounded text-amber-200">
-                      12% OTP
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (onSelectPersona) onSelectPersona('scenario_sowmiya_block')
-                      else handleSelect('payment')
-                    }}
-                    className="w-full text-left px-2 py-1.5 rounded-lg bg-rose-950/60 hover:bg-rose-900/70 border border-rose-800/70 text-rose-300 text-xs font-semibold flex items-center justify-between transition group"
-                  >
-                    <span className="truncate">🔴 Sowmiya</span>
-                    <span className="text-[10px] font-mono font-bold bg-rose-900/90 px-1.5 py-0.5 rounded text-rose-200">
-                      26% BLOCK
-                    </span>
-                  </button>
-                </div>
               </div>
             )}
 
@@ -219,14 +189,23 @@ export default function Sidebar({
                     <li key={item.id}>
                       <button
                         onClick={() => handleSelect(item.id)}
-                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium transition duration-150 ${
+                        className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition duration-150 ${
                           isActive
                             ? 'bg-gradient-to-r from-cyan-950/80 to-slate-900 text-cyan-300 border border-cyan-800/60 shadow-md shadow-cyan-950/40 font-semibold'
+                            : item.isHighlight
+                            ? 'bg-cyan-950/30 text-cyan-300 hover:bg-cyan-950/60 border border-cyan-500/30 hover:border-cyan-400'
                             : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60 border border-transparent'
                         }`}
                       >
-                        <Icon className={`w-4 h-4 ${isActive ? 'text-cyan-400' : 'text-slate-400'}`} />
-                        <span>{item.label}</span>
+                        <div className="flex items-center gap-3">
+                          <Icon className={`w-4 h-4 ${isActive || item.isHighlight ? 'text-cyan-400' : 'text-slate-400'}`} />
+                          <span>{item.label}</span>
+                        </div>
+                        {item.isHighlight && (
+                          <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-cyan-900/80 text-cyan-200 border border-cyan-500/40 animate-pulse">
+                            AI CORE
+                          </span>
+                        )}
                       </button>
                     </li>
                   )

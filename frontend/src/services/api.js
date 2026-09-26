@@ -65,11 +65,12 @@ export const dashboardApi = {
 
 // 2. Transactions & Real-time Evaluation API
 export const transactionsApi = {
-  list: async ({ page = 1, limit = 20, risk_level = '', prediction = '', search = '' } = {}) => {
+  list: async ({ page = 1, limit = 20, risk_level = '', prediction = '', search = '', customer_id = '' } = {}) => {
     const params = new URLSearchParams({ page, limit })
     if (risk_level) params.append('risk_level', risk_level)
     if (prediction !== '' && prediction !== undefined) params.append('prediction', prediction)
     if (search) params.append('search', search)
+    if (customer_id) params.append('customer_id', customer_id)
 
     const res = await fetch(`${BASE_URL}/transactions?${params.toString()}`, {
       headers: getAuthHeaders(),
@@ -378,7 +379,7 @@ export const adminMlApi = {
 // 7. System Health API
 export const systemApi = {
   getHealth: async () => {
-    const res = await fetch('/api/health', {
+    const res = await fetch(`${BASE_URL}/health`, {
       headers: { Accept: 'application/json' },
     })
     return handleResponse(res)

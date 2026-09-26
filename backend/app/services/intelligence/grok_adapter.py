@@ -23,6 +23,12 @@ class GrokAdapter:
     @classmethod
     def get_api_key(cls) -> str:
         key = os.getenv("GROK_API_KEY", "").strip() or os.getenv("XAI_API_KEY", "").strip()
+        if not key:
+            try:
+                from backend.app.core.config import settings
+                key = (settings.GROK_API_KEY or "").strip()
+            except Exception:
+                pass
         if key and key != "your_grok_api_key_here":
             return key
         return ""

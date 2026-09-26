@@ -46,6 +46,12 @@ class MistralAdapter:
     @classmethod
     def get_api_key(cls) -> str:
         key = os.getenv("MISTRAL_API_KEY", "").strip()
+        if not key:
+            try:
+                from backend.app.core.config import settings
+                key = (getattr(settings, "MISTRAL_API_KEY", "") or "").strip()
+            except Exception:
+                pass
         if key and key not in ("your_mistral_api_key_here", ""):
             return key
         return ""

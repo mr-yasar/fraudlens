@@ -20,8 +20,8 @@ class Settings(BaseSettings):
     BACKEND_PORT: int = 8000
     ALLOWED_ORIGINS: Union[str, List[str]] = "http://localhost:3000,http://localhost:5173,http://127.0.0.1:5173"
 
-    # Database
-    DATABASE_URL: str = "postgresql+psycopg://postgres:postgres@localhost:5432/fraud_detection_db"
+    # Database (Defaults to SQLite for instant local execution without PostgreSQL requirement)
+    DATABASE_URL: str = "sqlite:///./fraud_detection.db"
     DB_POOL_SIZE: int = 10
     DB_MAX_OVERFLOW: int = 20
     DB_POOL_TIMEOUT: int = 30
@@ -38,13 +38,18 @@ class Settings(BaseSettings):
     INITIAL_INVESTIGATOR_EMAIL: str = "investigator@fraudlens.internal"
     INITIAL_INVESTIGATOR_PASSWORD: str = "Investigator@2026!"
 
-    # LLM API Keys (Google Gemini + xAI Grok)
+    # LLM API Keys (Google Gemini + xAI Grok + Mistral)
     GEMINI_API_KEY: str = ""
     GROK_API_KEY: str = ""
-    DEFAULT_LLM_PROVIDER: str = "gemini"  # 'gemini' | 'grok'
+    MISTRAL_API_KEY: str = ""
+    DEFAULT_LLM_PROVIDER: str = "gemini"  # 'gemini' | 'grok' | 'mistral'
 
     model_config = SettingsConfigDict(
-        env_file=os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), ".env"),
+        env_file=(
+            os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))), ".env"),
+            os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), ".env"),
+            ".env",
+        ),
         env_file_encoding="utf-8",
         extra="ignore",
     )

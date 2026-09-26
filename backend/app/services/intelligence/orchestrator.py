@@ -280,7 +280,11 @@ class LLMOrchestrator:
                 gemini_succeeded = False
 
                 # 1st Priority: Gemini (Gemini 3.6 default; Gemini 3.7 only for heavy/complex reasoning; Never 3.8)
-                if ProviderHealthTracker.is_available("gemini") and GeminiAdapter.is_configured():
+                # We attempt generate() directly and let the adapter's own internal validation
+                # handle missing configuration (raises ValueError), which the except handler
+                # catches and falls through to intelligent failover. This avoids a TOCTOU issue
+                # where is_configured() could return False while generate() would succeed.
+                if ProviderHealthTracker.is_available("gemini"):
                     escalate_to_3_7 = (routing.action in (RoutingAction.ESCALATE_GEMINI_3_7, RoutingAction.CALL_BOTH))
                     try:
                         final_response_text, model_name = GeminiAdapter.generate(
@@ -294,8 +298,8 @@ class LLMOrchestrator:
                         tier_label = "3.7 Deep Reasoning" if escalate_to_3_7 else "3.6"
                         engine_name = f"Google Gemini {tier_label} ({model_name})"
 
-                        # Optional: If query specifically requested dual challenge AND Grok is healthy
-                        if routing.action == RoutingAction.CALL_BOTH and ProviderHealthTracker.is_available("grok") and GrokAdapter.is_configured():
+                        # Dual synthesis: If query requested independent challenge AND Grok is healthy
+                        if routing.action == RoutingAction.CALL_BOTH and ProviderHealthTracker.is_available("grok"):
                             try:
                                 grok_review, _ = GrokAdapter.review_and_challenge(
                                     user_query=latest_user_query,
@@ -303,16 +307,27 @@ class LLMOrchestrator:
                                     evidence_context=evidence_context,
                                 )
                                 if grok_review:
-                                    grok_challenge_applied = True
-                                    final_response_text = ResponseSynthesizer.synthesize(
+                                    # Grok review was executed and returned a valid challenge.
+                                    # Pass it into the Gemini synthesis so the challenge is
+                                    # genuinely incorporated, not blindly agreed with.
+                                    synthesized = ResponseSynthesizer.synthesize(
                                         user_query=latest_user_query,
                                         gemini_primary_analysis=final_response_text,
                                         grok_review=grok_review,
                                         evidence_context=evidence_context,
                                         system_instruction=system_instruction,
                                     )
-                                    engine_name = "Gemini 3.7 + xAI Grok (Dual Synthesis)"
-                                    model_name = "gemini-3.7-flash + grok-2"
+                                    if synthesized and synthesized != final_response_text:
+                                        # All three conditions met: Grok executed, valid challenge
+                                        # returned, and challenge was incorporated into synthesis.
+                                        grok_challenge_applied = True
+                                        final_response_text = synthesized
+                                        engine_name = "Gemini 3.7 + xAI Grok (Dual Synthesis)"
+                                        model_name = "gemini-3.7-flash + grok-2"
+                                    else:
+                                        # Synthesis returned but was identical — Grok review
+                                        # was available but synthesis failed to incorporate it.
+                                        logger.warning("Grok challenge obtained but synthesis did not incorporate it.")
                             except Exception as g_exc:
                                 logger.warning("Optional Grok challenge review skipped in AUTO: %s", g_exc)
 

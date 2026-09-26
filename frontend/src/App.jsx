@@ -37,6 +37,7 @@ import LoginScene from './components/login/LoginScene'
 import SecurityUnlockTransition from './components/SecurityUnlockTransition'
 import HowItWorksModal from './components/HowItWorksModal'
 import AiAssistantPanel from './components/AiAssistantPanel'
+import AiInvestigationCommandCenter from './components/ai/AiInvestigationCommandCenter'
 import { systemApi } from './services/api'
 import { getCustomerPersona } from './utils/customerHelper'
 
@@ -52,6 +53,10 @@ function CommandCenterApp() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [showHowItWorks, setShowHowItWorks] = useState(false)
 
+  // Floating AI Assistant & Expand/Minimize Synchronization
+  const [aiAssistantOpen, setAiAssistantOpen] = useState(false)
+  const [previousViewBeforeCopilot, setPreviousViewBeforeCopilot] = useState('dashboard')
+
   // Navigate to a new view — push current view into history
   const navigateTo = useCallback((view) => {
     setActiveView((prev) => {
@@ -62,6 +67,23 @@ function CommandCenterApp() {
     })
     setMobileOpen(false)
   }, [])
+
+  const handleExpandToCommandCenter = useCallback(() => {
+    setPreviousViewBeforeCopilot((prev) => (activeView !== 'ai-copilot' ? activeView : 'dashboard'))
+    setAiAssistantOpen(false)
+    navigateTo('ai-copilot')
+  }, [activeView, navigateTo])
+
+  const handleMinimizeCommandCenter = useCallback(() => {
+    const returnView =
+      previousViewBeforeCopilot && previousViewBeforeCopilot !== 'ai-copilot'
+        ? previousViewBeforeCopilot
+        : (navHistory.length > 0 && navHistory[navHistory.length - 1] !== 'ai-copilot'
+            ? navHistory[navHistory.length - 1]
+            : 'dashboard')
+    navigateTo(returnView)
+    setAiAssistantOpen(true)
+  }, [previousViewBeforeCopilot, navHistory, navigateTo])
 
   const handleSelectPersona = useCallback((personaId) => {
     setSelectedPersona(personaId)
@@ -195,7 +217,9 @@ function CommandCenterApp() {
 
         {/* Main Content Layout */}
         <div
-          className={`flex-1 flex flex-col min-w-0 overflow-y-auto transition-transform duration-500 ${
+          className={`flex-1 flex flex-col min-w-0 ${
+            activeView === 'ai-copilot' ? 'overflow-hidden h-screen' : 'overflow-y-auto'
+          } transition-transform duration-500 ${
             isTransitioning ? 'translate-y-0.5' : 'translate-y-0'
           }`}
         >
@@ -232,7 +256,7 @@ function CommandCenterApp() {
                 </strong>
               </div>
 
-              {/* Real-Time Personas Header Switcher Bar (Admin sees all 3; Customer watches only their own) */}
+              {/* Real-Time Session Status (Zero-Leak Multi-Tenant Isolation) */}
               {isCustomer ? (
                 <div className="hidden xl:flex items-center gap-2 px-2.5 py-1 rounded-xl bg-slate-950/80 border border-emerald-800/80 shadow-inner">
                   <span className="text-[10px] font-mono text-emerald-400 uppercase font-bold flex items-center gap-1.5">
@@ -240,54 +264,24 @@ function CommandCenterApp() {
                     Verified Customer:
                   </span>
                   <span className="text-[11px] font-mono font-bold text-white">
-                    {customerPersona.name} ({customerPersona.customerId})
+                    {customerPersona.name}
                   </span>
                   <span className="text-[10px] font-mono font-bold bg-emerald-950 px-1.5 py-0.5 rounded text-emerald-300 border border-emerald-800">
-                    {customerPersona.fraudRate} Baseline
+                    Private Session
                   </span>
                 </div>
               ) : (
-                <div className="hidden xl:flex items-center gap-1.5 px-2 py-1 rounded-xl bg-slate-950/80 border border-slate-800/80 shadow-inner">
-                  <span className="text-[10px] font-mono text-cyan-400 uppercase font-bold flex items-center gap-1 mr-1">
-                    <Zap className="w-3 h-3 text-cyan-400 animate-pulse" />
-                    Personas:
+                <div className="hidden xl:flex items-center gap-2 px-2.5 py-1 rounded-xl bg-slate-950/80 border border-slate-800/80 shadow-inner">
+                  <span className="text-[10px] font-mono text-cyan-400 uppercase font-bold flex items-center gap-1">
+                    <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
+                    Security Clearance:
                   </span>
-                  <button
-                    onClick={() => handleSelectPersona('scenario_monisha_safe')}
-                    className={`px-2 py-0.5 rounded-lg text-[10px] font-mono font-bold transition flex items-center gap-1 border ${
-                      activeView === 'payment' && selectedPersona === 'scenario_monisha_safe'
-                        ? 'bg-emerald-900 border-emerald-500 text-white shadow-sm'
-                        : 'bg-emerald-950/70 hover:bg-emerald-900/80 border-emerald-800/60 text-emerald-300'
-                    }`}
-                    title="Monisha (3% Fraud Rate) - Clean Habitual Baseline -> ALLOW"
-                  >
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                    Monisha (3%)
-                  </button>
-                  <button
-                    onClick={() => handleSelectPersona('scenario_mohana_review')}
-                    className={`px-2 py-0.5 rounded-lg text-[10px] font-mono font-bold transition flex items-center gap-1 border ${
-                      activeView === 'payment' && selectedPersona === 'scenario_mohana_review'
-                        ? 'bg-amber-900 border-amber-500 text-white shadow-sm'
-                        : 'bg-amber-950/70 hover:bg-amber-900/80 border-amber-800/60 text-amber-300'
-                    }`}
-                    title="Mohana (12% Fraud Rate) - Unfamiliar Device/Region -> REVIEW (OTP)"
-                  >
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-                    Mohana (12%)
-                  </button>
-                  <button
-                    onClick={() => handleSelectPersona('scenario_sowmiya_block')}
-                    className={`px-2 py-0.5 rounded-lg text-[10px] font-mono font-bold transition flex items-center gap-1 border ${
-                      activeView === 'payment' && selectedPersona === 'scenario_sowmiya_block'
-                        ? 'bg-rose-900 border-rose-500 text-white shadow-sm'
-                        : 'bg-rose-950/70 hover:bg-rose-900/80 border-rose-800/60 text-rose-300'
-                    }`}
-                    title="Sowmiya (26% Fraud Rate) - Botnet ATO Attack -> BLOCK"
-                  >
-                    <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
-                    Sowmiya (26%)
-                  </button>
+                  <span className="text-[11px] font-mono font-bold text-white">
+                    {isAdmin ? 'System Administrator' : 'Fraud Investigator'}
+                  </span>
+                  <span className="text-[10px] font-mono font-bold bg-cyan-950 px-1.5 py-0.5 rounded text-cyan-300 border border-cyan-800">
+                    Zero-Leak Protected
+                  </span>
                 </div>
               )}
             </div>
@@ -368,7 +362,7 @@ function CommandCenterApp() {
           </header>
 
           {/* Dynamic Page Views */}
-          <main className="p-4 sm:p-6 lg:p-8 flex-1">
+          <main className={activeView === 'ai-copilot' ? 'flex-1 overflow-hidden' : 'p-4 sm:p-6 lg:p-8 flex-1'}>
             <ErrorBoundary onReset={() => setActiveView('dashboard')}>
               {activeView === 'dashboard' && (
                 <DashboardView
@@ -377,6 +371,15 @@ function CommandCenterApp() {
                   onSelectTransaction={handleSelectTransaction}
                   onOpenCase={() => navigateTo('investigations')}
                   onOpenPayment={handleSelectPersona}
+                />
+              )}
+
+              {activeView === 'ai-copilot' && (
+                <AiInvestigationCommandCenter
+                  user={user}
+                  isAdmin={isAdmin}
+                  onNavigate={navigateTo}
+                  onMinimize={handleMinimizeCommandCenter}
                 />
               )}
 
@@ -457,11 +460,13 @@ function CommandCenterApp() {
             </ErrorBoundary>
           </main>
 
-          {/* Footer */}
-          <footer className="border-t border-slate-800/80 py-3 px-6 bg-slate-950/80 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-2">
-            <div>FraudLens AI — Financial Fraud Detection &amp; Explainability Platform</div>
-            <div className="font-mono text-[11px]">29 Merchant Master Architecture • Real-Time AI</div>
-          </footer>
+          {/* Footer (hidden in full-screen AI copilot workspace) */}
+          {activeView !== 'ai-copilot' && (
+            <footer className="border-t border-slate-800/80 py-3 px-6 bg-slate-950/80 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-2">
+              <div>FraudLens AI — Financial Fraud Detection &amp; Explainability Platform</div>
+              <div className="font-mono text-[11px]">29 Merchant Master Architecture • Real-Time AI</div>
+            </footer>
+          )}
         </div>
       </div>
 
@@ -471,6 +476,9 @@ function CommandCenterApp() {
         isAdmin={isAdmin}
         currentView={activeView}
         currentTransactionId={''}
+        isOpenExternal={aiAssistantOpen}
+        onOpenChange={setAiAssistantOpen}
+        onExpandToCommandCenter={handleExpandToCommandCenter}
       />
 
       {/* Interactive Unified How It Works (System Guide, Architecture & AI Voice Help) */}

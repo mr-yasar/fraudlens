@@ -240,7 +240,8 @@ class TestOrchestratorEndToEnd:
         ]
         mock_grok_rev.return_value = ("Challenge: Notice that the customer frequently orders at midnight on weekends.", "grok-2")
 
-        with patch("backend.app.services.intelligence.grok_adapter.GrokAdapter.is_configured", return_value=True):
+        with patch("backend.app.services.intelligence.grok_adapter.GrokAdapter.is_configured", return_value=True), \
+             patch("backend.app.services.intelligence.provider_health.ProviderHealthTracker.is_available", return_value=True):
             res = LLMOrchestrator.chat(
                 messages=[{"role": "user", "content": "Deep forensic multi-step analysis on TXN_101 with independent challenge"}],
             )
