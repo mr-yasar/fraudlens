@@ -276,13 +276,10 @@ export default function AiInvestigationCommandCenter({
           headers: getAuthHeaders(),
           body: JSON.stringify({
             messages: historyForApi,
-            provider,
-            context: {
-              account_label: selectedCase.account_label || selectedCase.id,
-              case_id: selectedCase.id,
-              anomaly: selectedCase.anomaly,
-              risk_score: selectedCase.riskScore,
-            },
+            provider: provider === 'auto' ? null : provider,
+            context: selectedCase
+              ? `Account: ${selectedCase.account_label || selectedCase.id} | Anomaly: ${selectedCase.anomaly || 'Velocity Burst'} | Risk Score: ${selectedCase.riskScore || 70}`
+              : 'General Fraud Investigation',
           }),
         })
 
