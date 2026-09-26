@@ -28,9 +28,9 @@ def _sync_sqlite_columns(db: Session) -> None:
             res = conn.execute(text("PRAGMA table_info(customers);")).fetchall()
             cust_cols = {row[1] for row in res}
             if "simulated_balance" not in cust_cols:
-                conn.execute(text("ALTER TABLE customers ADD COLUMN simulated_balance FLOAT DEFAULT 50000.0;"))
+                conn.execute(text("ALTER TABLE customers ADD COLUMN simulated_balance FLOAT DEFAULT 1500000.0;"))
             if "currency" not in cust_cols:
-                conn.execute(text("ALTER TABLE customers ADD COLUMN currency VARCHAR(10) DEFAULT 'USD';"))
+                conn.execute(text("ALTER TABLE customers ADD COLUMN currency VARCHAR(10) DEFAULT 'INR';"))
             if "name" not in cust_cols:
                 conn.execute(text("ALTER TABLE customers ADD COLUMN name VARCHAR(200);"))
             if "email" not in cust_cols:
@@ -119,9 +119,9 @@ def init_db(db: Session) -> None:
 
     # 4. Seed Initial Customer Profiles if empty
     if db.query(Customer).count() == 0:
-        c1 = Customer(customer_id="CUST-1001", name="Alice Taylor", email="customer@fraudlens.internal", account_age_days=180, simulated_balance=50000.0, currency="USD")
-        c2 = Customer(customer_id="CUST-1002", name="Bob Reynolds", email="bob.reynolds@example.com", account_age_days=45, simulated_balance=35000.0, currency="USD")
-        c3 = Customer(customer_id="CUST-1003", name="Charlie Davis", email="charlie.davis@example.com", account_age_days=12, simulated_balance=25000.0, currency="USD")
+        c1 = Customer(customer_id="CUST-1001", name="Alice Taylor", email="customer@fraudlens.internal", account_age_days=180, simulated_balance=1550000.0, currency="INR")
+        c2 = Customer(customer_id="CUST-1002", name="Bob Reynolds", email="bob.reynolds@example.com", account_age_days=45, simulated_balance=1535000.0, currency="INR")
+        c3 = Customer(customer_id="CUST-1003", name="Charlie Davis", email="charlie.davis@example.com", account_age_days=12, simulated_balance=1525000.0, currency="INR")
         db.add_all([c1, c2, c3])
         db.commit()
 

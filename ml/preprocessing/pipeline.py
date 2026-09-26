@@ -6,6 +6,20 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import joblib
 import numpy as np
 import pandas as pd
+import sys
+import types
+
+# Ensure compatibility when Windows Smart App Control blocks optional sklearn C-extensions
+if "sklearn.decomposition._online_lda_fast" not in sys.modules:
+    try:
+        from sklearn.decomposition import _online_lda_fast  # noqa: F401
+    except (ImportError, OSError):
+        _m = types.ModuleType("sklearn.decomposition._online_lda_fast")
+        _m._dirichlet_expectation_1d = None
+        _m._dirichlet_expectation_2d = None
+        _m.mean_change = None
+        sys.modules["sklearn.decomposition._online_lda_fast"] = _m
+
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer

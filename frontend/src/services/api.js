@@ -508,5 +508,29 @@ export const alertsApi = {
   },
 }
 
+// 11. AI Assistant & Key Diagnostics API
+export const aiApi = {
+  getProviders: async () => {
+    const res = await fetch(`${BASE_URL}/ai/providers`, {
+      headers: getAuthHeaders(),
+    })
+    return handleResponse(res)
+  },
+  verifyKey: async (provider = 'all') => {
+    const res = await fetch(`${BASE_URL}/ai/verify-key?provider=${encodeURIComponent(provider)}`, {
+      headers: getAuthHeaders(),
+    })
+    return handleResponse(res)
+  },
+  chat: async (payload) => {
+    const res = await fetch(`${BASE_URL}/ai/chat`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(payload),
+    })
+    return handleResponse(res)
+  },
+}
+
 
 

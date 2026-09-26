@@ -241,9 +241,14 @@ export default function CustomerDashboardView({
           <div className="text-2xl font-black text-white font-mono mt-2 tracking-tight">
             {showBalance ? formatInr(data?.account_balance) : '••••••••'}
           </div>
-          <div className="text-[11px] text-slate-400 mt-1 flex items-center gap-1.5 font-mono">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-            <span>Active Checking Account • INR</span>
+          <div className="text-[11px] text-slate-400 mt-1 flex items-center justify-between font-mono">
+            <span className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+              <span>Checking • INR</span>
+            </span>
+            <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 font-bold border border-emerald-700">
+              +₹15L Active
+            </span>
           </div>
         </div>
 

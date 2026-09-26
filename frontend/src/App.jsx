@@ -13,6 +13,7 @@ import {
   CreditCard,
   Bot,
   Volume2,
+  Lightbulb,
 } from 'lucide-react'
 
 import { AuthProvider, useAuth } from './context/AuthContext'
@@ -34,8 +35,7 @@ import AuditLogsView from './components/AuditLogsView'
 import SettingsView from './components/SettingsView'
 import LoginScene from './components/login/LoginScene'
 import SecurityUnlockTransition from './components/SecurityUnlockTransition'
-import UserManualModal from './components/UserManualModal'
-import AiVoiceHelpModal from './components/AiVoiceHelpModal'
+import HowItWorksModal from './components/HowItWorksModal'
 import AiAssistantPanel from './components/AiAssistantPanel'
 import { systemApi } from './services/api'
 import { getCustomerPersona } from './utils/customerHelper'
@@ -50,8 +50,7 @@ function CommandCenterApp() {
   const [selectedPersona, setSelectedPersona] = useState('scenario_monisha_safe')
   const [navHistory, setNavHistory] = useState([]) // history stack for back navigation
   const [mobileOpen, setMobileOpen] = useState(false)
-  const [showManual, setShowManual] = useState(false)
-  const [showVoiceHelp, setShowVoiceHelp] = useState(false)
+  const [showHowItWorks, setShowHowItWorks] = useState(false)
 
   // Navigate to a new view — push current view into history
   const navigateTo = useCallback((view) => {
@@ -187,8 +186,9 @@ function CommandCenterApp() {
             logout={logout}
             mobileOpen={mobileOpen}
             setMobileOpen={setMobileOpen}
-            onOpenManual={() => setShowManual(true)}
-            onOpenVoiceHelp={() => setShowVoiceHelp(true)}
+            onOpenHowItWorks={() => setShowHowItWorks(true)}
+            onOpenManual={() => setShowHowItWorks(true)}
+            onOpenVoiceHelp={() => setShowHowItWorks(true)}
             onSelectPersona={handleSelectPersona}
           />
         </ErrorBoundary>
@@ -307,29 +307,17 @@ function CommandCenterApp() {
                 <span className="hidden sm:inline">Payment Gateway</span>
               </button>
 
-              {/* AI Voice Help: What is Fraud? Shortcut */}
+              {/* Unified How It Works (System Guide & AI Voice Explainer) */}
               <button
-                onClick={() => setShowVoiceHelp(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-cyan-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold shadow-lg shadow-purple-950/40 transition border border-purple-400/50 group"
-                title="Launch AI Voice Help & What is Fraud? (Siri & Google Voice)"
+                onClick={() => setShowHowItWorks(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-600 via-indigo-600 to-purple-600 hover:from-cyan-500 hover:to-indigo-500 text-white text-xs font-bold shadow-lg shadow-cyan-950/40 transition border border-cyan-400/50 group"
+                title="Open How It Works: Interactive System Guide, Architecture, Personas & AI Voice Explainer"
               >
-                <Bot className="w-3.5 h-3.5 group-hover:scale-110 transition-transform animate-pulse" />
-                <span className="hidden lg:inline">AI Voice Help</span>
-                <span className="lg:hidden">Voice AI</span>
-                <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-purple-950/90 text-purple-200 border border-purple-700/80">
-                  Siri
+                <Lightbulb className="w-3.5 h-3.5 text-cyan-200 group-hover:scale-110 transition-transform animate-pulse" />
+                <span className="hidden sm:inline">How It Works</span>
+                <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-cyan-950/90 text-cyan-200 border border-cyan-700/80">
+                  Guide + Voice
                 </span>
-              </button>
-
-              {/* User Manual & Guide Button */}
-              <button
-                onClick={() => setShowManual(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-bold shadow-lg shadow-cyan-950/40 transition"
-                title="Open Easy User Manual"
-              >
-                <BookOpen className="w-3.5 h-3.5" />
-                <span className="hidden md:inline">User Manual</span>
-                <span className="md:hidden">Guide</span>
               </button>
 
               {/* Backend Connectivity Status */}
@@ -485,19 +473,12 @@ function CommandCenterApp() {
         currentTransactionId={''}
       />
 
-      {/* Interactive Easy User Manual & Guide Modal */}
-      <UserManualModal
-        isOpen={showManual}
-        onClose={() => setShowManual(false)}
-        onOpenVoiceHelp={() => setShowVoiceHelp(true)}
+      {/* Interactive Unified How It Works (System Guide, Architecture & AI Voice Help) */}
+      <HowItWorksModal
+        isOpen={showHowItWorks}
+        onClose={() => setShowHowItWorks(false)}
         user={user}
         isAdmin={isAdmin}
-      />
-
-      {/* Interactive AI Voice Help & What is Fraud Explainer Modal */}
-      <AiVoiceHelpModal
-        isOpen={showVoiceHelp}
-        onClose={() => setShowVoiceHelp(false)}
       />
     </div>
   )

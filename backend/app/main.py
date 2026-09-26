@@ -1,5 +1,19 @@
 """FastAPI Application Entry Point for Explainable AI Fraud & Risk Detection System."""
 
+import sys
+import types
+
+# Ensure compatibility when Windows Smart App Control blocks optional sklearn C-extensions
+if "sklearn.decomposition._online_lda_fast" not in sys.modules:
+    try:
+        from sklearn.decomposition import _online_lda_fast  # noqa: F401
+    except (ImportError, OSError):
+        _m = types.ModuleType("sklearn.decomposition._online_lda_fast")
+        _m._dirichlet_expectation_1d = None
+        _m._dirichlet_expectation_2d = None
+        _m.mean_change = None
+        sys.modules["sklearn.decomposition._online_lda_fast"] = _m
+
 from contextlib import asynccontextmanager
 import logging
 from typing import AsyncGenerator

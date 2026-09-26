@@ -710,8 +710,12 @@ export default function PaymentView({
                 <div className="flex items-center justify-between mb-1">
                   <label className="text-xs font-medium text-slate-300">Amount (₹ INR)</label>
                   {wallet && (
-                    <span className="text-[10px] font-mono text-slate-400">
-                      Balance: {formatINR(wallet.simulated_balance)}
+                    <span className="text-[10px] font-mono text-emerald-400 flex items-center gap-1 font-bold">
+                      <Wallet className="w-3 h-3 text-emerald-400" />
+                      <span>Cash: {formatINR(wallet.simulated_balance)}</span>
+                      <span className="text-[8px] px-1 py-0.2 rounded bg-emerald-950 text-emerald-300 border border-emerald-700">
+                        +₹15L
+                      </span>
                     </span>
                   )}
                 </div>

@@ -65,8 +65,8 @@ class RiskDecisionOrchestrator:
             customer = Customer(
                 customer_id=customer_id,
                 account_age_days=int(account_age_days) if account_age_days is not None else 30,
-                simulated_balance=1000000.0,
-                currency="USD",
+                simulated_balance=1500000.0,
+                currency="INR",
             )
             db.add(customer)
             db.flush()

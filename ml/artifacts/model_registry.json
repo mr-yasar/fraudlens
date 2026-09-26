@@ -1,6 +1,6 @@
 {
   "version": "v1.1.0",
-  "last_updated": "2026-09-25T14:37:03.928363+00:00",
+  "last_updated": "2026-09-25T18:06:46.297177+00:00",
   "active_model": "xgboost",
   "models": {
     "logistic_regression": {

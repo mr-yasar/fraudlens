@@ -220,7 +220,7 @@ export default function CustomersView({ onSelectTransaction, user, isAdmin }) {
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2 text-xs mb-3">
+                  <div className="grid grid-cols-2 gap-2 text-xs mb-2">
                     <div className="p-2.5 bg-slate-950/80 rounded-xl border border-slate-800/80">
                       <span className="text-[10px] text-slate-400 uppercase font-mono block">Total Txs</span>
                       <span className="font-mono font-bold text-white text-sm">{c.transaction_count || 0}</span>
@@ -231,6 +231,19 @@ export default function CustomersView({ onSelectTransaction, user, isAdmin }) {
                         {formatINR(c.historical_avg_amount || 0)}
                       </span>
                     </div>
+                  </div>
+
+                  {/* Available Cash Liquidity (includes ₹15 Lakhs Feature Cash) */}
+                  <div className="p-2.5 bg-gradient-to-r from-emerald-950/70 via-slate-950/80 to-cyan-950/70 rounded-xl border border-emerald-700/60 mb-3 flex items-center justify-between">
+                    <div>
+                      <span className="text-[9px] text-emerald-400 uppercase font-mono font-bold block">Available Cash</span>
+                      <span className="font-mono font-black text-emerald-300 text-sm">
+                        {formatINR(c.simulated_balance || 1500000.0)}
+                      </span>
+                    </div>
+                    <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 font-bold border border-emerald-600">
+                      +₹15L Feature
+                    </span>
                   </div>
 
                   {/* Status Flags */}
@@ -286,6 +299,23 @@ export default function CustomersView({ onSelectTransaction, user, isAdmin }) {
               >
                 ✕ Close
               </button>
+            </div>
+            {/* Available Cash Liquidity & Wallet Reserve */}
+            <div className="p-3.5 rounded-xl bg-gradient-to-r from-emerald-950/70 via-slate-900 to-cyan-950/70 border border-emerald-600/70 flex items-center justify-between font-mono">
+              <div>
+                <span className="text-[10px] text-emerald-400 uppercase tracking-wider block font-bold">
+                  Available Cash Liquidity / Wallet
+                </span>
+                <span className="text-xl font-black text-emerald-300">
+                  {formatINR(selectedCust.simulated_balance || 1500000.0)}
+                </span>
+              </div>
+              <div className="text-right">
+                <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-900/90 text-emerald-200 border border-emerald-600 font-bold">
+                  +₹15 Lakhs Extra Cash Added
+                </span>
+                <div className="text-[10px] text-slate-400 mt-0.5">Real-Time Instant Pre-Auth Liquidity</div>
+              </div>
             </div>
 
             {/* Baseline Profile Stats */}

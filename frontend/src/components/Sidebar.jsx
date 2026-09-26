@@ -23,6 +23,7 @@ import {
   UserCheck,
   Bot,
   Volume2,
+  Lightbulb,
 } from 'lucide-react'
 import { getCustomerPersona } from '../utils/customerHelper'
 
@@ -34,6 +35,7 @@ export default function Sidebar({
   logout,
   mobileOpen,
   setMobileOpen,
+  onOpenHowItWorks,
   onOpenManual,
   onOpenVoiceHelp,
   onSelectPersona,
@@ -262,40 +264,25 @@ export default function Sidebar({
               </div>
             )}
 
-            {/* Quick Actions: AI Voice Help & User Guide */}
-            <div className="pt-2 space-y-2">
+            {/* Quick Action: Unified How It Works (System Guide & AI Voice Help) */}
+            <div className="pt-2">
               <button
                 type="button"
                 onClick={() => {
-                  onOpenVoiceHelp && onOpenVoiceHelp()
+                  if (onOpenHowItWorks) onOpenHowItWorks()
+                  else if (onOpenManual) onOpenManual()
                   if (setMobileOpen) setMobileOpen(false)
                 }}
-                className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-purple-950/70 via-indigo-950/70 to-slate-900 border border-purple-500/60 text-purple-200 shadow-lg shadow-purple-950/50 hover:border-purple-400 hover:text-white transition group"
+                className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-cyan-950/80 via-indigo-950/80 to-slate-900 border border-cyan-500/60 text-cyan-200 shadow-lg shadow-cyan-950/50 hover:border-cyan-400 hover:text-white transition group"
+                title="Open How It Works: Interactive Guide, Architecture, Personas & AI Voice Explainer"
               >
                 <div className="flex items-center gap-2.5">
-                  <Bot className="w-4 h-4 text-purple-400 group-hover:scale-110 transition-transform animate-pulse" />
-                  <span>AI Voice Help &amp; What is Fraud?</span>
+                  <Lightbulb className="w-4 h-4 text-cyan-300 group-hover:scale-110 transition-transform animate-pulse" />
+                  <span>How It Works</span>
                 </div>
-                <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-purple-900/90 text-purple-200 font-bold flex items-center gap-1 border border-purple-700">
-                  <Volume2 className="w-2.5 h-2.5" />
-                  Siri
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  onOpenManual && onOpenManual()
-                  if (setMobileOpen) setMobileOpen(false)
-                }}
-                className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold bg-cyan-950/50 hover:bg-cyan-900/60 border border-cyan-700/60 text-cyan-200 shadow-md transition group"
-              >
-                <div className="flex items-center gap-2.5">
-                  <BookOpen className="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform" />
-                  <span>User Manual &amp; Guide</span>
-                </div>
-                <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-cyan-900 text-cyan-300 font-bold">
-                  ₹ INR
+                <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-cyan-900/90 text-cyan-200 font-bold flex items-center gap-1 border border-cyan-700">
+                  <Volume2 className="w-2.5 h-2.5 text-cyan-300" />
+                  Guide + Voice
                 </span>
               </button>
             </div>

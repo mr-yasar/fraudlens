@@ -120,6 +120,8 @@ def list_customers(
                 created_at=cust.created_at,
                 transaction_count=int(tx_count),
                 historical_avg_amount=round(avg_amt, 2),
+                simulated_balance=round(float(cust.simulated_balance or 1500000.0), 2),
+                currency=cust.currency or "INR",
                 high_risk_count=high_risk_cnt,
                 fraud_transaction_count=fraud_cnt,
             )
@@ -257,6 +259,8 @@ def get_customer_detail(
         account_age_days=customer.account_age_days,
         created_at=customer.created_at,
         transaction_count=total_tx_count,
+        simulated_balance=round(float(customer.simulated_balance or 1500000.0), 2),
+        currency=customer.currency or "INR",
         behavioral_stats=behavioral_stats,
         recent_transactions=recent_tx_list,
     )

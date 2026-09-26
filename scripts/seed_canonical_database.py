@@ -151,7 +151,7 @@ def seed_database():
             c = Customer(
                 customer_id=c_id,
                 account_age_days=int(row["customer_account_age_days"]),
-                simulated_balance=100000.0,
+                simulated_balance=1600000.0,
                 currency="INR",
                 name=c_name,
                 email=c_email,

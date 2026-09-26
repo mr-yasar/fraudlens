@@ -24,6 +24,8 @@ class CustomerResponse(CustomerBase):
     created_at: datetime
     transaction_count: int = Field(0, description="Total count of transactions for this customer")
     historical_avg_amount: float = Field(0.0, description="Calculated average transaction amount")
+    simulated_balance: float = Field(1500000.0, description="Available simulated cash/wallet balance")
+    currency: str = Field("INR", description="Account currency")
     high_risk_count: int = Field(0, description="Count of transactions flagged HIGH risk")
     fraud_transaction_count: int = Field(0, description="Count of confirmed fraud transactions")
 

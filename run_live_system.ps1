@@ -3,9 +3,11 @@ Write-Host "===================================================" -ForegroundColo
 Write-Host "    Starting FraudLens AI Backend and Frontend     " -ForegroundColor Cyan
 Write-Host "===================================================" -ForegroundColor Cyan
 
+$pyExe = if (Test-Path ".venv\Scripts\python.exe") { ".venv\Scripts\python.exe" } else { "python" }
+
 # 1. Start Backend in separate window
 Write-Host "`n[1/2] Launching FastAPI Backend on http://127.0.0.1:8000 ..." -ForegroundColor Green
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "`$env:PYTHONPATH='.'; python -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000 --reload"
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "`$env:PYTHONPATH='.'; & '$pyExe' -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000 --reload"
 
 # 2. Start Frontend in separate window
 Write-Host "[2/2] Launching React Vite Frontend on http://localhost:5173 ..." -ForegroundColor Green

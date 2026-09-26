@@ -31,8 +31,8 @@ class CustomerBehaviorProfile:
     previous_transaction_amount: float = 0.0
     recent_avg_amount_7d: float = 0.0
     recent_max_amount_7d: float = 0.0
-    simulated_balance: float = 50000.0
-    currency: str = "USD"
+    simulated_balance: float = 1500000.0
+    currency: str = "INR"
     velocity_5m: int = 0
     velocity_15m: int = 0
     velocity_1h: int = 0
@@ -180,8 +180,8 @@ class BehaviorProfileService:
         # 1. Fetch customer entity
         customer = db.query(Customer).filter(Customer.customer_id == customer_id).first()
         account_age = float(customer.account_age_days) if customer and customer.account_age_days is not None else 30.0
-        balance = float(customer.simulated_balance) if customer and customer.simulated_balance is not None else 50000.0
-        currency = customer.currency if customer and customer.currency else "USD"
+        balance = float(customer.simulated_balance) if customer and customer.simulated_balance is not None else 1500000.0
+        currency = customer.currency if customer and customer.currency else "INR"
 
         # 2. Query all past transactions for this customer
         history = (

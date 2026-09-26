@@ -65,8 +65,8 @@ def register(
             customer_id=cust_id,
             name=new_user.name,
             email=new_user.email,
-            simulated_balance=50000.0,
-            currency="USD",
+            simulated_balance=1500000.0,
+            currency="INR",
             account_age_days=30,
             risk_segment="Standard",
         )
