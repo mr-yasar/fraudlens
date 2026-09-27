@@ -190,6 +190,7 @@ export default function LiveMonitorAndInvestigationHub({
           user={user}
           isAdmin={isAdmin}
           onInvestigate={handleLaunchInvestigation}
+          onViewExplanation={onViewExplanation}
         />
       ) : (
         <InvestigationsView
@@ -203,3 +204,4 @@ export default function LiveMonitorAndInvestigationHub({
     </div>
   )
 }
+

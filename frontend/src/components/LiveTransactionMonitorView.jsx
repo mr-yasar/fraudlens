@@ -13,12 +13,14 @@ import {
   ArrowUpRight,
   TrendingDown,
   TrendingUp,
+  Sparkles,
+  ShieldCheck,
 } from 'lucide-react'
 import { formatINR } from '../utils/formatters'
 
 import { getCustomerPersona } from '../utils/customerHelper'
 
-export default function LiveTransactionMonitorView({ onInvestigate, user, isAdmin }) {
+export default function LiveTransactionMonitorView({ onInvestigate, onViewExplanation, user, isAdmin }) {
   const customerPersona = getCustomerPersona(user)
   const isCustomer = customerPersona.isCustomer
 
@@ -92,17 +94,22 @@ export default function LiveTransactionMonitorView({ onInvestigate, user, isAdmi
                 STREAM ACTIVE • REAL-TIME RADAR
               </span>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-slate-800 text-slate-300">
-                20,000 SYNTHETIC CANONICAL REPOSITORY
+                {isCustomer ? `PRIVATE ACCOUNT: ${customerPersona.customerId}` : '20,000 SYNTHETIC CANONICAL REPOSITORY'}
               </span>
             </div>
             <h1 className="text-2xl font-black tracking-tight text-white flex items-center gap-2">
               <Radio className="w-6 h-6 text-cyan-400" />
-              Live Transaction Radar &amp; Fraud Monitor
+              {isCustomer
+                ? `Live Transaction Radar & Security Monitor`
+                : `Live Transaction Radar & Fraud Monitor`}
             </h1>
             <p className="text-sm text-slate-400 mt-1 max-w-2xl">
-              Real-time monitoring feed of incoming transactions with instant ML scoring, risk classification, and step-up flags.
+              {isCustomer
+                ? `Real-time monitoring feed and instant AI explanations for ${customerPersona.customerName || customerPersona.name}. Every transaction decision and risk driver is strictly computed for your account.`
+                : `Real-time monitoring feed of incoming transactions with instant ML scoring, risk classification, and step-up flags.`}
             </p>
           </div>
+
 
           <div className="flex items-center gap-3">
             <button
@@ -327,16 +334,32 @@ export default function LiveTransactionMonitorView({ onInvestigate, user, isAdmi
                     </td>
 
                     <td className="p-3.5 text-right">
-                      {onInvestigate && (
-                        <button
-                          onClick={() => onInvestigate(tx.transaction_id)}
-                          className="px-2.5 py-1 rounded bg-slate-800 hover:bg-cyan-950 text-slate-300 hover:text-cyan-300 border border-slate-700 hover:border-cyan-700 font-medium text-[11px] transition inline-flex items-center gap-1"
-                        >
-                          <Eye className="w-3 h-3" />
-                          Investigate
-                        </button>
-                      )}
+                      <div className="inline-flex items-center gap-1.5 justify-end">
+                        {onViewExplanation && (
+                          <button
+                            type="button"
+                            onClick={() => onViewExplanation(tx.transaction_id)}
+                            className="px-2.5 py-1 rounded bg-indigo-950/80 hover:bg-indigo-900 text-indigo-300 hover:text-white border border-indigo-700/70 hover:border-indigo-500 font-semibold text-[11px] transition inline-flex items-center gap-1 shadow-sm"
+                            title={`Inspect AI Explanation & SHAP factors for ${tx.transaction_id}`}
+                          >
+                            <Sparkles className="w-3 h-3 text-cyan-400" />
+                            <span>Explain</span>
+                          </button>
+                        )}
+                        {onInvestigate && (
+                          <button
+                            type="button"
+                            onClick={() => onInvestigate(tx.transaction_id)}
+                            className="px-2.5 py-1 rounded bg-slate-800 hover:bg-cyan-950 text-slate-300 hover:text-cyan-300 border border-slate-700 hover:border-cyan-700 font-medium text-[11px] transition inline-flex items-center gap-1"
+                            title={`Open fraud case investigation for ${tx.transaction_id}`}
+                          >
+                            <Eye className="w-3 h-3" />
+                            <span>Investigate</span>
+                          </button>
+                        )}
+                      </div>
                     </td>
+
                   </tr>
                 )
               })}

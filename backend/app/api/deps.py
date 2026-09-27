@@ -113,3 +113,41 @@ class RequireRoles:
 # Specific RBAC Dependencies
 require_admin = RequireRoles([UserRole.ADMIN])
 require_investigator = RequireRoles([UserRole.ADMIN, UserRole.FRAUD_INVESTIGATOR])
+
+
+def get_customer_id_for_user(user: Optional[User], db: Optional[Session] = None) -> Optional[str]:
+    """Resolve standard customer_id for a given user.
+    Returns None for ADMIN and FRAUD_INVESTIGATOR roles allowing broad investigation access.
+    Returns exact canonical customer_id for CUSTOMER/USER roles (e.g. CUST_MONISHA_001, CUST_MOHANA_002, CUST_SOWMIYA_003).
+    """
+    if not user:
+        return None
+    role = (user.role or "").upper()
+    if role in ("ADMIN", "FRAUD_INVESTIGATOR"):
+        return None
+
+    email_l = (user.email or "").lower()
+    name_l = (user.name or "").lower()
+
+    if "monisha" in email_l or "monisha" in name_l:
+        return "CUST_MONISHA_001"
+    if "mohana" in email_l or "mohana" in name_l:
+        return "CUST_MOHANA_002"
+    if "sowmiya" in email_l or "sowmiya" in name_l:
+        return "CUST_SOWMIYA_003"
+    if "arun" in email_l or "arun" in name_l:
+        return "CUST_REAL_001"
+    if "priya" in email_l or "priya" in name_l:
+        return "CUST_REAL_002"
+    if "vikram" in email_l or "vikram" in name_l:
+        return "CUST_REAL_003"
+
+    if db:
+        from backend.app.models.customer import Customer
+        from sqlalchemy import func
+        cust = db.query(Customer).filter(func.lower(Customer.email) == email_l).first()
+        if cust and cust.customer_id:
+            return cust.customer_id
+
+    return f"CUST-USER-{user.id}"
+

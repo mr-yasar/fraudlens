@@ -19,7 +19,7 @@ from backend.app.models.audit_log import AuditLog
 
 from backend.app.models.payment_intent import PaymentIntent, PaymentLifecycleStatus
 from backend.app.schemas.user import UserRole
-from backend.app.api.deps import require_investigator, get_current_active_user
+from backend.app.api.deps import require_investigator, get_current_active_user, get_customer_id_for_user
 
 from backend.app.schemas.investigation import (
     InvestigationStatus,
@@ -44,7 +44,7 @@ router = APIRouter()
 def create_investigation(
     payload: InvestigationCreateInput,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_investigator),
+    current_user: User = Depends(get_current_active_user),
 ) -> InvestigationDetailResponse:
     """Open a new investigation case for an existing transaction."""
     # 1. Verify target transaction exists
@@ -54,6 +54,15 @@ def create_investigation(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Transaction with ID '{payload.transaction_id}' not found.",
         )
+
+    # Customer Isolation: Verify user owns the transaction if customer
+    user_cust_id = get_customer_id_for_user(current_user, db)
+    if user_cust_id is not None:
+        if tx.customer_id != user_cust_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied: You can only create investigation cases for your own transactions.",
+            )
 
     # 2. Prevent duplicate active investigations for same transaction
     active_case = (
@@ -73,9 +82,9 @@ def create_investigation(
     # 3. Determine investigator assignment
     assigned_id = payload.investigator_id
     if assigned_id is None:
-        if current_user.role == UserRole.FRAUD_INVESTIGATOR.value:
+        if current_user.role in (UserRole.FRAUD_INVESTIGATOR.value, "FRAUD_INVESTIGATOR"):
             assigned_id = current_user.id
-        elif current_user.role == UserRole.ADMIN.value:
+        elif current_user.role in (UserRole.ADMIN.value, "ADMIN"):
             assigned_id = current_user.id
     else:
         # Verify specified investigator exists if provided
@@ -85,6 +94,7 @@ def create_investigation(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Investigator with User ID '{assigned_id}' not found.",
             )
+
 
     # 4. Generate unique Case ID
     case_id = f"CASE-{uuid.uuid4().hex[:8].upper()}"
@@ -173,25 +183,16 @@ def list_investigations(
     sort_by: str = Query("created_at", description="Sort field: created_at, updated_at, case_id, status"),
     sort_order: str = Query("desc", description="Sort order: asc or desc"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_investigator),
+    current_user: User = Depends(get_current_active_user),
 ) -> InvestigationListResponse:
     """List investigation cases with comprehensive search and filtering."""
     query = db.query(Investigation).join(Transaction, Investigation.transaction_id == Transaction.transaction_id)
 
     # Customer Data Isolation: customers can only view investigation cases for their own transactions
-    role = (current_user.role or "").upper()
-    if role not in ("ADMIN", "FRAUD_INVESTIGATOR"):
-        email_l = (current_user.email or "").lower()
-        if "monisha" in email_l:
-            user_cust_id = "CUST_MONISHA_001"
-        elif "mohana" in email_l:
-            user_cust_id = "CUST_MOHANA_002"
-        elif "sowmiya" in email_l:
-            user_cust_id = "CUST_SOWMIYA_003"
-        else:
-            cust_rec = db.query(Customer).filter(func.lower(Customer.email) == email_l).first()
-            user_cust_id = cust_rec.customer_id if cust_rec else f"CUST-USER-{current_user.id}"
+    user_cust_id = get_customer_id_for_user(current_user, db)
+    if user_cust_id is not None:
         query = query.filter(Transaction.customer_id == user_cust_id)
+
 
     # Search filter
     if search:
@@ -306,18 +307,8 @@ def get_investigation_detail(
     tx = db.query(Transaction).filter(Transaction.transaction_id == investigation.transaction_id).first()
 
     # Customer Data Isolation
-    role = (current_user.role or "").upper()
-    if role not in ("ADMIN", "FRAUD_INVESTIGATOR"):
-        email_l = (current_user.email or "").lower()
-        if "monisha" in email_l:
-            user_cust_id = "CUST_MONISHA_001"
-        elif "mohana" in email_l:
-            user_cust_id = "CUST_MOHANA_002"
-        elif "sowmiya" in email_l:
-            user_cust_id = "CUST_SOWMIYA_003"
-        else:
-            cust_rec = db.query(Customer).filter(func.lower(Customer.email) == email_l).first()
-            user_cust_id = cust_rec.customer_id if cust_rec else f"CUST-USER-{current_user.id}"
+    user_cust_id = get_customer_id_for_user(current_user, db)
+    if user_cust_id is not None:
         if not tx or tx.customer_id != user_cust_id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -374,7 +365,7 @@ def update_investigation(
     case_id: str,
     payload: InvestigationUpdateInput,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_investigator),
+    current_user: User = Depends(get_current_active_user),
 ) -> InvestigationDetailResponse:
     """Update investigation case status, decision, notes, or investigator assignment."""
     investigation = db.query(Investigation).filter(Investigation.case_id == case_id.strip()).first()
@@ -384,8 +375,24 @@ def update_investigation(
             detail=f"Investigation case with ID '{case_id}' not found.",
         )
 
+    tx = db.query(Transaction).filter(Transaction.transaction_id == investigation.transaction_id).first()
+
+    # Customer Isolation check
+    user_cust_id = get_customer_id_for_user(current_user, db)
+    if user_cust_id is not None:
+        if not tx or tx.customer_id != user_cust_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied: You do not have permission to modify this investigation case.",
+            )
+        if payload.investigator_id is not None:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Customers cannot reassign case investigators.",
+            )
+
     # Check permission for investigator role (Admin can update any case; investigator can update assigned or open cases)
-    if current_user.role == UserRole.FRAUD_INVESTIGATOR.value:
+    if current_user.role in (UserRole.FRAUD_INVESTIGATOR.value, "FRAUD_INVESTIGATOR"):
         if investigation.investigator_id is not None and investigation.investigator_id != current_user.id:
             # If case is assigned to another investigator, non-admin cannot arbitrarily overwrite
             raise HTTPException(
@@ -429,7 +436,7 @@ def update_investigation(
 
     # 4. Update investigator assignment
     if payload.investigator_id is not None and payload.investigator_id != investigation.investigator_id:
-        if current_user.role != UserRole.ADMIN.value and payload.investigator_id != current_user.id:
+        if current_user.role not in (UserRole.ADMIN.value, "ADMIN") and payload.investigator_id != current_user.id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Only administrators can reassign cases to other investigators.",
@@ -514,7 +521,7 @@ def update_investigation(
 def get_investigation_timeline(
     case_id: str,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_investigator),
+    current_user: User = Depends(get_current_active_user),
 ) -> List[Dict[str, Any]]:
     """Synthesize complete chronological timeline of events for an investigation case."""
     investigation = db.query(Investigation).filter(Investigation.case_id == case_id.strip()).first()
@@ -524,10 +531,20 @@ def get_investigation_timeline(
             detail=f"Investigation case with ID '{case_id}' not found.",
         )
 
+    tx = db.query(Transaction).filter(Transaction.transaction_id == investigation.transaction_id).first()
+
+    # Customer Isolation check
+    user_cust_id = get_customer_id_for_user(current_user, db)
+    if user_cust_id is not None:
+        if not tx or tx.customer_id != user_cust_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied: You do not have permission to view this investigation timeline.",
+            )
+
     timeline_events: List[Dict[str, Any]] = []
 
     # 1. Transaction creation & AI Evaluation
-    tx = db.query(Transaction).filter(Transaction.transaction_id == investigation.transaction_id).first()
     if tx and tx.created_at:
         timeline_events.append({
             "timestamp": tx.created_at.isoformat(),
@@ -636,9 +653,27 @@ def generate_ai_copilot_dossier(
     case_id: str,
     provider: Optional[str] = Query("gemini", description="AI Model provider: 'gemini', 'grok', or 'claude'"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_investigator),
+    current_user: User = Depends(get_current_active_user),
 ) -> Dict[str, Any]:
     """Generate structured GenAI forensic investigation dossier."""
+    investigation = db.query(Investigation).filter(Investigation.case_id == case_id.strip()).first()
+    if not investigation:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Investigation case with ID '{case_id}' not found.",
+        )
+
+    tx = db.query(Transaction).filter(Transaction.transaction_id == investigation.transaction_id).first()
+
+    # Customer Isolation check
+    user_cust_id = get_customer_id_for_user(current_user, db)
+    if user_cust_id is not None:
+        if not tx or tx.customer_id != user_cust_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Access denied: You do not have permission to generate AI Copilot dossiers for this case.",
+            )
+
     from backend.app.services.ai_copilot_service import AiCopilotService
     try:
         return AiCopilotService.generate_dossier(
@@ -656,6 +691,7 @@ def generate_ai_copilot_dossier(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"AI Copilot analysis failed: {str(e)}",
         )
+
 
 
 @router.post(

@@ -13,7 +13,7 @@ from backend.app.models.transaction import Transaction
 from backend.app.models.investigation import Investigation
 from backend.app.models.approval import Approval, ApprovalStatus
 from backend.app.schemas.user import UserRole
-from backend.app.api.deps import require_investigator, get_current_active_user
+from backend.app.api.deps import require_investigator, get_current_active_user, get_customer_id_for_user
 from backend.app.schemas.dashboard import (
     DashboardStatsResponse,
     AnalyticsReportsResponse,
@@ -35,47 +35,60 @@ router = APIRouter()
 )
 def get_dashboard_stats(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_investigator),
+    current_user: User = Depends(get_current_active_user),
 ) -> DashboardStatsResponse:
     """Compute and return live dashboard telemetry."""
+    user_cust_id = get_customer_id_for_user(current_user, db)
+
+    tx_q = db.query(Transaction)
+    if user_cust_id is not None:
+        tx_q = tx_q.filter(Transaction.customer_id == user_cust_id)
+
+    inv_q = db.query(Investigation)
+    if user_cust_id is not None:
+        inv_q = inv_q.join(Transaction, Investigation.transaction_id == Transaction.transaction_id).filter(Transaction.customer_id == user_cust_id)
+
     # 1. Total Counts
-    total_tx = db.query(func.count(Transaction.id)).scalar() or 0
-    total_cust = db.query(func.count(Customer.id)).scalar() or 0
-    total_inv = db.query(func.count(Investigation.id)).scalar() or 0
+    total_tx = tx_q.count()
+    total_cust = 1 if user_cust_id else (db.query(func.count(Customer.id)).scalar() or 0)
+    total_inv = inv_q.count()
+
 
     # 2. Prediction Breakdown
-    fraud_tx = db.query(func.count(Transaction.id)).filter(Transaction.prediction == 1).scalar() or 0
-    genuine_tx = db.query(func.count(Transaction.id)).filter(Transaction.prediction == 0).scalar() or 0
+    fraud_tx = tx_q.filter(Transaction.prediction == 1).count()
+    genuine_tx = tx_q.filter(Transaction.prediction == 0).count()
     fraud_ratio = round((fraud_tx / total_tx) * 100, 2) if total_tx > 0 else 0.0
 
     # 3. Risk Level Breakdown
-    high_risk_tx = db.query(func.count(Transaction.id)).filter(Transaction.risk_level == "HIGH").scalar() or 0
-    med_risk_tx = db.query(func.count(Transaction.id)).filter(Transaction.risk_level == "MEDIUM").scalar() or 0
-    low_risk_tx = db.query(func.count(Transaction.id)).filter(Transaction.risk_level == "LOW").scalar() or 0
+    high_risk_tx = tx_q.filter(Transaction.risk_level == "HIGH").count()
+    med_risk_tx = tx_q.filter(Transaction.risk_level == "MEDIUM").count()
+    low_risk_tx = tx_q.filter(Transaction.risk_level == "LOW").count()
 
     # 4. Averages
-    avg_risk = db.query(func.avg(Transaction.risk_score)).scalar()
-    avg_risk_score = round(float(avg_risk), 2) if avg_risk is not None else 0.0
+    if user_cust_id is not None:
+        avg_risk = db.query(func.avg(Transaction.risk_score)).filter(Transaction.customer_id == user_cust_id).scalar()
+        avg_prob = db.query(func.avg(Transaction.fraud_probability)).filter(Transaction.customer_id == user_cust_id).scalar()
+    else:
+        avg_risk = db.query(func.avg(Transaction.risk_score)).scalar()
+        avg_prob = db.query(func.avg(Transaction.fraud_probability)).scalar()
 
-    avg_prob = db.query(func.avg(Transaction.fraud_probability)).scalar()
+    avg_risk_score = round(float(avg_risk), 2) if avg_risk is not None else 0.0
     avg_fraud_prob = round(float(avg_prob), 4) if avg_prob is not None else 0.0
 
     # 5. Investigation Breakdown
-    open_inv = db.query(func.count(Investigation.id)).filter(func.upper(Investigation.status) == "OPEN").scalar() or 0
-    under_review_inv = db.query(func.count(Investigation.id)).filter(func.upper(Investigation.status) == "UNDER_REVIEW").scalar() or 0
-    resolved_inv = db.query(func.count(Investigation.id)).filter(func.upper(Investigation.status) == "RESOLVED").scalar() or 0
+    open_inv = inv_q.filter(func.upper(Investigation.status) == "OPEN").count()
+    under_review_inv = inv_q.filter(func.upper(Investigation.status) == "UNDER_REVIEW").count()
+    resolved_inv = inv_q.filter(func.upper(Investigation.status) == "RESOLVED").count()
 
-    confirmed_fraud = db.query(func.count(Investigation.id)).filter(func.upper(Investigation.decision) == "CONFIRMED_FRAUD").scalar() or 0
-    genuine_cases = db.query(func.count(Investigation.id)).filter(func.upper(Investigation.decision) == "GENUINE").scalar() or 0
-
+    confirmed_fraud = inv_q.filter(func.upper(Investigation.decision) == "CONFIRMED_FRAUD").count()
+    genuine_cases = inv_q.filter(func.upper(Investigation.decision) == "GENUINE").count()
 
     # 6. Recent Transaction Feeds
-    recent_txs = (
-        db.query(Transaction)
-        .order_by(desc(Transaction.created_at))
-        .limit(8)
-        .all()
-    )
+    recent_tx_q = db.query(Transaction)
+    if user_cust_id is not None:
+        recent_tx_q = recent_tx_q.filter(Transaction.customer_id == user_cust_id)
+    recent_txs = recent_tx_q.order_by(desc(Transaction.created_at)).limit(8).all()
+
     recent_tx_list = [
         {
             "id": t.id,
@@ -94,13 +107,11 @@ def get_dashboard_stats(
     ]
 
     # 7. Recent High-Risk Activity
-    high_risk_feed = (
-        db.query(Transaction)
-        .filter(Transaction.risk_level == "HIGH")
-        .order_by(desc(Transaction.created_at))
-        .limit(5)
-        .all()
-    )
+    high_risk_feed_q = db.query(Transaction).filter(Transaction.risk_level == "HIGH")
+    if user_cust_id is not None:
+        high_risk_feed_q = high_risk_feed_q.filter(Transaction.customer_id == user_cust_id)
+    high_risk_feed = high_risk_feed_q.order_by(desc(Transaction.created_at)).limit(5).all()
+
     high_risk_list = [
         {
             "transaction_id": t.transaction_id,
@@ -114,12 +125,11 @@ def get_dashboard_stats(
     ]
 
     # 8. Recent Investigations
-    recent_cases = (
-        db.query(Investigation)
-        .order_by(desc(Investigation.created_at))
-        .limit(5)
-        .all()
-    )
+    recent_inv_q = db.query(Investigation)
+    if user_cust_id is not None:
+        recent_inv_q = recent_inv_q.join(Transaction, Investigation.transaction_id == Transaction.transaction_id).filter(Transaction.customer_id == user_cust_id)
+    recent_cases = recent_inv_q.order_by(desc(Investigation.created_at)).limit(5).all()
+
     recent_cases_list = [
         {
             "case_id": c.case_id,
@@ -130,6 +140,7 @@ def get_dashboard_stats(
         }
         for c in recent_cases
     ]
+
 
     # 9. Risk Distribution Breakdown
     risk_dist = {
@@ -373,14 +384,20 @@ def get_dashboard_stats(
 )
 def get_analytics_reports(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_investigator),
+    current_user: User = Depends(get_current_active_user),
 ) -> AnalyticsReportsResponse:
     """Generate comprehensive compliance and threat intelligence report."""
-    total_tx = db.query(func.count(Transaction.id)).scalar() or 0
-    fraud_tx = db.query(func.count(Transaction.id)).filter(Transaction.prediction == 1).scalar() or 0
+    user_cust_id = get_customer_id_for_user(current_user, db)
+
+    tx_q = db.query(Transaction)
+    if user_cust_id is not None:
+        tx_q = tx_q.filter(Transaction.customer_id == user_cust_id)
+
+    total_tx = tx_q.count()
+    fraud_tx = tx_q.filter(Transaction.prediction == 1).count()
 
     # Merchant Category Vulnerability Analysis
-    merchant_data = (
+    merchant_query = (
         db.query(
             Transaction.merchant_category,
             func.count(Transaction.id).label("tx_count"),
@@ -388,9 +405,10 @@ def get_analytics_reports(
             func.sum(Transaction.amount).label("total_amount"),
             func.avg(Transaction.risk_score).label("avg_risk"),
         )
-        .group_by(Transaction.merchant_category)
-        .all()
     )
+    if user_cust_id is not None:
+        merchant_query = merchant_query.filter(Transaction.customer_id == user_cust_id)
+    merchant_data = merchant_query.group_by(Transaction.merchant_category).all()
 
     merchant_analysis = []
     for row in merchant_data:
@@ -407,9 +425,9 @@ def get_analytics_reports(
         })
 
     # Risk Breakdown
-    high_cnt = db.query(func.count(Transaction.id)).filter(Transaction.risk_level == "HIGH").scalar() or 0
-    med_cnt = db.query(func.count(Transaction.id)).filter(Transaction.risk_level == "MEDIUM").scalar() or 0
-    low_cnt = db.query(func.count(Transaction.id)).filter(Transaction.risk_level == "LOW").scalar() or 0
+    high_cnt = tx_q.filter(Transaction.risk_level == "HIGH").count()
+    med_cnt = tx_q.filter(Transaction.risk_level == "MEDIUM").count()
+    low_cnt = tx_q.filter(Transaction.risk_level == "LOW").count()
 
     risk_breakdown = [
         {"level": "LOW", "count": low_cnt, "percentage": round((low_cnt / total_tx) * 100, 1) if total_tx > 0 else 0.0},
@@ -418,11 +436,14 @@ def get_analytics_reports(
     ]
 
     # Investigation Outcomes
-    total_inv = db.query(func.count(Investigation.id)).scalar() or 0
-    confirmed = db.query(func.count(Investigation.id)).filter(Investigation.decision == "CONFIRMED_FRAUD").scalar() or 0
-    genuine = db.query(func.count(Investigation.id)).filter(Investigation.decision == "GENUINE").scalar() or 0
-    open_c = db.query(func.count(Investigation.id)).filter(Investigation.status == "OPEN").scalar() or 0
-    review_c = db.query(func.count(Investigation.id)).filter(Investigation.status == "UNDER_REVIEW").scalar() or 0
+    inv_q = db.query(Investigation)
+    if user_cust_id is not None:
+        inv_q = inv_q.join(Transaction, Investigation.transaction_id == Transaction.transaction_id).filter(Transaction.customer_id == user_cust_id)
+    total_inv = inv_q.count()
+    confirmed = inv_q.filter(Investigation.decision == "CONFIRMED_FRAUD").count()
+    genuine = inv_q.filter(Investigation.decision == "GENUINE").count()
+    open_c = inv_q.filter(Investigation.status == "OPEN").count()
+    review_c = inv_q.filter(Investigation.status == "UNDER_REVIEW").count()
 
     investigation_outcomes = {
         "total_cases": total_inv,
@@ -432,6 +453,7 @@ def get_analytics_reports(
         "under_review": review_c,
         "confirmation_rate": round((confirmed / (confirmed + genuine)) * 100, 2) if (confirmed + genuine) > 0 else 0.0,
     }
+
 
     # Model Performance Summary from active service
     service = FraudPredictionService.get_instance()
@@ -680,7 +702,7 @@ def get_customer_dashboard(
         customer_id=customer_id,
         name=customer.name if customer else current_user.name,
         email=customer.email if customer else current_user.email,
-        account_balance=float(customer.account_balance) if customer and customer.account_balance is not None else 10000.0,
+        account_balance=float(customer.account_balance) if customer and customer.account_balance is not None else 547855.0,
         risk_segment=customer.risk_segment if customer else "Standard",
         account_age_days=customer.account_age_days if customer else 30,
         total_transactions_count=total_tx,

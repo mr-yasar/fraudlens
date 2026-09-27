@@ -222,7 +222,7 @@ export default function DashboardView({ onSelectTransaction, onOpenCase, onOpenP
                 <span className="text-[10px] font-mono text-slate-400">All 3 Canonical Personas Active</span>
               </div>
               <h2 className="text-base sm:text-lg font-bold text-white mt-1">
-                Real-Time Evaluation Personas (Student MCA Research Set)
+                Real-Time Evaluation Personas &amp; Behavioral Profiles
               </h2>
             </div>
             <button

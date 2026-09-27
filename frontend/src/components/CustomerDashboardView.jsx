@@ -175,7 +175,7 @@ export default function CustomerDashboardView({
           ...prev,
           pending_approvals: remaining,
           pending_approvals_count: remaining.length,
-          account_balance: Math.max(0, (prev.account_balance || 1720000) - amt),
+          account_balance: Math.max(0, (prev.account_balance || 547855) - amt),
           security_summary: {
             ...(prev.security_summary || {}),
             pending_reviews_count: remaining.length,
@@ -469,7 +469,7 @@ export default function CustomerDashboardView({
               <span>Checking • INR</span>
             </span>
             <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 font-bold border border-emerald-700">
-              +₹15L Active
+              Verified Account
             </span>
           </div>
         </div>
@@ -908,45 +908,25 @@ export default function CustomerDashboardView({
               <div className="p-5 rounded-2xl bg-gradient-to-r from-emerald-950/80 via-slate-900 to-teal-950/80 border border-emerald-500/60 shadow-xl flex items-center justify-between">
                 <div>
                   <span className="text-[10px] text-emerald-400 uppercase font-mono font-bold block">
-                    Total Available Liquidity
+                    Available Balance
                   </span>
                   <span className="text-3xl font-black text-emerald-300 font-mono">
                     {formatInr(data?.account_balance)}
                   </span>
                   <div className="text-xs text-slate-400 mt-1">
-                    Primary Checking Account • Account No: FL-IND-8849-0129
+                    Primary Checking Account • Currency: INR (₹ Indian Rupee)
                   </div>
                 </div>
-                <div className="text-right font-mono">
-                  <span className="px-2.5 py-1 rounded-lg bg-emerald-900/90 text-emerald-200 border border-emerald-600 text-xs font-bold">
-                    +₹15,00,000 Active
-                  </span>
-                  <div className="text-[10px] text-slate-400 mt-1">Instant Pre-Auth Reserve</div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 font-mono text-xs">
-                <div className="p-3.5 bg-slate-950/80 rounded-xl border border-slate-800">
-                  <span className="text-slate-400 text-[10px] uppercase block">Base Deposit</span>
-                  <strong className="text-white text-sm">₹2,20,000.00</strong>
-                </div>
-                <div className="p-3.5 bg-slate-950/80 rounded-xl border border-slate-800">
-                  <span className="text-slate-400 text-[10px] uppercase block">Credit Reserve Line</span>
-                  <strong className="text-cyan-300 text-sm">₹15,00,000.00</strong>
-                </div>
-                <div className="p-3.5 bg-slate-950/80 rounded-xl border border-slate-800">
-                  <span className="text-slate-400 text-[10px] uppercase block">Currency Code</span>
-                  <strong className="text-emerald-400 text-sm">INR (₹ Indian Rupee)</strong>
-                </div>
+                <DollarSign className="w-10 h-10 text-emerald-400 opacity-50" />
               </div>
 
               <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-300 space-y-2">
                 <h4 className="font-bold text-white uppercase text-[11px] font-mono flex items-center gap-1.5">
                   <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                  Instant Liquidity &amp; Pre-Auth Protection
+                  Pre-Auth Protection Active
                 </h4>
                 <p className="text-slate-400 leading-relaxed text-[11px]">
-                  Your ₹15 Lakhs reserve is seamlessly linked to the FraudLens AI Pre-Authorization engine. Every transaction is pre-scored before settlement, preventing unauthorized debits and chargeback disputes.
+                  Every transaction is pre-scored by the FraudLens AI engine before settlement, preventing unauthorized debits and chargeback disputes.
                 </p>
               </div>
             </div>

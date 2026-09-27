@@ -67,7 +67,7 @@ const LINKED_BANK_ACCOUNTS = [
     accountNumberMasked: '•••• •••• 4821',
     ifsc: 'HDFC0000240',
     branch: 'Anna Nagar, Chennai',
-    balance: 78450.0,
+    balance: 547855.0,
     isPrimary: true,
     logoColor: 'from-blue-700 to-indigo-800',
   },
@@ -78,7 +78,7 @@ const LINKED_BANK_ACCOUNTS = [
     accountNumberMasked: '•••• •••• 9102',
     ifsc: 'SBIN0001542',
     branch: 'Nungambakkam, Chennai',
-    balance: 42100.0,
+    balance: 242100.0,
     isPrimary: false,
     logoColor: 'from-cyan-700 to-blue-900',
   },
@@ -89,7 +89,7 @@ const LINKED_BANK_ACCOUNTS = [
     accountNumberMasked: '•••• •••• 3341',
     ifsc: 'ICIC0000001',
     branch: 'T Nagar, Chennai',
-    balance: 115000.0,
+    balance: 547855.0,
     isPrimary: false,
     logoColor: 'from-orange-700 to-amber-900',
   },
@@ -100,7 +100,7 @@ const LINKED_BANK_ACCOUNTS = [
     accountNumberMasked: '•••• 1500',
     ifsc: 'FLNS000001',
     branch: 'Digital Cyber Wallet',
-    balance: 1500000.0,
+    balance: 547855.0,
     isPrimary: false,
     logoColor: 'from-emerald-600 to-teal-800',
   },
@@ -844,11 +844,16 @@ export default function PaymentView({
               </span>
             </div>
             <p className="text-xs text-slate-300 mt-1 max-w-2xl">
-              Live multi-channel payment engine with instant pre-authorization fraud evaluation for{' '}
-              <strong className="text-emerald-300">Monisha (3%)</strong>,{' '}
-              <strong className="text-amber-300">Mohana (12%)</strong>, and{' '}
-              <strong className="text-rose-300">Sowmiya (26%)</strong>. Pre-decision protection stops
-              fraud before funds transfer.
+              {isCustomer ? (
+                <>
+                  Live multi-channel payment engine with instant pre-authorization fraud evaluation and pre-decision security protection for{' '}
+                  <strong className="text-emerald-300">{customerPersona.name}</strong>.
+                </>
+              ) : (
+                <>
+                  Live multi-channel payment engine with instant pre-authorization fraud evaluation and real-time defense. Pre-decision protection stops fraud before funds transfer.
+                </>
+              )}
             </p>
           </div>
         </div>
@@ -940,44 +945,6 @@ export default function PaymentView({
       {/* TAB 1: PAY & TRANSFER GATEWAY */}
       {activeTab === 'gateway' && (
         <div className="space-y-6">
-          {/* Persona Helper Guide */}
-          {showHelperGuide && (
-            <div className="p-4 bg-gradient-to-r from-cyan-950/40 via-indigo-950/30 to-cyan-950/40 border border-cyan-700/50 rounded-2xl text-xs text-cyan-200 relative shadow-lg">
-              <div className="flex items-center justify-between font-bold text-white mb-2">
-                <div className="flex items-center gap-2">
-                  <Zap className="w-4 h-4 text-cyan-400 animate-pulse" />
-                  <span className="text-cyan-300 font-extrabold uppercase tracking-wide">
-                    {isCustomer
-                      ? `Personal Security Profile for ${customerPersona.name}`
-                      : 'Pre-Authorization Evaluation Suite — 3 Distinct Baseline Personas'}
-                  </span>
-                </div>
-                <button
-                  onClick={() => setShowHelperGuide(false)}
-                  className="text-cyan-400 hover:text-white text-xs underline"
-                >
-                  Hide Guide
-                </button>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-[11px] text-slate-300">
-                <div className="p-2.5 bg-slate-900/80 rounded-xl border border-emerald-800/50">
-                  <strong className="text-emerald-400 block mb-0.5">🟢 Monisha (3% Baseline)</strong>
-                  Routine UPI/Cards in Chennai. Result: Instant{' '}
-                  <strong className="text-emerald-300">ALLOW (Auto-Approved, Zero Friction)</strong>.
-                </div>
-                <div className="p-2.5 bg-slate-900/80 rounded-xl border border-amber-800/50">
-                  <strong className="text-amber-400 block mb-0.5">🟡 Mohana (12% Baseline)</strong>
-                  Moderate value &amp; unfamiliar web browser. Result:{' '}
-                  <strong className="text-amber-300">REVIEW (Step-Up OTP Challenge)</strong>.
-                </div>
-                <div className="p-2.5 bg-slate-900/80 rounded-xl border border-rose-800/50">
-                  <strong className="text-rose-400 block mb-0.5">🔴 Sowmiya (26% Baseline)</strong>
-                  Botnet emulator at 2:30 AM via foreign proxy. Result:{' '}
-                  <strong className="text-rose-300">BLOCK (Instant Pre-Auth Defense)</strong>.
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* Preset Scenario Selector Buttons */}
           <div className="space-y-1.5">
@@ -1742,10 +1709,11 @@ export default function PaymentView({
                           </div>
                         </div>
                         <div className="text-right shrink-0">
-                          <div className="text-xs font-bold text-emerald-400 font-mono">
-                            {formatINR(bank.balance)}
+                          <div className="text-xs font-bold text-emerald-400 font-mono flex items-center gap-1 justify-end">
+                            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                            <span>Linked &amp; Active</span>
                           </div>
-                          <div className="text-[9px] text-slate-500">Available</div>
+                          <div className="text-[9px] text-slate-500 font-mono">•••• •••• Verified</div>
                         </div>
                       </button>
                     )

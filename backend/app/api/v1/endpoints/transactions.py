@@ -14,7 +14,7 @@ from backend.app.models.customer import Customer
 from backend.app.models.transaction import Transaction
 from backend.app.models.shap_explanation import ShapExplanation
 from backend.app.models.audit_log import AuditLog
-from backend.app.api.deps import require_investigator, get_current_user, get_current_active_user
+from backend.app.api.deps import require_investigator, get_current_user, get_current_active_user, get_customer_id_for_user
 from backend.app.schemas.prediction import (
     TransactionPredictionInput,
     LocalExplanationResponse,
@@ -54,16 +54,21 @@ def _ensure_customer_exists(db: Session, customer_id: str, account_age_days: Opt
 def create_transaction(
     payload: TransactionCreateInput,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_investigator),
+    current_user: User = Depends(get_current_active_user),
 ) -> TransactionDetailResponse:
     """Create and score a financial transaction with full database persistence."""
     # Ensure transaction_id
     tx_id = payload.transaction_id or f"TX-{uuid.uuid4().hex[:12].upper()}"
     payload.transaction_id = tx_id
 
-    # Ensure customer_id
-    cust_id = payload.customer_id or f"CUST-{uuid.uuid4().hex[:8].upper()}"
+    # Enforce Customer Persona Isolation: If customer, bind strictly to own customer_id
+    user_cust_id = get_customer_id_for_user(current_user, db)
+    if user_cust_id is not None:
+        cust_id = user_cust_id
+    else:
+        cust_id = payload.customer_id or f"CUST-{uuid.uuid4().hex[:8].upper()}"
     payload.customer_id = cust_id
+
 
     # 1. Check for duplicate transaction_id
     existing_tx = db.query(Transaction).filter(Transaction.transaction_id == tx_id).first()
@@ -200,17 +205,23 @@ def create_transaction(
 def evaluate_realtime_transaction(
     payload: TransactionCreateInput,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_investigator),
+    current_user: User = Depends(get_current_active_user),
 ) -> RealtimeEvaluationResponse:
     """Execute real-time risk assessment workflow with alert generation and persistence."""
     tx_id = payload.transaction_id or f"RT-{uuid.uuid4().hex[:12].upper()}"
     payload.transaction_id = tx_id
 
-    cust_id = payload.customer_id or f"CUST-{uuid.uuid4().hex[:8].upper()}"
+    # Enforce Customer Persona Isolation: If customer, bind strictly to own customer_id
+    user_cust_id = get_customer_id_for_user(current_user, db)
+    if user_cust_id is not None:
+        cust_id = user_cust_id
+    else:
+        cust_id = payload.customer_id or f"CUST-{uuid.uuid4().hex[:8].upper()}"
     payload.customer_id = cust_id
 
     # 1. Ensure customer is provisioned
     _ensure_customer_exists(db, cust_id, payload.account_age_days)
+
 
     # 2. Evaluate with FraudPredictionService
     prediction_service = FraudPredictionService.get_instance()
@@ -336,6 +347,7 @@ def evaluate_realtime_transaction(
 def list_transactions(
     page: int = Query(1, ge=1, description="Page number (1-indexed)"),
     page_size: int = Query(20, ge=1, le=100, description="Items per page"),
+    limit: Optional[int] = Query(None, ge=1, le=100, description="Alias for page_size"),
     customer_id: Optional[str] = Query(None, description="Filter by customer identifier"),
     search: Optional[str] = Query(None, description="Search by transaction_id or customer_id"),
     risk_level: Optional[str] = Query(None, description="Filter by risk level: LOW, MEDIUM, HIGH"),
@@ -350,21 +362,14 @@ def list_transactions(
     current_user: User = Depends(get_current_active_user),
 ) -> TransactionListResponse:
     """List transactions with flexible filtering, search, and pagination."""
+    if limit is not None:
+        page_size = limit
+
     query = db.query(Transaction)
 
-    # Customer Data Isolation: Customers can only view their own transactions
-    role = (current_user.role or "").upper()
-    if role not in ("ADMIN", "FRAUD_INVESTIGATOR"):
-        email_l = (current_user.email or "").lower()
-        if "monisha" in email_l:
-            user_cust_id = "CUST_MONISHA_001"
-        elif "mohana" in email_l:
-            user_cust_id = "CUST_MOHANA_002"
-        elif "sowmiya" in email_l:
-            user_cust_id = "CUST_SOWMIYA_003"
-        else:
-            cust = db.query(Customer).filter(func.lower(Customer.email) == email_l).first()
-            user_cust_id = cust.customer_id if cust else f"CUST-USER-{current_user.id}"
+    # Customer Data Isolation: Customers can strictly only view their own transactions
+    user_cust_id = get_customer_id_for_user(current_user, db)
+    if user_cust_id is not None:
         query = query.filter(Transaction.customer_id == user_cust_id)
     elif customer_id:
         query = query.filter(Transaction.customer_id == customer_id.strip())
@@ -453,6 +458,9 @@ def _check_tx_access(tx: Transaction, user: User, db: Optional[Session] = None) 
     role = (user.role or "").upper()
     if role in ("ADMIN", "FRAUD_INVESTIGATOR"):
         return
+    user_cust_id = get_customer_id_for_user(user, db)
+    if user_cust_id is not None and (tx.customer_id or "").upper() == user_cust_id.upper():
+        return
     user_cust_patterns = [
         user.email.lower() if user.email else "",
         f"CUST-USER-{user.id}".lower(),
@@ -465,13 +473,6 @@ def _check_tx_access(tx: Transaction, user: User, db: Optional[Session] = None) 
     tx_cust_lower = (tx.customer_id or "").lower()
     if any(p and (tx_cust_lower == p or tx_cust_lower.endswith(str(user.id))) for p in user_cust_patterns):
         return
-    user_email_l = (user.email or "").lower()
-    if "monisha" in user_email_l and "monisha" in tx_cust_lower:
-        return
-    if "mohana" in user_email_l and "mohana" in tx_cust_lower:
-        return
-    if "sowmiya" in user_email_l and "sowmiya" in tx_cust_lower:
-        return
     if db:
         cust = db.query(Customer).filter(Customer.customer_id == tx.customer_id).first()
         if cust and cust.email and user.email and cust.email.lower() == user.email.lower():
@@ -480,6 +481,7 @@ def _check_tx_access(tx: Transaction, user: User, db: Optional[Session] = None) 
         status_code=status.HTTP_403_FORBIDDEN,
         detail="Access denied: You do not have permission to view this transaction.",
     )
+
 
 
 

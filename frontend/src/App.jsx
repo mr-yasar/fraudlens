@@ -28,12 +28,10 @@ import LiveMonitorAndInvestigationHub from './components/LiveMonitorAndInvestiga
 import LiveTransactionMonitorView from './components/LiveTransactionMonitorView'
 import MerchantIntelligenceView from './components/MerchantIntelligenceView'
 import TransactionsView from './components/TransactionsView'
-import CustomersView from './components/CustomersView'
 import ExplainableAiView from './components/ExplainableAiView'
 import InvestigationsView from './components/InvestigationsView'
 import ModelLabView from './components/ModelLabView'
 import DatasetHealthView from './components/DatasetHealthView'
-import ReportsView from './components/ReportsView'
 import AuditLogsView from './components/AuditLogsView'
 import SettingsView from './components/SettingsView'
 import LoginScene from './components/login/LoginScene'
@@ -444,14 +442,6 @@ function CommandCenterApp() {
                 />
               )}
 
-              {activeView === 'customers' && (
-                <CustomersView
-                  user={user}
-                  isAdmin={isAdmin}
-                  onSelectTransaction={handleSelectTransaction}
-                />
-              )}
-
               {activeView === 'explainable-ai' && (
                 <ExplainableAiView
                   user={user}
@@ -466,10 +456,6 @@ function CommandCenterApp() {
 
               {(activeView === 'dataset-health' || activeView === 'admin-dataset') && (
                 <DatasetHealthView user={user} isAdmin={isAdmin} />
-              )}
-
-              {activeView === 'reports' && (
-                <ReportsView user={user} isAdmin={isAdmin} />
               )}
 
               {activeView === 'audit-logs' && (

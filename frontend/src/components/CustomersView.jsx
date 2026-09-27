@@ -219,16 +219,16 @@ export default function CustomersView({ onSelectTransaction, user, isAdmin }) {
                     </div>
                   </div>
 
-                  {/* Available Cash Liquidity (includes ₹15 Lakhs Feature Cash) */}
+                  {/* Available Cash Liquidity */}
                   <div className="p-2.5 bg-gradient-to-r from-emerald-950/70 via-slate-950/80 to-cyan-950/70 rounded-xl border border-emerald-700/60 mb-3 flex items-center justify-between">
                     <div>
                       <span className="text-[9px] text-emerald-400 uppercase font-mono font-bold block">Available Cash</span>
                       <span className="font-mono font-black text-emerald-300 text-sm">
-                        {formatINR(c.simulated_balance || 1500000.0)}
+                        {formatINR(c.simulated_balance || 547855.0)}
                       </span>
                     </div>
                     <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 font-bold border border-emerald-600">
-                      +₹15L Feature
+                      Active Cash
                     </span>
                   </div>
 
@@ -292,12 +292,12 @@ export default function CustomersView({ onSelectTransaction, user, isAdmin }) {
                   Available Cash Liquidity / Wallet
                 </span>
                 <span className="text-2xl font-black text-emerald-300">
-                  {formatINR(selectedCust.simulated_balance || 1500000.0)}
+                  {formatINR(selectedCust.simulated_balance || 547855.0)}
                 </span>
               </div>
               <div className="text-right">
                 <span className="text-[10px] px-2.5 py-1 rounded-lg bg-emerald-900/90 text-emerald-200 border border-emerald-600 font-bold">
-                  +₹15 Lakhs Active Liquidity
+                  Verified Account Liquidity
                 </span>
                 <div className="text-[10px] text-slate-400 mt-1">Real-Time Instant Pre-Auth Liquidity</div>
               </div>

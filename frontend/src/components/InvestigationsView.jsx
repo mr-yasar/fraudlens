@@ -20,6 +20,7 @@ import {
 import { investigationsApi } from '../services/api'
 import AiInvestigationModal from './AiInvestigationModal'
 import GlobalCenterModal from './common/GlobalCenterModal'
+import { getCustomerPersona } from '../utils/customerHelper'
 
 export default function InvestigationsView({
   onInspectExplanation,
@@ -29,6 +30,9 @@ export default function InvestigationsView({
   user = null,
   isAdmin = false,
 }) {
+  const customerPersona = getCustomerPersona(user)
+  const isCustomer = customerPersona.isCustomer
+
   const [cases, setCases] = useState([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
@@ -36,6 +40,7 @@ export default function InvestigationsView({
   const [statusFilter, setStatusFilter] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+
 
   // Target transaction from Live Radar stream
   const [targetTx, setTargetTx] = useState(initialTxId)
@@ -164,12 +169,17 @@ export default function InvestigationsView({
       <div>
         <h2 className="text-xl font-bold text-white flex items-center gap-2">
           <ShieldAlert className="w-5 h-5 text-cyan-400" />
-          Investigation &amp; Case Management Operations
+          {isCustomer
+            ? `Personal Fraud Cases & Dispute Resolution Hub`
+            : `Investigation & Case Management Operations`}
         </h2>
         <p className="text-xs text-slate-400 mt-0.5">
-          End-to-end case tracking, evidence logging, status transitions, and final fraud adjudications.
+          {isCustomer
+            ? `Active security investigation cases, dispute tracking, and AI forensic intelligence for ${customerPersona.customerName || customerPersona.name}. Strictly private to your account transactions.`
+            : `End-to-end case tracking, evidence logging, status transitions, and final fraud adjudications across all customer transactions.`}
         </p>
       </div>
+
 
       {/* Target Transaction Escalation Card from Live Radar */}
       {targetTx && (

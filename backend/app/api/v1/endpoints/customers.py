@@ -10,7 +10,7 @@ from backend.app.core.database import get_db
 from backend.app.models.user import User
 from backend.app.models.customer import Customer
 from backend.app.models.transaction import Transaction
-from backend.app.api.deps import require_investigator, get_current_active_user
+from backend.app.api.deps import require_investigator, get_current_active_user, get_customer_id_for_user
 from backend.app.schemas.customer import (
     CustomerResponse,
     CustomerBehavioralStats,
@@ -285,15 +285,23 @@ def get_customer_transactions(
     sort_by: str = Query("created_at", description="Sort field: created_at, amount, risk_score, fraud_probability"),
     sort_order: str = Query("desc", description="Sort direction: asc or desc"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_investigator),
+    current_user: User = Depends(get_current_active_user),
 ) -> TransactionListResponse:
     """Retrieve filtered, paginated transaction history for a specific customer."""
+    user_cust_id = get_customer_id_for_user(current_user, db)
+    if user_cust_id is not None and user_cust_id.upper() != customer_id.strip().upper():
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied: You do not have permission to view another customer's transactions.",
+        )
+
     customer = db.query(Customer).filter(Customer.customer_id == customer_id).first()
     if not customer:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Customer with ID '{customer_id}' not found.",
         )
+
 
     query = db.query(Transaction).filter(Transaction.customer_id == customer_id)
 

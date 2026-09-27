@@ -47,26 +47,23 @@ export default function Sidebar({
   // Payment Gateway is Customer-only. Risk Analyzer is Admin/Investigator.
   const primaryNav = isCustomer
     ? [
-        { id: 'dashboard', label: 'Security Dashboard', icon: LayoutDashboard },
+        { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { id: 'analyzer', label: 'Transaction Risk Analyzer', icon: BrainCircuit, isHighlight: true },
         { id: 'payment', label: 'Payment Gateway', icon: CreditCard, isHighlight: true },
         { id: 'transactions', label: 'My Transactions', icon: History },
-        { id: 'customers', label: 'My Profile & Cards', icon: Users },
         { id: 'live-monitor', label: 'Live Radar & Fraud Cases', icon: Radio, isHighlight: true },
-        { id: 'reports', label: 'Account Security Reports', icon: BarChart3 },
         { id: 'ai-copilot', label: 'AI Security Assistant', icon: Bot, isHighlight: true },
       ]
     : [
-        { id: 'dashboard', label: 'Command Dashboard', icon: LayoutDashboard },
+        { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
         { id: 'ai-copilot', label: 'AI Investigation Copilot', icon: Bot, isHighlight: true },
         { id: 'analyzer', label: 'Transaction Risk Analyzer', icon: BrainCircuit, isHighlight: true },
         { id: 'live-monitor', label: 'Live Radar & Fraud Cases', icon: Radio, isHighlight: true },
         { id: 'merchants', label: 'Merchant Intelligence', icon: Store },
         { id: 'transactions', label: 'All Transactions', icon: History },
-        { id: 'customers', label: 'Customer Intelligence', icon: Users },
         { id: 'explainable-ai', label: 'Explainable AI & SHAP', icon: Sparkles },
         { id: 'model-lab', label: 'Model Lab & Registry', icon: Cpu },
         { id: 'dataset-health', label: 'Dataset Health & Audit', icon: Database },
-        { id: 'reports', label: 'Reports & Analytics', icon: BarChart3 },
       ]
 
   const systemNav = [

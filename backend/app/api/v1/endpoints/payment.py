@@ -87,7 +87,7 @@ def get_customer_wallet(
         customer = Customer(
             customer_id=customer_id,
             account_age_days=30,
-            simulated_balance=1500000.0,
+            simulated_balance=547855.0,
             currency="INR",
         )
         db.add(customer)
@@ -120,7 +120,7 @@ def get_customer_wallet(
 
     return CustomerWalletResponse(
         customer_id=customer.customer_id,
-        simulated_balance=float(customer.simulated_balance or 1500000.0),
+        simulated_balance=float(customer.simulated_balance or 547855.0),
         currency=customer.currency or "INR",
         account_age_days=profile.account_age_days,
         known_beneficiaries=bene_dtos,

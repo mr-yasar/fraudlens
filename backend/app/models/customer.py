@@ -14,7 +14,7 @@ class Customer(Base):
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     customer_id = Column(String(100), unique=True, index=True, nullable=False)
     account_age_days = Column(Integer, nullable=True)
-    simulated_balance = Column(Float, default=1500000.0, nullable=False, server_default="1500000.0")
+    simulated_balance = Column(Float, default=547855.0, nullable=False, server_default="547855.0")
     currency = Column(String(10), default="INR", nullable=False, server_default="INR")
     created_at = Column(
         DateTime(timezone=True),

@@ -26,18 +26,30 @@ import {
 import { formatINR } from '../utils/formatters'
 import SearchableMerchantSelect from './common/SearchableMerchantSelect'
 import CANONICAL_MASTER_MERCHANTS from '../data/canonicalMerchants'
+import { getCustomerPersona } from '../utils/customerHelper'
 
-export default function TransactionRiskAnalyzerView() {
+export default function TransactionRiskAnalyzerView({ user, isAdmin, onViewExplanation }) {
+  const customerPersona = getCustomerPersona(user)
+  const isCustomer = customerPersona.isCustomer
+
   const [merchants, setMerchants] = useState(CANONICAL_MASTER_MERCHANTS || [])
   const [loadingMerchants, setLoadingMerchants] = useState(false)
 
+  // Active persona dataset mode (for Admin to toggle, or locked to customer for logged-in customer)
+  const isMonisha = (customerPersona.customerId || '').includes('MONISHA')
+  const isMohana = (customerPersona.customerId || '').includes('MOHANA')
+  const isSowmiya = (customerPersona.customerId || '').includes('SOWMIYA')
+
+  const initialCustomerAvg = isMonisha ? '1950' : isMohana ? '8500' : isSowmiya ? '28500' : '1450'
+  const initialDevice = isMonisha ? 'mobile_ios' : 'mobile_android'
+
   // Form State
-  const [merchantId, setMerchantId] = useState('M001')
-  const [amount, setAmount] = useState('1250')
-  const [customerHistoricalAvg, setCustomerHistoricalAvg] = useState('1450')
-  const [previousTxAmount, setPreviousTxAmount] = useState('1300')
+  const [merchantId, setMerchantId] = useState(isMonisha ? 'M001' : isMohana ? 'M002' : 'M001')
+  const [amount, setAmount] = useState(isMonisha ? '1250' : isMohana ? '14500' : '1250')
+  const [customerHistoricalAvg, setCustomerHistoricalAvg] = useState(initialCustomerAvg)
+  const [previousTxAmount, setPreviousTxAmount] = useState(isMonisha ? '1300' : isMohana ? '6500' : '1300')
   const [transactionType, setTransactionType] = useState('UPI')
-  const [deviceType, setDeviceType] = useState('mobile_android')
+  const [deviceType, setDeviceType] = useState(initialDevice)
   const [transactionHour, setTransactionHour] = useState('14')
   const [isNewDevice, setIsNewDevice] = useState(false)
   const [isNewBeneficiary, setIsNewBeneficiary] = useState(false)
@@ -97,18 +109,18 @@ export default function TransactionRiskAnalyzerView() {
     }
   }
 
-  // Quick Preset Handlers
+  // Quick Preset Handlers tailored to active persona / dataset
   const applyPreset = (type) => {
     setAnalysisResult(null)
     setError(null)
     setIsFormDirty(false)
-    if (type === 'normal') {
+    if (type === 'normal' || type === 'monisha_grocery') {
       setMerchantId('M001') // NovaMart Fresh
       setAmount('1250')
-      setCustomerHistoricalAvg('1450')
+      setCustomerHistoricalAvg('1950')
       setPreviousTxAmount('1300')
       setTransactionType('UPI')
-      setDeviceType('mobile_android')
+      setDeviceType('mobile_ios')
       setTransactionHour('14')
       setIsNewDevice(false)
       setIsNewBeneficiary(false)
@@ -117,10 +129,55 @@ export default function TransactionRiskAnalyzerView() {
       setTxLast1h('1')
       setTxLast24h('3')
       setFailedAttempts('0')
+    } else if (type === 'monisha_coffee') {
+      setMerchantId('M007') // Blue Tokai Cafe
+      setAmount('280')
+      setCustomerHistoricalAvg('1950')
+      setPreviousTxAmount('1250')
+      setTransactionType('UPI')
+      setDeviceType('mobile_ios')
+      setTransactionHour('11')
+      setIsNewDevice(false)
+      setIsNewBeneficiary(false)
+      setIsLocationChanged(false)
+      setLocationDistanceKm('0')
+      setTxLast1h('1')
+      setTxLast24h('2')
+      setFailedAttempts('0')
+    } else if (type === 'mohana_gadget') {
+      setMerchantId('M002') // CircuitBay Electronics
+      setAmount('14500')
+      setCustomerHistoricalAvg('8500')
+      setPreviousTxAmount('4200')
+      setTransactionType('CARD')
+      setDeviceType('mobile_android')
+      setTransactionHour('18')
+      setIsNewDevice(true)
+      setIsNewBeneficiary(false)
+      setIsLocationChanged(true)
+      setLocationDistanceKm('85')
+      setTxLast1h('3')
+      setTxLast24h('6')
+      setFailedAttempts('1')
+    } else if (type === 'sowmiya_botnet') {
+      setMerchantId('M028') // CryptoVault Exchange
+      setAmount('78000')
+      setCustomerHistoricalAvg('28500')
+      setPreviousTxAmount('9500')
+      setTransactionType('ONLINE')
+      setDeviceType('unknown_bot')
+      setTransactionHour('2') // 2 AM Night burst
+      setIsNewDevice(true)
+      setIsNewBeneficiary(true)
+      setIsLocationChanged(true)
+      setLocationDistanceKm('850')
+      setTxLast1h('12')
+      setTxLast24h('28')
+      setFailedAttempts('4')
     } else if (type === 'suspicious') {
       setMerchantId('M002') // CircuitBay Electronics
       setAmount('45000')
-      setCustomerHistoricalAvg('1250') // Habitual ₹1,250 grocery shopper suddenly spending ₹45k!
+      setCustomerHistoricalAvg('1950')
       setPreviousTxAmount('950')
       setTransactionType('ONLINE')
       setDeviceType('unknown_bot')
@@ -135,7 +192,7 @@ export default function TransactionRiskAnalyzerView() {
     } else if (type === 'high_value_jewellery') {
       setMerchantId('M004') // Aurelia Gold House
       setAmount('85000')
-      setCustomerHistoricalAvg('80000') // Affluent luxury buyer
+      setCustomerHistoricalAvg('80000')
       setPreviousTxAmount('72000')
       setTransactionType('CARD')
       setDeviceType('mobile_ios')
@@ -151,7 +208,7 @@ export default function TransactionRiskAnalyzerView() {
   }
 
   const handleReset = () => {
-    applyPreset('normal')
+    applyPreset(isMonisha ? 'monisha_grocery' : isMohana ? 'mohana_gadget' : isSowmiya ? 'sowmiya_botnet' : 'normal')
   }
 
   const handleAnalyze = async (e) => {
@@ -167,6 +224,7 @@ export default function TransactionRiskAnalyzerView() {
       const prevAmt = parseFloat(previousTxAmount) || custAvg
 
       const payload = {
+        customer_id: customerPersona.customerId || 'CUST_MONISHA_001',
         amount: parseFloat(amount) || 0,
         merchant_id: merchantId,
         merchant_name: selectedMerchantObj?.merchant_name || 'Selected Merchant',
@@ -320,49 +378,133 @@ export default function TransactionRiskAnalyzerView() {
       <div className="rounded-2xl bg-gradient-to-r from-slate-900 via-slate-950 to-cyan-950/80 border border-slate-800 p-6 shadow-xl relative overflow-hidden">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex flex-wrap items-center gap-2 mb-2">
               <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-cyan-950 text-cyan-400 border border-cyan-800">
                 AI INFERENCE ENGINE
               </span>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-purple-950 text-purple-300 border border-purple-800">
                 SHAP EXPLAINABILITY ACTIVE
               </span>
+              {isCustomer && (
+                <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold border ${customerPersona.badgeColor}`}>
+                  👤 {customerPersona.name} ({customerPersona.fraudRate})
+                </span>
+              )}
             </div>
             <h1 className="text-2xl font-black tracking-tight text-white flex items-center gap-2">
               <BrainCircuit className="w-6 h-6 text-cyan-400" />
               Transaction Risk Analyzer &amp; Explainability
             </h1>
             <p className="text-sm text-slate-400 mt-1 max-w-2xl">
-              Evaluate financial transactions in real-time against merchant profiles, customer baselines, device intelligence, and XGBoost/SHAP models.
+              {isCustomer
+                ? `Evaluate transactions in real-time calibrated against ${customerPersona.name}'s verified behavioral baseline, merchant risk profiles, and TreeSHAP explainability.`
+                : 'Evaluate financial transactions in real-time against merchant profiles, customer baselines, device intelligence, and XGBoost/SHAP models.'}
             </p>
           </div>
 
           {/* Presets & Reset */}
           <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => applyPreset('normal')}
-              className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-400 font-mono text-xs border border-slate-700 transition"
-              title="Normal Grocery purchase (₹1,250)"
-            >
-              Preset: Normal (₹1,250)
-            </button>
-            <button
-              type="button"
-              onClick={() => applyPreset('suspicious')}
-              className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-400 font-mono text-xs border border-slate-700 transition"
-              title="Suspicious Bot & Location Jump (₹45,000)"
-            >
-              Preset: Velocity Anomaly (₹45,000)
-            </button>
-            <button
-              type="button"
-              onClick={() => applyPreset('high_value_jewellery')}
-              className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-rose-400 font-mono text-xs border border-slate-700 transition"
-              title="High Value Gold Jewellery (₹85,000)"
-            >
-              Preset: Luxury Jewellery (₹85,000)
-            </button>
+            {isMonisha ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => applyPreset('monisha_grocery')}
+                  className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-400 font-mono text-xs border border-slate-700 transition"
+                  title="Routine Grocery (₹1,250)"
+                >
+                  Monisha: Grocery (₹1,250)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => applyPreset('monisha_coffee')}
+                  className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 font-mono text-xs border border-slate-700 transition"
+                  title="Cafe & Snacks (₹280)"
+                >
+                  Monisha: Cafe (₹280)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => applyPreset('suspicious')}
+                  className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-400 font-mono text-xs border border-slate-700 transition"
+                  title="Off-Hours Surge Anomaly (₹45,000)"
+                >
+                  Monisha: Anomaly (₹45,000)
+                </button>
+              </>
+            ) : isMohana ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => applyPreset('normal')}
+                  className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-400 font-mono text-xs border border-slate-700 transition"
+                  title="Retail Purchase (₹4,200)"
+                >
+                  Mohana: Retail (₹4,200)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => applyPreset('mohana_gadget')}
+                  className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-400 font-mono text-xs border border-slate-700 transition"
+                  title="Tech Gadget Review (₹14,500)"
+                >
+                  Mohana: Gadget (₹14,500)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => applyPreset('suspicious')}
+                  className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-rose-400 font-mono text-xs border border-slate-700 transition"
+                  title="Velocity Surge (₹45,000)"
+                >
+                  Mohana: Anomaly (₹45,000)
+                </button>
+              </>
+            ) : isSowmiya ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => applyPreset('normal')}
+                  className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-400 font-mono text-xs border border-slate-700 transition"
+                  title="Normal Transfer (₹9,500)"
+                >
+                  Sowmiya: Transfer (₹9,500)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => applyPreset('sowmiya_botnet')}
+                  className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-rose-400 font-mono text-xs border border-slate-700 transition"
+                  title="Botnet Proxy Burst (₹78,000)"
+                >
+                  Sowmiya: Botnet (₹78,000)
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={() => applyPreset('normal')}
+                  className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-400 font-mono text-xs border border-slate-700 transition"
+                  title="Normal Grocery purchase (₹1,250)"
+                >
+                  Preset: Normal (₹1,250)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => applyPreset('suspicious')}
+                  className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-400 font-mono text-xs border border-slate-700 transition"
+                  title="Suspicious Bot & Location Jump (₹45,000)"
+                >
+                  Preset: Anomaly (₹45,000)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => applyPreset('high_value_jewellery')}
+                  className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-rose-400 font-mono text-xs border border-slate-700 transition"
+                  title="High Value Gold Jewellery (₹85,000)"
+                >
+                  Preset: Jewellery (₹85,000)
+                </button>
+              </>
+            )}
             <button
               type="button"
               onClick={handleReset}

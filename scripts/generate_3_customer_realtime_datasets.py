@@ -54,7 +54,7 @@ CUSTOMER_PERSONAS = [
         "device_id": "DEV-MONISHA-IPHONE-15",
         "device_type": "mobile_ios",
         "account_age_days": 420,
-        "simulated_balance": 120000.0,
+        "simulated_balance": 547855.0,
         "avg_ticket": 1950.0,
         "fraud_rate": 0.03,  # Exact 3% fraud rate
         "behavior_desc": "Standard daily consumer transactions in Chennai with rare anomaly triggers (3% fraud rate).",
@@ -72,7 +72,7 @@ CUSTOMER_PERSONAS = [
         "device_id": "DEV-MOHANA-SAMSUNG-S23",
         "device_type": "mobile_android",
         "account_age_days": 180,
-        "simulated_balance": 220000.0,
+        "simulated_balance": 892400.0,
         "avg_ticket": 8500.0,
         "fraud_rate": 0.12,  # Exact 12% fraud rate
         "behavior_desc": "Frequent cross-city purchases, occasional unverified beneficiaries and travel spikes (12% fraud rate).",
@@ -90,7 +90,7 @@ CUSTOMER_PERSONAS = [
         "device_id": "DEV-SOWMIYA-ONEPLUS-11",
         "device_type": "mobile_android",
         "account_age_days": 55,
-        "simulated_balance": 45000.0,
+        "simulated_balance": 1245000.0,
         "avg_ticket": 28500.0,
         "fraud_rate": 0.26,  # Exact 26% fraud rate
         "behavior_desc": "High-velocity off-hours bursts, proxy IPs, bot device hops, and rapid multi-merchant draining (26% fraud rate).",
