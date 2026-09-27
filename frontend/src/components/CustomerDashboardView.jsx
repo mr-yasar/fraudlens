@@ -25,9 +25,12 @@ import {
   ArrowDownLeft,
   ShoppingBag,
   Zap,
+  Bell,
+  X,
 } from 'lucide-react'
 import { dashboardApi } from '../services/api'
 import MobileSecurityApprovalModal from './MobileSecurityApprovalModal'
+import { sound } from './login/soundEffects'
 
 export default function CustomerDashboardView({
   user,
@@ -45,6 +48,9 @@ export default function CustomerDashboardView({
   const [showCvv, setShowCvv] = useState(false)
   const [isCardFrozen, setIsCardFrozen] = useState(false)
   const [intlEnabled, setIntlEnabled] = useState(true)
+
+  // Real-Time Notification Banner State
+  const [notification, setNotification] = useState(null)
 
   // Security OTP Step-Up Modal State
   const [activeApproval, setActiveApproval] = useState(null)
@@ -64,14 +70,176 @@ export default function CustomerDashboardView({
 
   useEffect(() => {
     fetchCustomerData()
-    const interval = setInterval(fetchCustomerData, 15000)
+    // Rapid 4-second poll interval ensures fast real-time synchronization
+    const interval = setInterval(fetchCustomerData, 4000)
     return () => clearInterval(interval)
   }, [customerId])
 
-  // Determine Persona Color Theme
-  const isMonisha = customerId.includes('MONISHA')
-  const isMohana = customerId.includes('MOHANA')
-  const isSowmiya = customerId.includes('SOWMIYA')
+  // Real-Time Server-Sent Events (SSE) Stream Subscription
+  useEffect(() => {
+    let evtSource = null
+    try {
+      evtSource = new EventSource('/api/v1/events/stream')
+      evtSource.onmessage = (event) => {
+        try {
+          const payload = JSON.parse(event.data)
+          if (
+            payload.event_type?.includes('approval') ||
+            payload.event_type?.includes('payment') ||
+            payload.event_type === 'notification'
+          ) {
+            fetchCustomerData()
+            if (payload.event_type === 'notification' && (!payload.data?.customer_id || payload.data.customer_id === customerId)) {
+              setNotification({
+                type: payload.data.type || 'SUCCESS',
+                title: payload.data.title || 'Security Notification',
+                message: payload.data.message || '',
+                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+              })
+              sound?.playVerified && sound.playVerified()
+            }
+          }
+        } catch {
+          // Ignore JSON parse errors on ping events
+        }
+      }
+    } catch {
+      // Fallback gracefully to rapid polling
+    }
+    return () => {
+      if (evtSource) evtSource.close()
+    }
+  }, [customerId])
+
+  // Auto-dismiss real-time notification after 7 seconds
+  useEffect(() => {
+    if (notification) {
+      const timer = setTimeout(() => {
+        setNotification(null)
+      }, 7000)
+      return () => clearTimeout(timer)
+    }
+  }, [notification])
+
+  // Real-Time Approval Authorization Handler
+  const handleApproveChallenge = async (approvalId, otpCode) => {
+    try {
+      const token = localStorage.getItem('fraudlens_token') || localStorage.getItem('access_token')
+      const targetApproval = (data?.pending_approvals || []).find((a) => a.approval_id === approvalId) || activeApproval
+      const res = await fetch(`/api/v1/approvals/${approvalId}/approve`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          challenge_response: otpCode,
+          channel: 'CUSTOMER_PORTAL_OTP',
+          notes: 'Customer verified and authorized via SMS OTP in Customer Portal',
+        }),
+      })
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}))
+        throw new Error(errJson.detail || 'Approval authorization failed on server')
+      }
+
+      // Close the modal immediately so the modal banner and screen clears smoothly
+      setActiveApproval(null)
+
+      // Play verified audio chime
+      sound?.playVerified && sound.playVerified()
+
+      // Real-Time Notification Banner
+      const amt = targetApproval?.amount || 14500
+      const merchant = targetApproval?.merchant_category || 'CircuitBay Electronics'
+      setNotification({
+        type: 'SUCCESS',
+        title: 'Payment Authorized Successfully!',
+        message: `SMS OTP verified. Payment of ₹${Number(amt).toLocaleString('en-IN')} to ${merchant} has been authorized and completed in real-time.`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+      })
+
+      // IMMEDIATELY update local state to remove this pending approval and adjust balance
+      setData((prev) => {
+        if (!prev) return prev
+        const remaining = (prev.pending_approvals || []).filter((a) => a.approval_id !== approvalId)
+        return {
+          ...prev,
+          pending_approvals: remaining,
+          pending_approvals_count: remaining.length,
+          account_balance: Math.max(0, (prev.account_balance || 1720000) - amt),
+          security_summary: {
+            ...(prev.security_summary || {}),
+            pending_reviews_count: remaining.length,
+          },
+        }
+      })
+
+      // Fetch fresh verified data in the background
+      setTimeout(() => {
+        fetchCustomerData()
+      }, 500)
+    } catch (err) {
+      console.error('Error approving challenge:', err)
+      throw err
+    }
+  }
+
+  // Real-Time Reject Handler
+  const handleRejectChallenge = async (approvalId, reason) => {
+    try {
+      const token = localStorage.getItem('fraudlens_token') || localStorage.getItem('access_token')
+      await fetch(`/api/v1/approvals/${approvalId}/reject`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          reason: reason || 'Customer flagged as unrecognized',
+          notes: 'Customer rejected verification in portal',
+        }),
+      })
+
+      sound?.playError && sound.playError()
+
+      // Real-Time Notification Banner
+      setNotification({
+        type: 'WARNING',
+        title: 'Suspicious Transaction Cancelled',
+        message: `Verification challenge declined. Transaction cancelled and flagged for fraud investigation review.`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+      })
+
+      // Instantly remove from pending
+      setData((prev) => {
+        if (!prev) return prev
+        const remaining = (prev.pending_approvals || []).filter((a) => a.approval_id !== approvalId)
+        return {
+          ...prev,
+          pending_approvals: remaining,
+          pending_approvals_count: remaining.length,
+          security_summary: {
+            ...(prev.security_summary || {}),
+            pending_reviews_count: remaining.length,
+          },
+        }
+      })
+
+      setTimeout(() => {
+        fetchCustomerData()
+      }, 800)
+    } catch (err) {
+      console.error('Error rejecting challenge:', err)
+      throw err
+    }
+  }
+
+  // Determine Persona Color Theme (Case-insensitive)
+  const isMonisha = (customerId || '').toUpperCase().includes('MONISHA') || (data?.customer_id || '').toUpperCase().includes('MONISHA')
+  const isMohana = (customerId || '').toUpperCase().includes('MOHANA') || (data?.customer_id || '').toUpperCase().includes('MOHANA')
+  const isSowmiya = (customerId || '').toUpperCase().includes('SOWMIYA') || (data?.customer_id || '').toUpperCase().includes('SOWMIYA')
 
   const theme = isMonisha
     ? {
@@ -131,13 +299,44 @@ export default function CustomerDashboardView({
     )
   }
 
-  const pendingApprovals = data?.pending_approvals || []
+  const pendingApprovals = isMonisha ? [] : (data?.pending_approvals || [])
   const recentTxs = data?.recent_transactions || []
   const categoryBreakdown = data?.category_breakdown || []
   const security = data?.security_summary || {}
 
   return (
     <div className="space-y-6">
+      {/* Real-Time Security Notification Banner (Triggered upon OTP verification or action) */}
+      {notification && (
+        <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-950/95 via-slate-950 to-teal-950/95 border-2 border-emerald-500 shadow-[0_0_35px_rgba(16,185,129,0.35)] flex items-center justify-between gap-4 animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className="flex items-center gap-3.5">
+            <div className="p-2.5 rounded-xl bg-emerald-500 text-slate-950 font-bold shadow-lg shadow-emerald-500/40 shrink-0">
+              <ShieldCheck className="w-5 h-5 text-slate-950" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-[11px] font-black uppercase text-emerald-400 tracking-wider flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                  REAL-TIME NOTIFICATION
+                </span>
+                <span className="text-[10px] font-mono text-slate-400 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800">
+                  {notification.timestamp}
+                </span>
+              </div>
+              <h4 className="text-sm font-bold text-white mt-0.5">{notification.title}</h4>
+              <p className="text-xs text-emerald-200/90 mt-0.5">{notification.message}</p>
+            </div>
+          </div>
+          <button
+            onClick={() => setNotification(null)}
+            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-900 border border-transparent hover:border-slate-800 transition"
+            aria-label="Dismiss notification"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* 1. Header: Customer Identity & Real-Time Security Posture */}
       <div
         className={`p-5 sm:p-6 rounded-3xl bg-slate-950/90 border-2 ${theme.border} ${theme.glow} backdrop-blur-xl relative overflow-hidden`}
@@ -202,8 +401,8 @@ export default function CustomerDashboardView({
           </div>
         </div>
 
-        {/* Pending Security Reviews Alert Banner (for Mohana or elevated cases) */}
-        {pendingApprovals.length > 0 && (
+        {/* Pending Security Reviews Alert Banner (for Mohana or elevated cases - never for Monisha) */}
+        {!isMonisha && pendingApprovals.length > 0 && (
           <div className="mt-4 p-3.5 rounded-2xl bg-amber-950/60 border border-amber-600 text-amber-200 text-xs flex flex-wrap items-center justify-between gap-3 shadow-lg animate-pulse">
             <div className="flex items-center gap-2.5">
               <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
@@ -576,21 +775,19 @@ export default function CustomerDashboardView({
         <MobileSecurityApprovalModal
           isOpen={Boolean(activeApproval)}
           onClose={() => setActiveApproval(null)}
-          onApproved={() => {
-            setActiveApproval(null)
-            fetchCustomerData()
-          }}
-          onRejected={() => {
-            setActiveApproval(null)
-            fetchCustomerData()
-          }}
-          transactionData={{
+          approvalId={activeApproval.approval_id}
+          onApprove={handleApproveChallenge}
+          onReject={handleRejectChallenge}
+          customerName={data?.name || customerPersona.customerName}
+          transaction={{
             transaction_id: activeApproval.transaction_id,
             amount: activeApproval.amount,
             merchant_name: activeApproval.merchant_category,
             risk_level: activeApproval.risk_level,
             risk_score: activeApproval.risk_score,
-            customer_name: data?.name || customerPersona.customerName,
+            otp_code: activeApproval.otp_code,
+            location: data?.primary_location || 'Chennai, IN',
+            device_type: data?.primary_device || 'Android Mobile',
           }}
         />
       )}

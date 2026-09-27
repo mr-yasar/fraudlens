@@ -138,37 +138,46 @@ export const paymentApi = {
   },
   listPendingApprovals: async (customerId = '') => {
     const url = customerId
-      ? `${BASE_URL}/payment/approvals/pending?customer_id=${encodeURIComponent(customerId)}`
-      : `${BASE_URL}/payment/approvals/pending`
+      ? `${BASE_URL}/approvals/pending?customer_id=${encodeURIComponent(customerId)}`
+      : `${BASE_URL}/approvals/pending`
     const res = await fetch(url, {
       headers: getAuthHeaders(),
     })
     return handleResponse(res)
   },
   processApproval: async (approvalId, { action, notes = '', challenge_response = '' }) => {
-    const res = await fetch(`${BASE_URL}/payment/approvals/${approvalId}/action`, {
+    const res = await fetch(`${BASE_URL}/approvals/${approvalId}/action`, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify({ action, notes, challenge_response }),
     })
     return handleResponse(res)
   },
-  approve: async (approvalId) => {
-    const res = await fetch(`${BASE_URL}/payment/approvals/${approvalId}/approve`, {
+  approve: async (approvalId, challenge_response = '') => {
+    const res = await fetch(`${BASE_URL}/approvals/${approvalId}/approve`, {
       method: 'POST',
       headers: getAuthHeaders(),
+      body: JSON.stringify({
+        challenge_response,
+        channel: 'CUSTOMER_PORTAL_OTP',
+        notes: 'Customer verified and authorized via SMS OTP',
+      }),
     })
     return handleResponse(res)
   },
-  reject: async (approvalId) => {
-    const res = await fetch(`${BASE_URL}/payment/approvals/${approvalId}/reject`, {
+  reject: async (approvalId, reason = '') => {
+    const res = await fetch(`${BASE_URL}/approvals/${approvalId}/reject`, {
       method: 'POST',
       headers: getAuthHeaders(),
+      body: JSON.stringify({
+        reason: reason || 'Customer flagged as unrecognized',
+        notes: 'Customer rejected verification in portal',
+      }),
     })
     return handleResponse(res)
   },
   sendApprovalOtp: async (approvalId) => {
-    const res = await fetch(`${BASE_URL}/payment/approvals/${approvalId}/send-otp`, {
+    const res = await fetch(`${BASE_URL}/approvals/${approvalId}/send-otp`, {
       method: 'POST',
       headers: getAuthHeaders(),
     })

@@ -172,6 +172,14 @@ export default function MobileSecurityApprovalModal({
     }
   }
 
+  // Auto-dismiss incoming SMS popup banner after 8 seconds
+  useEffect(() => {
+    if (incomingSms) {
+      const timer = setTimeout(() => setIncomingSms(null), 8000)
+      return () => clearTimeout(timer)
+    }
+  }, [incomingSms])
+
   // Handle single digit typing or paste
   const handleDigitChange = (index, value) => {
     setOtpError(null)
@@ -185,6 +193,7 @@ export default function MobileSecurityApprovalModal({
           nextDigits[i] = clean[i]
         }
         setOtpDigits(nextDigits)
+        setIncomingSms(null)
         const nextFocus = Math.min(clean.length, 5)
         inputRefs[nextFocus]?.current?.focus()
         return
@@ -207,13 +216,14 @@ export default function MobileSecurityApprovalModal({
     }
   }
 
-  // Quick 1-click Auto-fill from incoming SMS
+  // Quick 1-click Auto-fill from incoming SMS (instantly populates & dismisses the SMS banner)
   const handleAutoFillFromSms = () => {
     if (!generatedOtp) return
     const split = generatedOtp.split('').slice(0, 6)
     while (split.length < 6) split.push('')
     setOtpDigits(split)
     setOtpError(null)
+    setIncomingSms(null)
     sound.playBlip && sound.playBlip()
     inputRefs[5]?.current?.focus()
   }
@@ -345,9 +355,19 @@ export default function MobileSecurityApprovalModal({
                       MESSAGES • {incomingSms.time}
                     </span>
                   </div>
-                  <span className="px-1.5 py-0.2 rounded bg-cyan-950 text-cyan-300 border border-cyan-700 font-mono text-[9px] font-bold">
-                    SMS DELIVERED
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="px-1.5 py-0.2 rounded bg-cyan-950 text-cyan-300 border border-cyan-700 font-mono text-[9px] font-bold">
+                      SMS DELIVERED
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setIncomingSms(null)}
+                      className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800 transition"
+                      title="Dismiss notification"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
 
                 <p className="text-[11px] text-slate-200 leading-snug">

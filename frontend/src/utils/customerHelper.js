@@ -31,7 +31,7 @@ export function getCustomerPersona(user) {
       customerName: 'Monisha',
       email: user.email,
       fraudRate: '3.0%',
-      baselineType: 'Safe Habitual (Auto-Approved)',
+      baselineType: 'Safe Habitual (Zero-Friction Auto-Approved, No OTP)',
       badgeColor: 'bg-emerald-950/80 text-emerald-300 border-emerald-700/60',
       color: 'emerald',
       defaultPresetId: 'scenario_monisha_safe',

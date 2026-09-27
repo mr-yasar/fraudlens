@@ -279,8 +279,12 @@ export default function PaymentView({
     }
   }, [])
 
-  // Load pending approvals
+  // Load pending approvals (Monisha never has pending approvals or OTP)
   const loadPendingApprovals = useCallback(async (customerId) => {
+    if (!customerId || customerId.toLowerCase().includes('monisha')) {
+      setPendingApprovals([])
+      return
+    }
     try {
       const list = await paymentApi.listPendingApprovals(customerId)
       setPendingApprovals(list || [])
@@ -349,13 +353,15 @@ export default function PaymentView({
       loadWallet(formData.customer_id)
       loadPendingApprovals(formData.customer_id)
 
-      // When fraud risk or review is detected, automatically pop up the Mobile Phone Push Notification Modal
+      // Monisha is a safe habitual consumer (3% baseline) with ZERO friction -> NEVER pop up OTP modal
+      const isMonisha = (formData.customer_id || '').toLowerCase().includes('monisha')
+
+      // When step-up review is detected for elevated cases (e.g. Mohana), pop up Mobile Phone Push Notification Modal
       if (
-        result.decision === 'REVIEW' ||
-        result.verification_required ||
-        result.decision === 'BLOCK' ||
-        result.risk_level === 'HIGH' ||
-        result.risk_level === 'MEDIUM'
+        !isMonisha &&
+        (result.decision === 'REVIEW' ||
+          result.verification_required ||
+          (result.decision === 'BLOCK' && result.approval_id))
       ) {
         setPhoneModalTx({
           ...formData,
@@ -366,10 +372,7 @@ export default function PaymentView({
           fraud_probability: result.fraud_probability,
           otp_code: result.otp_code,
           rule_triggered:
-            result.triggered_rules?.[0]?.rule_name ||
-            (result.decision === 'BLOCK'
-              ? 'High Risk Botnet / ATO Detected'
-              : 'Behavioral Risk Anomaly Detected'),
+            result.triggered_rules?.[0]?.rule_name || 'Behavioral Risk Anomaly Detected',
         })
         setPhoneModalApprovalId(result.approval_id || null)
         setShowPhoneModal(true)

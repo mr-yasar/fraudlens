@@ -106,18 +106,18 @@ class RuleEngine:
         ))
 
         # ----------------------------------------------------
-        # 2. AMOUNT DEVIATION RULES
+        # 2. AMOUNT DEVIATION RULES (Calibrated for INR)
         # ----------------------------------------------------
-        # Severe amount surge (>= 4x baseline with amount >= $1,000)
-        amt_severe = (features.amount_ratio >= 4.0 and features.amount >= 1000.0) and not features.is_cold_start
+        # Severe amount surge (>= 4x baseline with amount >= ₹25,000)
+        amt_severe = (features.amount_ratio >= 4.0 and features.amount >= 25000.0) and not features.is_cold_start
         evaluated_rules.append(EvaluatedRule(
             rule_id="RULE-AMT-01",
             rule_name="Severe Monetary Amount Spike",
             category=RuleCategory.AMOUNT_DEVIATION,
             triggered=amt_severe,
             severity=RuleSeverity.HIGH if amt_severe else RuleSeverity.LOW,
-            action_impact=RuleActionImpact.ENFORCE_BLOCK if (amt_severe and features.amount >= 5000.0) else (RuleActionImpact.FLAG_REVIEW if amt_severe else RuleActionImpact.ALLOW),
-            reason=f"Transaction amount (${features.amount:,.2f}) is {features.amount_ratio:.1f}x higher than historical baseline (${features.historical_avg_amount:,.2f}).",
+            action_impact=RuleActionImpact.ENFORCE_BLOCK if (amt_severe and features.amount >= 70000.0) else (RuleActionImpact.FLAG_REVIEW if amt_severe else RuleActionImpact.ALLOW),
+            reason=f"Transaction amount (₹{features.amount:,.2f}) is {features.amount_ratio:.1f}x higher than historical baseline (₹{features.historical_avg_amount:,.2f}).",
             score_penalty=25 if amt_severe else 0,
             metadata={"amount": features.amount, "historical_avg": features.historical_avg_amount, "ratio": features.amount_ratio},
         ))
@@ -131,7 +131,7 @@ class RuleEngine:
             triggered=amt_mod,
             severity=RuleSeverity.MEDIUM if amt_mod else RuleSeverity.LOW,
             action_impact=RuleActionImpact.FLAG_REVIEW if amt_mod else RuleActionImpact.ALLOW,
-            reason=f"Transaction amount (${features.amount:,.2f}) is {features.amount_ratio:.1f}x above customer average.",
+            reason=f"Transaction amount (₹{features.amount:,.2f}) is {features.amount_ratio:.1f}x above customer average.",
             score_penalty=15 if amt_mod else 0,
             metadata={"amount": features.amount, "ratio": features.amount_ratio},
         ))
@@ -153,12 +153,12 @@ class RuleEngine:
         ))
 
         # ----------------------------------------------------
-        # 4. ACCOUNT TAKEOVER (ATO) / MULTI-SIGNAL PATTERNS
+        # 4. ACCOUNT TAKEOVER (ATO) / MULTI-SIGNAL PATTERNS (INR Calibrated)
         # ----------------------------------------------------
         # Critical ATO pattern: New Device + Unusual Location + Severe Amount Spike OR Bot client
         ato_crit = (
-            (features.is_new_device and features.is_unusual_location and features.amount_ratio >= 3.0) or
-            (features.amount >= 3000.0 and (features.is_new_device or features.is_unusual_location)) or
+            (features.is_new_device and features.is_unusual_location and features.amount_ratio >= 3.0 and features.amount >= 25000.0) or
+            (features.amount >= 60000.0 and (features.is_new_device or features.is_unusual_location)) or
             (features.amount_ratio >= 10.0 and (features.is_new_device or features.is_unusual_location))
         ) and not features.is_cold_start
         evaluated_rules.append(EvaluatedRule(
@@ -166,15 +166,15 @@ class RuleEngine:
             rule_name="Account Takeover Signature Pattern",
             category=RuleCategory.MULTI_SIGNAL,
             triggered=ato_crit,
-            severity=RuleSeverity.CRITICAL if (ato_crit and (features.amount >= 5000.0 or features.failed_attempts >= 3 or features.device_type == "unknown_bot")) else (RuleSeverity.HIGH if ato_crit else RuleSeverity.LOW),
-            action_impact=RuleActionImpact.ENFORCE_BLOCK if (ato_crit and (features.amount >= 5000.0 or features.failed_attempts >= 3 or features.device_type == "unknown_bot")) else (RuleActionImpact.FLAG_REVIEW if ato_crit else RuleActionImpact.ALLOW),
+            severity=RuleSeverity.CRITICAL if (ato_crit and (features.amount >= 70000.0 or features.failed_attempts >= 3 or features.device_type == "unknown_bot")) else (RuleSeverity.HIGH if ato_crit else RuleSeverity.LOW),
+            action_impact=RuleActionImpact.ENFORCE_BLOCK if (ato_crit and (features.amount >= 70000.0 or features.failed_attempts >= 3 or features.device_type == "unknown_bot")) else (RuleActionImpact.FLAG_REVIEW if ato_crit else RuleActionImpact.ALLOW),
             reason="Unrecognized hardware device and foreign location mismatch combined with severe monetary spike.",
             score_penalty=35 if ato_crit else 0,
             metadata={"is_new_device": features.is_new_device, "is_unusual_location": features.is_unusual_location, "amount_ratio": features.amount_ratio},
         ))
 
-        # Moderate ATO check: New Device with moderate amount surge
-        ato_mod = ((features.is_new_device or features.is_unusual_location) and features.amount_ratio >= 2.0 and not ato_crit and not features.is_cold_start)
+        # Moderate ATO check: New Device with moderate amount surge -> Triggers Step-Up Review
+        ato_mod = ((features.is_new_device or features.is_unusual_location) and (features.amount_ratio >= 1.8 or features.amount >= 8000.0) and not ato_crit and not features.is_cold_start)
         evaluated_rules.append(EvaluatedRule(
             rule_id="RULE-ATO-02",
             rule_name="Unusual Device/Location with Elevated Amount",
@@ -188,18 +188,18 @@ class RuleEngine:
         ))
 
         # ----------------------------------------------------
-        # 5. HIGH RISK SECTOR & MERCHANTS
+        # 5. HIGH RISK SECTOR & MERCHANTS (INR Calibrated)
         # ----------------------------------------------------
         cat_lower = features.merchant_category.lower()
         is_high_risk_sector = cat_lower in cls.HIGH_RISK_CATEGORIES
-        sector_elevated = is_high_risk_sector and (features.amount >= 2000.0 or features.failed_attempts >= 2 or features.is_new_device)
+        sector_elevated = is_high_risk_sector and (features.amount >= 25000.0 or features.failed_attempts >= 2 or features.is_new_device)
         evaluated_rules.append(EvaluatedRule(
             rule_id="RULE-CAT-01",
             rule_name="High Risk Sector On Elevated Threat Profile",
             category=RuleCategory.MULTI_SIGNAL,
             triggered=sector_elevated,
-            severity=RuleSeverity.CRITICAL if (sector_elevated and features.amount >= 5000.0) else (RuleSeverity.HIGH if sector_elevated else RuleSeverity.LOW),
-            action_impact=RuleActionImpact.ENFORCE_BLOCK if (sector_elevated and features.amount >= 5000.0) else (RuleActionImpact.FLAG_REVIEW if sector_elevated else RuleActionImpact.ALLOW),
+            severity=RuleSeverity.CRITICAL if (sector_elevated and features.amount >= 70000.0) else (RuleSeverity.HIGH if sector_elevated else RuleSeverity.LOW),
+            action_impact=RuleActionImpact.ENFORCE_BLOCK if (sector_elevated and features.amount >= 70000.0) else (RuleActionImpact.FLAG_REVIEW if sector_elevated else RuleActionImpact.ALLOW),
             reason=f"High-risk merchant sector '{features.merchant_category}' combined with elevated risk signals.",
             score_penalty=20 if sector_elevated else 0,
             metadata={"category": features.merchant_category, "amount": features.amount},
@@ -208,7 +208,7 @@ class RuleEngine:
         # ----------------------------------------------------
         # 6. TIME ANOMALY (OFF-HOURS HIGH VALUE)
         # ----------------------------------------------------
-        time_risk = (features.is_night_transaction and features.amount >= 2500.0 and not features.is_cold_start)
+        time_risk = (features.is_night_transaction and features.amount >= 35000.0 and not features.is_cold_start)
         evaluated_rules.append(EvaluatedRule(
             rule_id="RULE-TIME-01",
             rule_name="Off-Hours High Monetary Volume",
@@ -216,7 +216,7 @@ class RuleEngine:
             triggered=time_risk,
             severity=RuleSeverity.MEDIUM if time_risk else RuleSeverity.LOW,
             action_impact=RuleActionImpact.FLAG_REVIEW if time_risk else RuleActionImpact.ALLOW,
-            reason=f"High-value payment (${features.amount:,.2f}) executed during late night/early morning hours ({features.transaction_hour:02d}:00).",
+            reason=f"High-value payment (₹{features.amount:,.2f}) executed during late night/early morning hours ({features.transaction_hour:02d}:00).",
             score_penalty=10 if time_risk else 0,
             metadata={"hour": features.transaction_hour, "amount": features.amount},
         ))
