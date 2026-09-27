@@ -20,14 +20,25 @@ import {
 import { investigationsApi } from '../services/api'
 import AiInvestigationModal from './AiInvestigationModal'
 
-export default function InvestigationsView({ onInspectExplanation }) {
+export default function InvestigationsView({
+  onInspectExplanation,
+  initialTxId = null,
+  initialCaseId = null,
+  onSwitchToRadar = null,
+  user = null,
+  isAdmin = false,
+}) {
   const [cases, setCases] = useState([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
-  const [limit] = useState(15)
+  const [limit, setLimit] = useState(15)
   const [statusFilter, setStatusFilter] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+
+  // Target transaction from Live Radar stream
+  const [targetTx, setTargetTx] = useState(initialTxId)
+  const [creatingCase, setCreatingCase] = useState(false)
 
   // AI Copilot Modal State
   const [aiModalCaseId, setAiModalCaseId] = useState(null)
@@ -42,6 +53,46 @@ export default function InvestigationsView({ onInspectExplanation }) {
   const [editDecision, setEditDecision] = useState('')
   const [editNotes, setEditNotes] = useState('')
   const [submitting, setSubmitting] = useState(false)
+
+  useEffect(() => {
+    if (initialTxId) {
+      setTargetTx(initialTxId)
+    }
+  }, [initialTxId])
+
+  useEffect(() => {
+    if (initialCaseId) {
+      handleOpenCase(initialCaseId)
+    }
+  }, [initialCaseId])
+
+  // If targetTx matches an existing case, open it
+  useEffect(() => {
+    if (targetTx && cases.length > 0) {
+      const match = cases.find((c) => c.transaction_id === targetTx)
+      if (match) {
+        handleOpenCase(match.case_id)
+      }
+    }
+  }, [targetTx, cases])
+
+  const handleCreateCaseForTx = async (txId) => {
+    setCreatingCase(true)
+    try {
+      const newCase = await investigationsApi.create({
+        transaction_id: txId,
+        notes: `Escalated from Live Fraud Monitor radar by ${user?.username || 'investigator'}. Immediate risk review required.`,
+      })
+      fetchCases()
+      if (newCase && newCase.case_id) {
+        handleOpenCase(newCase.case_id)
+      }
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to create investigation case')
+    } finally {
+      setCreatingCase(false)
+    }
+  }
 
   const fetchCases = async () => {
     setLoading(true)
@@ -118,6 +169,61 @@ export default function InvestigationsView({ onInspectExplanation }) {
           End-to-end case tracking, evidence logging, status transitions, and final fraud adjudications.
         </p>
       </div>
+
+      {/* Target Transaction Escalation Card from Live Radar */}
+      {targetTx && (
+        <div className="p-3.5 rounded-2xl bg-indigo-950/70 border border-indigo-700/80 flex flex-wrap items-center justify-between gap-3 text-xs shadow-lg">
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-indigo-300 font-bold">Escalated from Live Radar:</span>
+            <span className="font-mono bg-indigo-900/90 px-2 py-0.5 rounded text-white font-bold border border-indigo-500">
+              {targetTx}
+            </span>
+            {cases.some((c) => c.transaction_id === targetTx) ? (
+              <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-800">
+                Case Linked #{cases.find((c) => c.transaction_id === targetTx)?.case_id}
+              </span>
+            ) : (
+              <span className="text-[10px] font-mono text-amber-300 bg-amber-950/80 px-2 py-0.5 rounded border border-amber-800">
+                No active case opened yet
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            {!cases.some((c) => c.transaction_id === targetTx) && (
+              <button
+                type="button"
+                disabled={creatingCase}
+                onClick={() => handleCreateCaseForTx(targetTx)}
+                className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-mono font-bold text-xs transition flex items-center gap-1.5 shadow"
+              >
+                <ShieldAlert className="w-3.5 h-3.5" />
+                <span>{creatingCase ? 'Creating Case...' : 'Open New Case for this TX'}</span>
+              </button>
+            )}
+
+            {onSwitchToRadar && (
+              <button
+                type="button"
+                onClick={onSwitchToRadar}
+                className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-cyan-300 border border-cyan-800 font-mono text-xs transition flex items-center gap-1"
+              >
+                <span>Live Radar Stream</span>
+                <span>&rarr;</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={() => setTargetTx(null)}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-900 transition"
+              title="Clear Target"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Filter Bar */}
       <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 shadow-md flex flex-wrap items-center justify-between gap-3">

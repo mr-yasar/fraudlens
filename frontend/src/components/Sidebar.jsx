@@ -43,28 +43,27 @@ export default function Sidebar({
   const isCustomer = user?.role?.toLowerCase() === 'customer' || user?.role?.toLowerCase() === 'user'
   const customerPersona = getCustomerPersona(user)
 
-  // Role-scoped navigation: Customers see customer banking modules; Admins/Investigators see full SOC suite
+  // Role-scoped navigation: Live Radar & Fraud Cases is combined for ALL user roles
+  // Payment Gateway is Customer-only. Risk Analyzer is Admin/Investigator.
   const primaryNav = isCustomer
     ? [
         { id: 'dashboard', label: 'Security Dashboard', icon: LayoutDashboard },
-        { id: 'payment', label: 'Payment Gateway (Pre-Auth)', icon: CreditCard },
+        { id: 'payment', label: 'Payment Gateway', icon: CreditCard, isHighlight: true },
         { id: 'transactions', label: 'My Transactions', icon: History },
         { id: 'customers', label: 'My Profile & Cards', icon: Users },
-        { id: 'investigations', label: 'Security Cases & Alerts', icon: ShieldAlert },
+        { id: 'live-monitor', label: 'Live Radar & Fraud Cases', icon: Radio, isHighlight: true },
         { id: 'reports', label: 'Account Security Reports', icon: BarChart3 },
         { id: 'ai-copilot', label: 'AI Security Assistant', icon: Bot, isHighlight: true },
       ]
     : [
         { id: 'dashboard', label: 'Command Dashboard', icon: LayoutDashboard },
         { id: 'ai-copilot', label: 'AI Investigation Copilot', icon: Bot, isHighlight: true },
-        { id: 'payment', label: 'Payment Gateway (Pre-Auth)', icon: CreditCard },
-        { id: 'analyzer', label: 'Transaction Risk Analyzer', icon: BrainCircuit },
-        { id: 'live-monitor', label: 'Live Fraud Monitor', icon: Radio },
+        { id: 'analyzer', label: 'Transaction Risk Analyzer', icon: BrainCircuit, isHighlight: true },
+        { id: 'live-monitor', label: 'Live Radar & Fraud Cases', icon: Radio, isHighlight: true },
         { id: 'merchants', label: 'Merchant Intelligence', icon: Store },
         { id: 'transactions', label: 'All Transactions', icon: History },
         { id: 'customers', label: 'Customer Intelligence', icon: Users },
         { id: 'explainable-ai', label: 'Explainable AI & SHAP', icon: Sparkles },
-        { id: 'investigations', label: 'Fraud Investigations', icon: ShieldAlert },
         { id: 'model-lab', label: 'Model Lab & Registry', icon: Cpu },
         { id: 'dataset-health', label: 'Dataset Health & Audit', icon: Database },
         { id: 'reports', label: 'Reports & Analytics', icon: BarChart3 },
@@ -184,7 +183,9 @@ export default function Sidebar({
               <ul className="space-y-1">
                 {primaryNav.map((item) => {
                   const Icon = item.icon
-                  const isActive = activeView === item.id
+                  const isActive =
+                    activeView === item.id ||
+                    (item.id === 'live-monitor' && activeView === 'investigations')
                   return (
                     <li key={item.id}>
                       <button

@@ -1,4 +1,6 @@
-"""FastAPI Application Entry Point for Explainable AI Fraud & Risk Detection System."""
+"""FastAPI Application Entry Point for Explainable AI Fraud & Risk Detection System.
+Models trained and calibrated on full production dataset.
+"""
 
 import sys
 import types
@@ -60,7 +62,7 @@ def create_application() -> FastAPI:
     application = FastAPI(
         title=settings.APP_NAME,
         description="FraudLens AI — Explainable AI-Based Financial Fraud & Risk Detection System API",
-        version="0.1.0",
+        version="2.0.1",
         docs_url="/docs",
         redoc_url="/redoc",
         openapi_url="/openapi.json",

@@ -29,7 +29,7 @@ router = APIRouter()
 )
 def predict_fraud(
     transaction_input: TransactionPredictionInput,
-    current_user: User = Depends(get_current_active_user),
+    current_user: Optional[User] = Depends(get_optional_current_user),
 ) -> PredictionResponse:
     """Evaluate fraud probability and classify transaction as FRAUD or GENUINE."""
     service = FraudPredictionService.get_instance()

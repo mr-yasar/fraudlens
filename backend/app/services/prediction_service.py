@@ -42,6 +42,7 @@ class FraudPredictionService:
         self.shap_explainer: Optional[FraudShapExplainer] = None
         self.is_ready: bool = False
 
+        self._last_mtime: float = 0.0
         self._load_artifacts()
 
     @classmethod
@@ -49,6 +50,16 @@ class FraudPredictionService:
         """Get or initialize singleton prediction service instance."""
         if cls._instance is None:
             cls._instance = cls(artifact_dir=artifact_dir)
+        else:
+            # Check if active_model_metadata.json was updated on disk
+            meta_path = cls._instance.artifact_dir / "active_model_metadata.json"
+            if meta_path.exists():
+                try:
+                    mtime = meta_path.stat().st_mtime
+                    if getattr(cls._instance, "_last_mtime", 0.0) != mtime:
+                        cls._instance._load_artifacts()
+                except Exception:
+                    pass
         return cls._instance
 
     @classmethod
@@ -61,6 +72,12 @@ class FraudPredictionService:
         meta_file = self.artifact_dir / "active_model_metadata.json"
         preprocessor_file = self.artifact_dir / "preprocessor.joblib"
         registry_file = self.artifact_dir / "model_registry.json"
+
+        if meta_file.exists():
+            try:
+                self._last_mtime = meta_file.stat().st_mtime
+            except Exception:
+                pass
 
         if not meta_file.exists() or not preprocessor_file.exists():
             self.is_ready = False
@@ -168,9 +185,10 @@ class FraudPredictionService:
         prior_tx = int(prior_tx_val if prior_tx_val is not None else 25)
         d["customer_total_transactions_prior"] = prior_tx
 
-        prev_amt_val = d.get("Previous_Transaction_Amount")
+        prev_amt_val = d.get("Previous_Transaction_Amount") if d.get("Previous_Transaction_Amount") is not None else d.get("previous_transaction_amount")
         prev_amt = float(prev_amt_val if prev_amt_val is not None else avg_amt)
         d["Previous_Transaction_Amount"] = prev_amt
+        d["previous_transaction_amount"] = prev_amt
 
         amt_ratio = float(amt / (avg_amt + 1e-5))
         d["amount_to_avg_ratio"] = amt_ratio

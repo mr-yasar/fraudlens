@@ -160,43 +160,66 @@ class RiskScoringEngine:
         total_score += model_pts
 
         # =========================================================================
-        # 2. Transaction Amount Abnormality Signal (Max: 25 pts)
+        # 2. Transaction Amount Abnormality Signal vs Average & Previous Spend (Max: 25 pts)
         # =========================================================================
+        prev_amount = float(transaction_data.get("Previous_Transaction_Amount") or transaction_data.get("previous_transaction_amount") or avg_amount_30d)
         amount_ratio = amount / (avg_amount_30d + 1e-5) if avg_amount_30d > 0 else 1.0
+        prev_ratio = amount / (prev_amount + 1e-5) if prev_amount > 0 else 1.0
         amount_pts = 0.0
 
-        if amount_ratio >= 10.0 or amount >= 100000.0:
-            amount_pts = 25.0
+        # Evaluation against Customer Historical Average Amount
+        if amount_ratio >= 8.0:
+            amount_pts += 18.0
             factors.append(RiskFactorDetail(
-                factor="extreme_amount_spike",
-                impact_score=amount_pts,
+                factor="extreme_customer_baseline_spike",
+                impact_score=18.0,
                 severity="HIGH",
-                detail=f"Transaction amount (₹{amount:,.2f}) is {amount_ratio:.1f}x higher than baseline (₹{avg_amount_30d:,.2f})",
+                detail=f"Amount (₹{amount:,.2f}) is {amount_ratio:.1f}x higher than customer average spend (₹{avg_amount_30d:,.2f})",
             ))
-        elif amount_ratio >= 4.0 or amount >= 50000.0:
-            amount_pts = 18.0
+        elif amount_ratio >= 3.5:
+            amount_pts += 12.0
             factors.append(RiskFactorDetail(
-                factor="severe_amount_abnormality",
-                impact_score=amount_pts,
+                factor="severe_customer_baseline_spike",
+                impact_score=12.0,
                 severity="HIGH",
-                detail=f"Transaction amount (₹{amount:,.2f}) is {amount_ratio:.1f}x higher than baseline (₹{avg_amount_30d:,.2f})",
+                detail=f"Amount (₹{amount:,.2f}) is {amount_ratio:.1f}x higher than customer average spend (₹{avg_amount_30d:,.2f})",
             ))
-        elif amount_ratio >= 2.0 or amount >= 15000.0:
-            amount_pts = 10.0
+        elif amount_ratio >= 2.0:
+            amount_pts += 6.0
             factors.append(RiskFactorDetail(
-                factor="moderate_amount_abnormality",
-                impact_score=amount_pts,
+                factor="moderate_customer_baseline_spike",
+                impact_score=6.0,
                 severity="MEDIUM",
-                detail=f"Transaction amount is {amount_ratio:.1f}x baseline (₹{avg_amount_30d:,.2f})",
+                detail=f"Amount (₹{amount:,.2f}) is {amount_ratio:.1f}x higher than customer average spend (₹{avg_amount_30d:,.2f})",
             ))
-        elif amount > 5000.0:
-            amount_pts = 5.0
+        elif 0.5 <= amount_ratio <= 1.4:
             factors.append(RiskFactorDetail(
-                factor="high_absolute_amount",
-                impact_score=amount_pts,
+                factor="consistent_customer_baseline",
+                impact_score=-4.0,
                 severity="LOW",
-                detail=f"Elevated transaction ticket (₹{amount:,.2f})",
+                detail=f"Amount (₹{amount:,.2f}) aligns with customer's historical average spend (₹{avg_amount_30d:,.2f})",
             ))
+            amount_pts -= 4.0
+
+        # Evaluation against Immediate Prior / Old Transaction Amount
+        if prev_ratio >= 6.0 and (amount - prev_amount) > 5000:
+            amount_pts += 7.0
+            factors.append(RiskFactorDetail(
+                factor="abrupt_jump_from_previous_transaction",
+                impact_score=7.0,
+                severity="HIGH",
+                detail=f"Abrupt {prev_ratio:.1f}x surge compared to immediate previous transaction (₹{prev_amount:,.2f})",
+            ))
+        elif 0.6 <= prev_ratio <= 1.6:
+            factors.append(RiskFactorDetail(
+                factor="consistent_with_previous_transaction",
+                impact_score=-3.0,
+                severity="LOW",
+                detail=f"Amount is continuous with immediate prior transaction (₹{prev_amount:,.2f})",
+            ))
+            amount_pts -= 3.0
+
+        amount_pts = max(-6.0, min(25.0, amount_pts))
         total_score += amount_pts
 
         # =========================================================================

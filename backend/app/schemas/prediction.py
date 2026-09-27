@@ -42,6 +42,7 @@ class TransactionPredictionInput(BaseModel):
     merchant_average_ticket: Optional[float] = Field(None, description="Merchant average ticket amount")
     merchant_historical_fraud_rate: Optional[float] = Field(None, description="Merchant historical fraud rate")
     customer_historical_avg_amount: Optional[float] = Field(None, description="Customer historical average amount")
+    previous_transaction_amount: Optional[float] = Field(None, description="Immediate previous transaction amount in INR")
     is_new_device: Optional[bool] = Field(None, description="New device indicator")
     is_new_beneficiary: Optional[bool] = Field(None, description="New beneficiary indicator")
     is_location_changed: Optional[bool] = Field(None, description="Location jump indicator")
@@ -90,32 +91,36 @@ class TransactionPredictionInput(BaseModel):
         d["transaction_amount"] = amt_val
 
         # Reconcile & Validate Transaction_Hour / transaction_hour
-        hour = d.get("Transaction_Hour", d.get("transaction_hour"))
+        hour = d.get("Transaction_Hour") if d.get("Transaction_Hour") is not None else d.get("transaction_hour")
         if hour is None:
-            raise ValueError("Field 'transaction_hour' or 'Transaction_Hour' is required.")
-        try:
-            hour_val = int(hour)
-            if not (0 <= hour_val <= 23):
-                raise ValueError("Transaction hour must be between 0 and 23.")
-        except (TypeError, ValueError) as e:
-            raise ValueError(f"Invalid transaction hour: {e}")
+            hour_val = 12
+        else:
+            try:
+                hour_val = int(hour)
+                if not (0 <= hour_val <= 23):
+                    hour_val = 12
+            except (TypeError, ValueError):
+                hour_val = 12
         d["Transaction_Hour"] = hour_val
         d["transaction_hour"] = hour_val
 
         # Reconcile Transaction_Type / transaction_type
-        tx_type = d.get("Transaction_Type", d.get("transaction_type", "Purchase"))
+        tx_type = d.get("Transaction_Type") or d.get("transaction_type") or "Purchase"
         d["Transaction_Type"] = str(tx_type)
         d["transaction_type"] = str(tx_type)
 
         # Reconcile Location / geo_location_region / Usual_Location
-        loc = d.get("Location", d.get("geo_location_region", "Pune"))
+        loc = d.get("Location") or d.get("location") or d.get("geo_location_region") or d.get("current_location") or "Chennai"
         d["Location"] = str(loc)
+        d["location"] = str(loc)
         d["geo_location_region"] = str(loc)
-        if "Usual_Location" not in d or d["Usual_Location"] is None:
-            d["Usual_Location"] = str(loc)
+        
+        usual_loc = d.get("Usual_Location") or d.get("usual_location") or d.get("customer_usual_location") or str(loc)
+        d["Usual_Location"] = str(usual_loc)
+        d["usual_location"] = str(usual_loc)
 
         # Reconcile Device_Type / device_type
-        dev = d.get("Device_Type", d.get("device_type", "Mac"))
+        dev = d.get("Device_Type") or d.get("device_type") or "mobile_android"
         d["Device_Type"] = str(dev)
         d["device_type"] = str(dev)
 
@@ -146,8 +151,18 @@ class TransactionPredictionInput(BaseModel):
         d["avg_transaction_amount_30d_customer"] = baseline_amt
         d["customer_historical_avg_amount"] = baseline_amt
 
-        if "Previous_Transaction_Amount" not in d or d["Previous_Transaction_Amount"] is None:
-            d["Previous_Transaction_Amount"] = baseline_amt
+        # Reconcile Previous_Transaction_Amount
+        prev_val = d.get("Previous_Transaction_Amount") if d.get("Previous_Transaction_Amount") is not None else d.get("previous_transaction_amount")
+        if prev_val is None:
+            prev_val = baseline_amt
+        try:
+            prev_amt = float(prev_val)
+            if prev_amt <= 0:
+                prev_amt = baseline_amt
+        except Exception:
+            prev_amt = baseline_amt
+        d["Previous_Transaction_Amount"] = prev_amt
+        d["previous_transaction_amount"] = prev_amt
 
         # Reconcile Amount_Deviation & Amount_Ratio
         d["Amount_Deviation"] = amt_val - baseline_amt

@@ -14,6 +14,8 @@ import {
   Bot,
   Volume2,
   Lightbulb,
+  BrainCircuit,
+  Radio,
 } from 'lucide-react'
 
 import { AuthProvider, useAuth } from './context/AuthContext'
@@ -22,6 +24,7 @@ import ErrorBoundary from './components/ErrorBoundary'
 import DashboardView from './components/DashboardView'
 import PaymentView from './components/PaymentView'
 import TransactionRiskAnalyzerView from './components/TransactionRiskAnalyzerView'
+import LiveMonitorAndInvestigationHub from './components/LiveMonitorAndInvestigationHub'
 import LiveTransactionMonitorView from './components/LiveTransactionMonitorView'
 import MerchantIntelligenceView from './components/MerchantIntelligenceView'
 import TransactionsView from './components/TransactionsView'
@@ -287,19 +290,34 @@ function CommandCenterApp() {
             </div>
 
             <div className="flex items-center space-x-2.5">
-              {/* Direct Payment Gateway Shortcut */}
-              <button
-                onClick={() => navigateTo('payment')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition border ${
-                  activeView === 'payment'
-                    ? 'bg-cyan-600 text-white border-cyan-400 shadow-md shadow-cyan-900/50'
-                    : 'bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border-slate-700'
-                }`}
-                title="Open Pre-Auth Payment Gateway"
-              >
-                <CreditCard className="w-3.5 h-3.5 text-cyan-400" />
-                <span className="hidden sm:inline">Payment Gateway</span>
-              </button>
+              {/* Direct Quick Shortcut: Payment Gateway for Customer, Risk Analyzer for Admin/Investigator */}
+              {isCustomer ? (
+                <button
+                  onClick={() => navigateTo('payment')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition border ${
+                    activeView === 'payment'
+                      ? 'bg-cyan-600 text-white border-cyan-400 shadow-md shadow-cyan-900/50'
+                      : 'bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border-slate-700'
+                  }`}
+                  title="Open Pre-Auth Payment Gateway"
+                >
+                  <CreditCard className="w-3.5 h-3.5 text-cyan-400" />
+                  <span className="hidden sm:inline">Payment Gateway</span>
+                </button>
+              ) : (
+                <button
+                  onClick={() => navigateTo('analyzer')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition border ${
+                    activeView === 'analyzer'
+                      ? 'bg-cyan-600 text-white border-cyan-400 shadow-md shadow-cyan-900/50'
+                      : 'bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border-slate-700'
+                  }`}
+                  title="Open Transaction Risk Analyzer"
+                >
+                  <BrainCircuit className="w-3.5 h-3.5 text-cyan-400" />
+                  <span className="hidden sm:inline">Risk Analyzer</span>
+                </button>
+              )}
 
               {/* Unified How It Works (System Guide & AI Voice Explainer) */}
               <button
@@ -387,19 +405,31 @@ function CommandCenterApp() {
                 <PaymentView
                   user={user}
                   isAdmin={isAdmin}
-                  initialPreset={selectedPersona}
+                  selectedPersona={selectedPersona}
                   onViewExplanation={handleViewExplanation}
-                  onNavigateToInvestigations={() => navigateTo('investigations')}
+                  onNavigateToInvestigations={() => navigateTo('live-monitor')}
                   onSelectTransaction={handleSelectTransaction}
                 />
               )}
 
               {activeView === 'analyzer' && (
-                <TransactionRiskAnalyzerView user={user} isAdmin={isAdmin} />
+                <TransactionRiskAnalyzerView
+                  user={user}
+                  isAdmin={isAdmin}
+                  onViewExplanation={handleViewExplanation}
+                  onNavigateToInvestigations={() => navigateTo('live-monitor')}
+                  onSelectTransaction={handleSelectTransaction}
+                />
               )}
 
-              {activeView === 'live-monitor' && (
-                <LiveTransactionMonitorView user={user} isAdmin={isAdmin} onInvestigate={handleOpenInvestigation} />
+              {(activeView === 'live-monitor' || activeView === 'investigations') && (
+                <LiveMonitorAndInvestigationHub
+                  user={user}
+                  isAdmin={isAdmin}
+                  initialTab={activeView === 'investigations' ? 'investigations' : 'monitor'}
+                  initialTxId={targetTxId}
+                  onViewExplanation={handleViewExplanation}
+                />
               )}
 
               {activeView === 'merchants' && (
@@ -427,14 +457,6 @@ function CommandCenterApp() {
                   user={user}
                   isAdmin={isAdmin}
                   initialTransactionId={targetTxId}
-                />
-              )}
-
-              {activeView === 'investigations' && (
-                <InvestigationsView
-                  user={user}
-                  isAdmin={isAdmin}
-                  onInspectExplanation={handleViewExplanation}
                 />
               )}
 

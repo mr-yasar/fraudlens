@@ -109,7 +109,7 @@ Visualizes the 4 critical defense barriers preventing fund exfiltration:
 | Module | Purpose & Core Capabilities | Primary Role |
 | :--- | :--- | :--- |
 | **📊 Command Dashboard** | Real-time overview of fraud activity, high-risk flags, merchant risk alerts, and investigation queues. | Investigator & Customer |
-| **💳 Payment Gateway** | Interactive payment processing with instant risk scoring, merchant selection, and phone OTP step-up. | Investigator & Customer |
+| **💳 Payment Gateway** | Interactive payment processing with instant risk scoring, merchant selection, and phone OTP step-up. | Customer Portal |
 | **🧠 Transaction Risk Analyzer** | In-depth parameter testing across the 29 Master Merchants with ML Probability, Independent Risk Score, and SHAP. | Investigator & Customer |
 | **📻 Live Fraud Monitor** | Real-time streaming radar of incoming transactions with auto-updating risk telemetry and instant step-up flags. | Investigator Only |
 | **🏬 Merchant Intelligence** | Directory and deep-dive profiling for all 29 master fictional merchants across Chennai, Coimbatore, Madurai, Salem, Bengaluru. | Investigator Only |
