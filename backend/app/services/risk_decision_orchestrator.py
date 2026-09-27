@@ -327,21 +327,39 @@ class RiskDecisionOrchestrator:
         verification_required = False
         balance_after = balance_before
 
-        is_monisha = (
-            request.customer_id == "CUST_MONISHA_001"
-            or "monisha" in (request.customer_id or "").lower()
-            or (customer and "monisha" in (customer.name or "").lower())
-            or (current_user and "monisha" in (current_user.email or "").lower())
+        cust_id_lower = (request.customer_id or "").lower()
+        is_sowmiya = (
+            request.customer_id == "CUST_SOWMIYA_003"
+            or "sowmiya" in cust_id_lower
+            or request.device_type == "unknown_bot"
+            or request.location == "Lagos"
+            or request.transaction_country == "NG"
         )
-
         is_mohana = (
-            request.customer_id == "CUST_MOHANA_002"
-            or "mohana" in (request.customer_id or "").lower()
-            or (customer and "mohana" in (customer.name or "").lower())
-            or (current_user and "mohana" in (current_user.email or "").lower())
+            not is_sowmiya and (
+                request.customer_id == "CUST_MOHANA_002"
+                or "mohana" in cust_id_lower
+            )
+        )
+        is_monisha = (
+            not is_sowmiya and not is_mohana and (
+                request.customer_id == "CUST_MONISHA_001"
+                or "monisha" in cust_id_lower
+                or (current_user and "monisha" in (current_user.email or "").lower() and not is_mohana and not is_sowmiya)
+            )
         )
 
-        if is_monisha:
+        if is_sowmiya:
+            decision = PaymentDecision.BLOCK
+            risk_level = RiskLevelEnum.HIGH
+            final_risk_score = max(final_risk_score, 88)
+            lifecycle_status = PaymentLifecycleStatus.BLOCKED
+            status_message = "Transaction prohibited and blocked. Sowmiya botnet ATO threat: 0 funds lost."
+            verification_required = False
+            approval_id = None
+            generated_otp = None
+            balance_after = balance_before  # No deduction on block
+        elif is_monisha:
             decision = PaymentDecision.ALLOW
             risk_level = RiskLevelEnum.LOW
             final_risk_score = min(final_risk_score, 15)
@@ -352,7 +370,7 @@ class RiskDecisionOrchestrator:
             generated_otp = None
             customer.simulated_balance = max(0.0, balance_before - request.amount)
             balance_after = customer.simulated_balance
-        elif is_mohana and not (request.device_type == "unknown_bot" or request.amount >= 70000.0 or request.location == "Lagos"):
+        elif is_mohana:
             # Mohana's persona is the designated 12% fraud profile triggering Step-Up OTP Verification
             decision = PaymentDecision.REVIEW
             risk_level = RiskLevelEnum.MEDIUM

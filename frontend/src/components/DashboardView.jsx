@@ -21,6 +21,9 @@ import {
   Target,
   FileText,
   Zap,
+  Lock,
+  Building2,
+  Info,
 } from 'lucide-react'
 import CyberHeroShield from './CyberHeroShield'
 import { dashboardApi, alertsApi } from '../services/api'
@@ -34,12 +37,14 @@ import {
 } from 'recharts'
 import { getCustomerPersona } from '../utils/customerHelper'
 import CustomerDashboardView from './CustomerDashboardView'
+import GlobalCenterModal from './common/GlobalCenterModal'
+import { formatINR } from '../utils/formatters'
 
 export default function DashboardView({ onSelectTransaction, onOpenCase, onOpenPayment, user, isAdmin }) {
   const customerPersona = getCustomerPersona(user)
   const isCustomer = customerPersona.isCustomer
 
-  // 1. DEDICATED CUSTOMER DASHBOARD: Ultimate-level, dataset-accurate, private banking interface
+  // DEDICATED CUSTOMER DASHBOARD
   if (isCustomer) {
     return (
       <CustomerDashboardView
@@ -52,13 +57,17 @@ export default function DashboardView({ onSelectTransaction, onOpenCase, onOpenP
     )
   }
 
-  // 2. ADMIN DASHBOARD: Kept exactly as is with zero change
+  // ADMIN DASHBOARD
   const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [alerts, setAlerts] = useState([])
   const [alertsLoading, setAlertsLoading] = useState(false)
   const [acknowledgingId, setAcknowledgingId] = useState(null)
+
+  // Centered Modal Inspection States (Feature: CLICK -> CENTERED MODAL -> FULL CONTENT)
+  const [activeModal, setActiveModal] = useState(null)
+  // activeModal can be: { type: 'METRIC', data: ... } | { type: 'ALERT', data: ... } | { type: 'TX', data: ... } | { type: 'SHAP', data: ... } | { type: 'MODEL', data: ... } | { type: 'CHANNEL', data: ... }
 
   const fetchStats = async () => {
     setLoading(true)
@@ -158,8 +167,6 @@ export default function DashboardView({ onSelectTransaction, onOpenCase, onOpenP
   const maxVolume = Math.max(...trends.map((t) => t.volume || 0), 1)
 
   const typeRisks = stats?.transaction_type_risk || []
-  const deviceRisks = stats?.device_risk || []
-  const modelComparison = stats?.model_comparison || {}
   const topFactors = stats?.top_risk_factors || []
   const shapChartData = (topFactors || [])
     .map((factor) => {
@@ -189,7 +196,6 @@ export default function DashboardView({ onSelectTransaction, onOpenCase, onOpenP
     .slice(0, 6)
 
   const aiIntelligence = stats?.ai_risk_intelligence || {}
-
   const activeModelName = stats?.active_model_info?.model_name || 'Logistic Regression'
   const activeModelVersion = stats?.active_model_info?.model_version || 'v1.2.0'
   const activeThreshold = stats?.active_model_info?.threshold ?? 0.8189
@@ -203,184 +209,246 @@ export default function DashboardView({ onSelectTransaction, onOpenCase, onOpenP
         riskScore={stats?.average_risk_score}
       />
 
-      {/* Real-Time Evaluation Personas / Customer Security Hub Banner */}
+      {/* Real-Time Evaluation Personas Banner */}
       <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-950 to-indigo-950/70 border border-cyan-800/50 shadow-xl relative overflow-hidden">
-        {isCustomer ? (
-          /* CUSTOMER ISOLATED VIEW: Only watching their own customer account */
-          <div>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3 border-b border-slate-800/80 pb-3">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-950 text-emerald-300 border border-emerald-700">
-                    <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                    AUTHENTICATED CUSTOMER PORTAL
-                  </span>
-                  <span className="text-[10px] font-mono text-slate-400">Personal Protected Account</span>
-                </div>
-                <h2 className="text-base sm:text-lg font-bold text-white mt-1">
-                  Customer Security Hub — {customerPersona.customerName} ({customerPersona.customerId})
-                </h2>
+        <div>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3 border-b border-slate-800/80 pb-3">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-cyan-950 text-cyan-300 border border-cyan-700">
+                  <Zap className="w-3 h-3 text-cyan-400 animate-pulse" />
+                  ADMIN MULTI-CUSTOMER AUDIT
+                </span>
+                <span className="text-[10px] font-mono text-slate-400">All 3 Canonical Personas Active</span>
               </div>
-              <button
-                onClick={() => onOpenPayment && onOpenPayment(`scenario_${customerPersona.customerName?.toLowerCase()}_safe`)}
-                className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-lg shadow-emerald-950/40 transition shrink-0"
-              >
-                <CreditCard className="w-3.5 h-3.5" />
-                <span>Open Pre-Auth Gateway (My Account)</span>
-              </button>
+              <h2 className="text-base sm:text-lg font-bold text-white mt-1">
+                Real-Time Evaluation Personas (Student MCA Research Set)
+              </h2>
             </div>
+            <button
+              onClick={() => onOpenPayment && onOpenPayment('scenario_monisha_safe')}
+              className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-bold shadow-lg shadow-cyan-950/40 transition shrink-0"
+            >
+              <CreditCard className="w-3.5 h-3.5" />
+              <span>Open Pre-Auth Gateway</span>
+            </button>
+          </div>
 
-            <div className="p-4 rounded-xl bg-slate-900/90 border border-emerald-800/60 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-              <div className="space-y-1">
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-bold text-white font-mono">{customerPersona.customerName}</span>
-                  <span className="px-2 py-0.5 rounded font-mono text-xs font-bold bg-emerald-950 text-emerald-300 border border-emerald-800">
-                    BASELINE FRAUD: {customerPersona.fraudRate}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {/* Persona 1: Monisha */}
+            <div
+              onClick={() =>
+                setActiveModal({
+                  type: 'PERSONA',
+                  title: 'Monisha (CUST_MONISHA_001) Profile',
+                  badge: '3.0% FRAUD RATE • SAFE ALLOW',
+                  badgeColor: 'bg-emerald-950 text-emerald-300 border-emerald-800',
+                  icon: CheckCircle2,
+                  data: {
+                    name: 'Monisha',
+                    id: 'CUST_MONISHA_001',
+                    fraudRate: '3.0%',
+                    tenure: '420 Days',
+                    balance: '₹15,00,000.00',
+                    location: 'Chennai, Tamil Nadu',
+                    usualMerchants: 'NovaMart Fresh, Blue Tokai Coffee, Swiggy',
+                    policy: 'Zero-Friction Auto-Approved (No OTP)',
+                  },
+                })
+              }
+              className="p-3.5 rounded-xl bg-slate-900/80 border border-emerald-800/50 hover:border-emerald-500/60 transition flex flex-col justify-between cursor-pointer group shadow"
+            >
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-xs font-bold text-white group-hover:text-emerald-300 transition">
+                    Monisha (CUST_MONISHA_001)
                   </span>
-                  <span className="text-xs text-slate-400 font-mono">ID: {customerPersona.customerId}</span>
+                  <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-950 text-emerald-300 border border-emerald-800">
+                    3.0% FRAUD
+                  </span>
                 </div>
-                <p className="text-xs text-slate-300 leading-relaxed max-w-2xl">
-                  Your payment account is protected by real-time behavioral fingerprinting, velocity tracking, and pre-authorization AI defense. Only your personal transactions and telemetry are visible in this session.
+                <p className="text-[11px] text-slate-300 leading-relaxed mb-2">
+                  Habitual grocery &amp; utility profile in Chennai. Clean baseline &rarr; Pre-Auth evaluates and issues <strong className="text-emerald-400">ALLOW (Auto-Approved)</strong>.
                 </p>
               </div>
-
-              <div className="flex items-center gap-3 shrink-0">
-                <button
-                  onClick={() => onOpenPayment && onOpenPayment()}
-                  className="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition flex items-center gap-2 shadow-md shadow-emerald-950"
-                >
-                  <CreditCard className="w-3.5 h-3.5" />
-                  <span>Initiate New Payment</span>
-                </button>
+              <div className="w-full mt-2 py-1.5 px-2.5 rounded-lg bg-emerald-950/70 hover:bg-emerald-900/80 border border-emerald-800/80 text-emerald-300 text-xs font-semibold flex items-center justify-center gap-1.5 transition">
+                <span>Inspect Persona Telemetry</span>
+                <ArrowUpRight className="w-3.5 h-3.5" />
               </div>
             </div>
-          </div>
-        ) : (
-          /* ADMIN / INVESTIGATOR VIEW: Multi-Customer Audit of All 3 Personas */
-          <div>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3 border-b border-slate-800/80 pb-3">
+
+            {/* Persona 2: Mohana */}
+            <div
+              onClick={() =>
+                setActiveModal({
+                  type: 'PERSONA',
+                  title: 'Mohana (CUST_MOHANA_002) Profile',
+                  badge: '12.0% FRAUD RATE • STEP-UP OTP',
+                  badgeColor: 'bg-amber-950 text-amber-300 border-amber-800',
+                  icon: AlertTriangle,
+                  data: {
+                    name: 'Mohana',
+                    id: 'CUST_MOHANA_002',
+                    fraudRate: '12.0%',
+                    tenure: '180 Days',
+                    balance: '₹15,00,000.00',
+                    location: 'Salem / Coimbatore, Tamil Nadu',
+                    usualMerchants: 'CircuitBay Electronics, GameZone Digital',
+                    policy: 'Step-Up OTP Verification on Velocity / Device Spikes',
+                  },
+                })
+              }
+              className="p-3.5 rounded-xl bg-slate-900/80 border border-amber-800/50 hover:border-amber-500/60 transition flex flex-col justify-between cursor-pointer group shadow"
+            >
               <div>
-                <div className="flex items-center gap-2">
-                  <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-cyan-950 text-cyan-300 border border-cyan-700">
-                    <Zap className="w-3 h-3 text-cyan-400 animate-pulse" />
-                    ADMIN MULTI-CUSTOMER AUDIT
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-xs font-bold text-white group-hover:text-amber-300 transition">
+                    Mohana (CUST_MOHANA_002)
                   </span>
-                  <span className="text-[10px] font-mono text-slate-400">All 3 Canonical Personas Active</span>
+                  <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-950 text-amber-300 border border-amber-800">
+                    12.0% FRAUD
+                  </span>
                 </div>
-                <h2 className="text-base sm:text-lg font-bold text-white mt-1">
-                  Real-Time Evaluation Personas (Student MCA Research Set)
-                </h2>
+                <p className="text-[11px] text-slate-300 leading-relaxed mb-2">
+                  Unfamiliar device &amp; cross-city Salem purchase. Elevated anomaly &rarr; FraudLens requests <strong className="text-amber-400">REVIEW (Step-Up OTP)</strong>.
+                </p>
               </div>
-              <button
-                onClick={() => onOpenPayment && onOpenPayment('scenario_monisha_safe')}
-                className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-bold shadow-lg shadow-cyan-950/40 transition shrink-0"
-              >
-                <CreditCard className="w-3.5 h-3.5" />
-                <span>Open Pre-Auth Gateway</span>
-              </button>
+              <div className="w-full mt-2 py-1.5 px-2.5 rounded-lg bg-amber-950/70 hover:bg-amber-900/80 border border-amber-800/80 text-amber-300 text-xs font-semibold flex items-center justify-center gap-1.5 transition">
+                <span>Inspect Persona Telemetry</span>
+                <ArrowUpRight className="w-3.5 h-3.5" />
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-              {/* Persona 1: Monisha */}
-              <div className="p-3.5 rounded-xl bg-slate-900/80 border border-emerald-800/50 hover:border-emerald-500/60 transition flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs font-bold text-white">Monisha (CUST_MONISHA_001)</span>
-                    <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-emerald-950 text-emerald-300 border border-emerald-800">
-                      3.0% FRAUD
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-slate-300 leading-relaxed mb-2">
-                    Habitual grocery &amp; utility profile in Chennai. Clean baseline &rarr; Pre-Auth automatically evaluates and issues <strong className="text-emerald-400">ALLOW (Auto-Approved)</strong>.
-                  </p>
+            {/* Persona 3: Sowmiya */}
+            <div
+              onClick={() =>
+                setActiveModal({
+                  type: 'PERSONA',
+                  title: 'Sowmiya (CUST_SOWMIYA_003) Profile',
+                  badge: '26.0% FRAUD RATE • CRITICAL BLOCK',
+                  badgeColor: 'bg-rose-950 text-rose-300 border-rose-800',
+                  icon: ShieldAlert,
+                  data: {
+                    name: 'Sowmiya',
+                    id: 'CUST_SOWMIYA_003',
+                    fraudRate: '26.0%',
+                    tenure: '90 Days',
+                    balance: '₹15,00,000.00',
+                    location: 'Lagos / Foreign Proxy / Dubai',
+                    usualMerchants: 'Aurelia Gold House, CryptoXchange Global',
+                    policy: 'Instant Pre-Auth Block on Botnet / ATO Incursion',
+                  },
+                })
+              }
+              className="p-3.5 rounded-xl bg-slate-900/80 border border-rose-800/50 hover:border-rose-500/60 transition flex flex-col justify-between cursor-pointer group shadow"
+            >
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-xs font-bold text-white group-hover:text-rose-300 transition">
+                    Sowmiya (CUST_SOWMIYA_003)
+                  </span>
+                  <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-950 text-rose-300 border border-rose-800">
+                    26.0% FRAUD
+                  </span>
                 </div>
-                <button
-                  onClick={() => onOpenPayment && onOpenPayment('scenario_monisha_safe')}
-                  className="w-full mt-2 py-1.5 px-2.5 rounded-lg bg-emerald-950/70 hover:bg-emerald-900/80 border border-emerald-800/80 text-emerald-300 hover:text-emerald-200 text-xs font-semibold flex items-center justify-center gap-1.5 transition"
-                >
-                  <span>Test Monisha in Gateway</span>
-                  <ArrowUpRight className="w-3.5 h-3.5" />
-                </button>
+                <p className="text-[11px] text-slate-300 leading-relaxed mb-2">
+                  Botnet emulator ATO attack at 2:30 AM via foreign proxy IP. Critical threat &rarr; Instant Pre-Auth <strong className="text-rose-400">BLOCK (Zero Funds Lost)</strong>.
+                </p>
               </div>
-
-              {/* Persona 2: Mohana */}
-              <div className="p-3.5 rounded-xl bg-slate-900/80 border border-amber-800/50 hover:border-amber-500/60 transition flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs font-bold text-white">Mohana (CUST_MOHANA_002)</span>
-                    <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-950 text-amber-300 border border-amber-800">
-                      12.0% FRAUD
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-slate-300 leading-relaxed mb-2">
-                    Unfamiliar device &amp; cross-city Salem purchase. Elevated anomaly &rarr; FraudLens pauses payment and requests <strong className="text-amber-400">REVIEW (Step-Up OTP)</strong>.
-                  </p>
-                </div>
-                <button
-                  onClick={() => onOpenPayment && onOpenPayment('scenario_mohana_review')}
-                  className="w-full mt-2 py-1.5 px-2.5 rounded-lg bg-amber-950/70 hover:bg-amber-900/80 border border-amber-800/80 text-amber-300 hover:text-amber-200 text-xs font-semibold flex items-center justify-center gap-1.5 transition"
-                >
-                  <span>Test Mohana in Gateway</span>
-                  <ArrowUpRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-
-              {/* Persona 3: Sowmiya */}
-              <div className="p-3.5 rounded-xl bg-slate-900/80 border border-rose-800/50 hover:border-rose-500/60 transition flex flex-col justify-between">
-                <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <span className="text-xs font-bold text-white">Sowmiya (CUST_SOWMIYA_003)</span>
-                    <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-950 text-rose-300 border border-rose-800">
-                      26.0% FRAUD
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-slate-300 leading-relaxed mb-2">
-                    Botnet emulator ATO attack at 2:30 AM via foreign proxy IP. Critical threat &rarr; Instant Pre-Auth <strong className="text-rose-400">BLOCK (Zero Funds Lost)</strong>.
-                  </p>
-                </div>
-                <button
-                  onClick={() => onOpenPayment && onOpenPayment('scenario_sowmiya_block')}
-                  className="w-full mt-2 py-1.5 px-2.5 rounded-lg bg-rose-950/70 hover:bg-rose-900/80 border border-rose-800/80 text-rose-300 hover:text-rose-200 text-xs font-semibold flex items-center justify-center gap-1.5 transition"
-                >
-                  <span>Test Sowmiya in Gateway</span>
-                  <ArrowUpRight className="w-3.5 h-3.5" />
-                </button>
+              <div className="w-full mt-2 py-1.5 px-2.5 rounded-lg bg-rose-950/70 hover:bg-rose-900/80 border border-rose-800/80 text-rose-300 text-xs font-semibold flex items-center justify-center gap-1.5 transition">
+                <span>Inspect Persona Telemetry</span>
+                <ArrowUpRight className="w-3.5 h-3.5" />
               </div>
             </div>
           </div>
-        )}
+        </div>
       </div>
 
-      {/* 2. Primary 8-Card KPI Metrics Grid */}
+      {/* 2. Primary 8-Card KPI Metrics Grid (Interactive Centered Modals on Click) */}
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">
         {/* Total Transactions */}
-        <div className="p-3.5 rounded-2xl bg-slate-900/70 border border-slate-800 shadow-md backdrop-blur-md flex flex-col justify-between">
+        <div
+          onClick={() =>
+            setActiveModal({
+              type: 'METRIC',
+              title: 'Total Transactions Ledger',
+              badge: `${stats?.total_transactions || 0} RECORDS`,
+              icon: Activity,
+              subtitle: 'Comprehensive ledger count of all transactions evaluated in database',
+              data: {
+                totalCount: stats?.total_transactions || 0,
+                genuineCount: stats?.genuine_transactions || 0,
+                fraudCount: stats?.fraud_transactions || 0,
+                fraudRatio: `${stats?.fraud_ratio || 0}%`,
+                databaseStatus: 'Verified SQL Database Connection',
+              },
+            })
+          }
+          className="p-3.5 rounded-2xl bg-slate-900/70 border border-slate-800 hover:border-cyan-500/60 shadow-md backdrop-blur-md flex flex-col justify-between cursor-pointer group transition hover:scale-[1.02]"
+        >
           <div className="flex items-center justify-between text-slate-400 mb-1">
             <span className="text-[10px] font-mono uppercase font-bold tracking-wider">Total Tx</span>
-            <Activity className="w-3.5 h-3.5 text-cyan-400" />
+            <Activity className="w-3.5 h-3.5 text-cyan-400 group-hover:scale-110 transition-transform" />
           </div>
           <div className="text-lg sm:text-xl font-black text-white font-mono">{stats?.total_transactions || 0}</div>
           <div className="text-[9px] text-cyan-400 mt-1 flex items-center gap-1 font-mono">
             <CheckCircle2 className="w-2.5 h-2.5 text-emerald-400 shrink-0" />
-            <span>Real DB records</span>
+            <span>Click to inspect</span>
           </div>
         </div>
 
-        {/* Fraud Detected */}
-        <div className="p-3.5 rounded-2xl bg-slate-900/70 border border-rose-900/50 shadow-md backdrop-blur-md flex flex-col justify-between">
+        {/* Fraud Flagged */}
+        <div
+          onClick={() =>
+            setActiveModal({
+              type: 'METRIC',
+              title: 'Fraud Incidents Breakdown',
+              badge: `${stats?.fraud_transactions || 0} THREATS`,
+              badgeColor: 'bg-rose-950 text-rose-300 border-rose-800',
+              icon: AlertTriangle,
+              subtitle: 'Transactions confirmed as anomalous or malicious by the AI risk pipeline',
+              data: {
+                fraudCount: stats?.fraud_transactions || 0,
+                fraudRatio: `${stats?.fraud_ratio || 0}%`,
+                highRiskCount: stats?.high_risk_transactions || 0,
+                openCases: stats?.open_investigations || 0,
+                meanScore: `${stats?.average_risk_score || 0} / 100`,
+              },
+            })
+          }
+          className="p-3.5 rounded-2xl bg-slate-900/70 border border-rose-900/50 hover:border-rose-500 shadow-md backdrop-blur-md flex flex-col justify-between cursor-pointer group transition hover:scale-[1.02]"
+        >
           <div className="flex items-center justify-between text-slate-400 mb-1">
             <span className="text-[10px] font-mono uppercase font-bold tracking-wider text-rose-400">Fraud Flagged</span>
-            <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
+            <AlertTriangle className="w-3.5 h-3.5 text-rose-400 group-hover:scale-110 transition-transform" />
           </div>
           <div className="text-lg sm:text-xl font-black text-rose-400 font-mono">{stats?.fraud_transactions || 0}</div>
           <div className="text-[9px] text-rose-400/80 mt-1 font-mono">{stats?.fraud_ratio || 0}% fraud rate</div>
         </div>
 
         {/* Genuine Transactions */}
-        <div className="p-3.5 rounded-2xl bg-slate-900/70 border border-emerald-900/50 shadow-md backdrop-blur-md flex flex-col justify-between">
+        <div
+          onClick={() =>
+            setActiveModal({
+              type: 'METRIC',
+              title: 'Genuine Legitimate Transfers',
+              badge: `${stats?.genuine_transactions || 0} CLEAN`,
+              badgeColor: 'bg-emerald-950 text-emerald-300 border-emerald-800',
+              icon: CheckCircle2,
+              subtitle: 'Transactions cleared with low risk score and auto-authorized with zero friction',
+              data: {
+                genuineCount: stats?.genuine_transactions || 0,
+                cleanRatio: `${stats?.total_transactions ? Math.round((stats.genuine_transactions / stats.total_transactions) * 100) : 100}%`,
+                lowRiskCount: stats?.low_risk_transactions || 0,
+                approvalLatency: '< 120ms',
+              },
+            })
+          }
+          className="p-3.5 rounded-2xl bg-slate-900/70 border border-emerald-900/50 hover:border-emerald-500 shadow-md backdrop-blur-md flex flex-col justify-between cursor-pointer group transition hover:scale-[1.02]"
+        >
           <div className="flex items-center justify-between text-slate-400 mb-1">
             <span className="text-[10px] font-mono uppercase font-bold tracking-wider text-emerald-400">Genuine</span>
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 group-hover:scale-110 transition-transform" />
           </div>
           <div className="text-lg sm:text-xl font-black text-emerald-400 font-mono">{stats?.genuine_transactions || 0}</div>
           <div className="text-[9px] text-emerald-400/80 mt-1 font-mono">
@@ -389,40 +457,107 @@ export default function DashboardView({ onSelectTransaction, onOpenCase, onOpenP
         </div>
 
         {/* High Risk Alerts */}
-        <div className="p-3.5 rounded-2xl bg-slate-900/70 border border-amber-900/50 shadow-md backdrop-blur-md flex flex-col justify-between">
+        <div
+          onClick={() =>
+            setActiveModal({
+              type: 'METRIC',
+              title: 'High Risk Incident Telemetry',
+              badge: 'SCORE 71-100',
+              badgeColor: 'bg-amber-950 text-amber-300 border-amber-800',
+              icon: ShieldAlert,
+              subtitle: 'Transactions scoring in the upper critical quartile requiring manual review or hard block',
+              data: {
+                highRiskCount: stats?.high_risk_transactions || 0,
+                openCases: stats?.open_investigations || 0,
+                posture: aiIntelligence.system_threat_posture || 'NORMAL',
+              },
+            })
+          }
+          className="p-3.5 rounded-2xl bg-slate-900/70 border border-amber-900/50 hover:border-amber-500 shadow-md backdrop-blur-md flex flex-col justify-between cursor-pointer group transition hover:scale-[1.02]"
+        >
           <div className="flex items-center justify-between text-slate-400 mb-1">
             <span className="text-[10px] font-mono uppercase font-bold tracking-wider text-amber-400">High Risk</span>
-            <ShieldAlert className="w-3.5 h-3.5 text-amber-400" />
+            <ShieldAlert className="w-3.5 h-3.5 text-amber-400 group-hover:scale-110 transition-transform" />
           </div>
           <div className="text-lg sm:text-xl font-black text-amber-400 font-mono">{stats?.high_risk_transactions || 0}</div>
           <div className="text-[9px] text-amber-400/80 mt-1 font-mono">Score 71–100</div>
         </div>
 
         {/* Active Investigations */}
-        <div className="p-3.5 rounded-2xl bg-slate-900/70 border border-cyan-900/50 shadow-md backdrop-blur-md flex flex-col justify-between">
+        <div
+          onClick={() =>
+            setActiveModal({
+              type: 'METRIC',
+              title: 'Active Case Management',
+              badge: `${stats?.open_investigations || 0} OPEN`,
+              icon: Clock,
+              subtitle: 'Formal compliance and security investigation dossiers held in pipeline',
+              data: {
+                openCases: stats?.open_investigations || 0,
+                resolvedCases: stats?.resolved_investigations || 0,
+                assignedAnalysts: 'Tier-1 Security Response Team',
+              },
+            })
+          }
+          className="p-3.5 rounded-2xl bg-slate-900/70 border border-cyan-900/50 hover:border-cyan-500 shadow-md backdrop-blur-md flex flex-col justify-between cursor-pointer group transition hover:scale-[1.02]"
+        >
           <div className="flex items-center justify-between text-slate-400 mb-1">
             <span className="text-[10px] font-mono uppercase font-bold tracking-wider text-cyan-300">Active Cases</span>
-            <Clock className="w-3.5 h-3.5 text-cyan-400" />
+            <Clock className="w-3.5 h-3.5 text-cyan-400 group-hover:scale-110 transition-transform" />
           </div>
           <div className="text-lg sm:text-xl font-black text-cyan-300 font-mono">{stats?.open_investigations || 0}</div>
           <div className="text-[9px] text-slate-400 mt-1 font-mono">{stats?.resolved_investigations || 0} resolved</div>
         </div>
 
         {/* Average Risk Score */}
-        <div className="p-3.5 rounded-2xl bg-slate-900/70 border border-purple-900/50 shadow-md backdrop-blur-md flex flex-col justify-between">
+        <div
+          onClick={() =>
+            setActiveModal({
+              type: 'METRIC',
+              title: 'Multi-Factor Risk Distribution',
+              badge: `MEAN: ${stats?.average_risk_score || 0}`,
+              icon: TrendingUp,
+              subtitle: '0-100 Composite risk metric factoring SHAP, rules, velocity, and device novelty',
+              data: {
+                meanScore: `${stats?.average_risk_score || 0} / 100`,
+                lowTier: `${lowCount} txs (0-30)`,
+                medTier: `${medCount} txs (31-70)`,
+                highTier: `${highCount} txs (71-100)`,
+              },
+            })
+          }
+          className="p-3.5 rounded-2xl bg-slate-900/70 border border-purple-900/50 hover:border-purple-500 shadow-md backdrop-blur-md flex flex-col justify-between cursor-pointer group transition hover:scale-[1.02]"
+        >
           <div className="flex items-center justify-between text-slate-400 mb-1">
             <span className="text-[10px] font-mono uppercase font-bold tracking-wider text-purple-300">Mean Risk</span>
-            <TrendingUp className="w-3.5 h-3.5 text-purple-400" />
+            <TrendingUp className="w-3.5 h-3.5 text-purple-400 group-hover:scale-110 transition-transform" />
           </div>
           <div className="text-lg sm:text-xl font-black text-purple-300 font-mono">{stats?.average_risk_score || 0}</div>
           <div className="text-[9px] text-slate-400 mt-1 font-mono">Scale 0–100</div>
         </div>
 
         {/* Average Fraud Probability */}
-        <div className="p-3.5 rounded-2xl bg-slate-900/70 border border-blue-900/50 shadow-md backdrop-blur-md flex flex-col justify-between">
+        <div
+          onClick={() =>
+            setActiveModal({
+              type: 'METRIC',
+              title: 'ML Classification Probability Mean',
+              badge: `${((stats?.average_fraud_probability || 0) * 100).toFixed(1)}% P(F=1)`,
+              icon: Target,
+              subtitle: 'Raw statistical output from the champion machine learning inference model',
+              data: {
+                meanProb: `${((stats?.average_fraud_probability || 0) * 100).toFixed(2)}%`,
+                activeModel: activeModelName,
+                modelVersion: activeModelVersion,
+                decisionThreshold: Number(activeThreshold).toFixed(4),
+              },
+            })
+          }
+          className="p-3.5 rounded-2xl bg-slate-900/70 border border-blue-900/50 hover:border-blue-500 shadow-md backdrop-blur-md flex flex-col justify-between cursor-pointer group transition hover:scale-[1.02]"
+        >
           <div className="flex items-center justify-between text-slate-400 mb-1">
             <span className="text-[10px] font-mono uppercase font-bold tracking-wider text-blue-300">Mean Prob</span>
-            <Target className="w-3.5 h-3.5 text-blue-400" />
+            <Target className="w-3.5 h-3.5 text-blue-400 group-hover:scale-110 transition-transform" />
           </div>
           <div className="text-lg sm:text-xl font-black text-blue-300 font-mono">
             {((stats?.average_fraud_probability || 0) * 100).toFixed(1)}%
@@ -431,10 +566,30 @@ export default function DashboardView({ onSelectTransaction, onOpenCase, onOpenP
         </div>
 
         {/* Active Model & Version */}
-        <div className="p-3.5 rounded-2xl bg-slate-900/70 border border-indigo-900/50 shadow-md backdrop-blur-md flex flex-col justify-between">
+        <div
+          onClick={() =>
+            setActiveModal({
+              type: 'MODEL',
+              title: 'Champion Model Deployment & Metrics',
+              badge: activeModelVersion,
+              icon: Cpu,
+              subtitle: 'Production inference model metadata, calibration threshold, and validation metrics',
+              data: {
+                modelName: activeModelName,
+                modelVersion: activeModelVersion,
+                threshold: Number(activeThreshold).toFixed(4),
+                f1Score: '0.4286',
+                precisionAuc: '0.496',
+                accuracy: '96.5%',
+                recall: '56.3%',
+              },
+            })
+          }
+          className="p-3.5 rounded-2xl bg-slate-900/70 border border-indigo-900/50 hover:border-indigo-500 shadow-md backdrop-blur-md flex flex-col justify-between cursor-pointer group transition hover:scale-[1.02]"
+        >
           <div className="flex items-center justify-between text-slate-400 mb-1">
             <span className="text-[10px] font-mono uppercase font-bold tracking-wider text-indigo-300">Active Model</span>
-            <Cpu className="w-3.5 h-3.5 text-indigo-400" />
+            <Cpu className="w-3.5 h-3.5 text-indigo-400 group-hover:scale-110 transition-transform" />
           </div>
           <div className="text-xs sm:text-sm font-black text-white font-mono truncate uppercase">
             {String(activeModelName).replace('_', ' ')}
@@ -443,12 +598,8 @@ export default function DashboardView({ onSelectTransaction, onOpenCase, onOpenP
         </div>
       </div>
 
-      {/* 3. AI Risk Intelligence Panel (Dedicated Cyber HUD Feature) */}
+      {/* 3. AI Risk Intelligence Panel */}
       <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-slate-900/95 via-slate-900/80 to-slate-950/95 border-2 border-cyan-500/40 shadow-2xl backdrop-blur-xl relative overflow-hidden">
-        {/* Glow Accent */}
-        <div className="absolute top-0 left-1/4 w-96 h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent pointer-events-none" />
-        <div className="absolute -bottom-10 -right-10 w-48 h-48 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
-
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 mb-4">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-2xl bg-cyan-500/15 border border-cyan-400/40 text-cyan-300 shadow-[0_0_15px_rgba(6,182,212,0.4)]">
@@ -459,7 +610,7 @@ export default function DashboardView({ onSelectTransaction, onOpenCase, onOpenP
                 INTELLIGENCE COMMAND FEED
               </div>
               <h3 className="text-lg font-black text-white tracking-tight">
-                AI Risk & Anomaly Intelligence
+                AI Risk &amp; Anomaly Intelligence
               </h3>
             </div>
           </div>
@@ -510,7 +661,7 @@ export default function DashboardView({ onSelectTransaction, onOpenCase, onOpenP
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-sm font-extrabold text-white uppercase tracking-wider">
-                  Transaction & Fraud Activity Stream
+                  Transaction &amp; Fraud Activity Stream
                 </h3>
                 <p className="text-[11px] text-slate-400 mt-0.5">
                   Hourly transaction distribution and fraud incident timeline
@@ -538,17 +689,12 @@ export default function DashboardView({ onSelectTransaction, onOpenCase, onOpenP
                   const hasFraud = (t.fraud_volume || 0) > 0
                   return (
                     <div key={i} className="flex-1 flex flex-col items-center gap-1 h-full justify-end group relative">
-                      {/* Tooltip on hover */}
                       <div className="absolute -top-10 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-950 border border-cyan-500 px-2 py-1 rounded text-[10px] font-mono text-cyan-300 whitespace-nowrap z-20 pointer-events-none shadow-lg">
                         {t.hour}: {t.volume} txs ({t.fraud_volume} fraud)
                       </div>
-
-                      {/* Fraud indicator dot */}
                       {hasFraud && (
                         <div className="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_6px_#f43f5e] animate-ping" />
                       )}
-
-                      {/* Bar */}
                       <div
                         className={`w-full rounded-t-md transition-all duration-300 ${
                           hasFraud
@@ -580,10 +726,30 @@ export default function DashboardView({ onSelectTransaction, onOpenCase, onOpenP
         </div>
 
         {/* CHART B: Risk Level Distribution & Classification Donut */}
-        <div className="p-5 sm:p-6 rounded-3xl bg-slate-900/60 border border-slate-800 shadow-xl backdrop-blur-md flex flex-col justify-between">
+        <div
+          onClick={() =>
+            setActiveModal({
+              type: 'DONUT',
+              title: 'Risk Tier Classification Matrix',
+              badge: `${totalRiskCount} ASSESSED`,
+              icon: Target,
+              subtitle: 'Comprehensive breakdown of Low, Medium, and High risk classifications',
+              data: {
+                totalAssessed: totalRiskCount,
+                lowCount,
+                lowPct,
+                medCount,
+                medPct,
+                highCount,
+                highPct,
+              },
+            })
+          }
+          className="p-5 sm:p-6 rounded-3xl bg-slate-900/60 border border-slate-800 hover:border-cyan-500/50 shadow-xl backdrop-blur-md flex flex-col justify-between cursor-pointer group transition"
+        >
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xs font-bold text-white uppercase tracking-wider">
+              <h3 className="text-xs font-bold text-white uppercase tracking-wider group-hover:text-cyan-300 transition">
                 Risk Classification Ratio
               </h3>
               <span className="text-[10px] font-mono text-cyan-400">Total: {totalRiskCount}</span>
@@ -658,8 +824,9 @@ export default function DashboardView({ onSelectTransaction, onOpenCase, onOpenP
             </div>
           </div>
 
-          <div className="mt-4 pt-3 border-t border-slate-800/80 text-[11px] text-slate-400">
-            Multi-factor scoring independent of pure probability.
+          <div className="mt-4 pt-3 border-t border-slate-800/80 text-[11px] text-cyan-400 flex items-center justify-between">
+            <span>Click for deep-dive classification</span>
+            <span>&rarr;</span>
           </div>
         </div>
       </div>
@@ -667,12 +834,26 @@ export default function DashboardView({ onSelectTransaction, onOpenCase, onOpenP
       {/* 5. Second Analytics Row: SHAP Factors, Model Performance, Channel Risk */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* CHART C: Top Fraud Risk Factors (Global SHAP Feature Importance) */}
-        <div className="p-5 sm:p-6 rounded-3xl bg-slate-900/60 border border-slate-800 shadow-xl backdrop-blur-md flex flex-col justify-between">
+        <div
+          onClick={() =>
+            setActiveModal({
+              type: 'SHAP',
+              title: 'Explainable AI Feature Attributions (SHAP)',
+              badge: 'GLOBAL IMPORTANCE',
+              icon: Sparkles,
+              subtitle: 'Mathematical driver weights computed across validated customer datasets',
+              data: shapChartData,
+            })
+          }
+          className="p-5 sm:p-6 rounded-3xl bg-slate-900/60 border border-slate-800 hover:border-purple-500/50 shadow-xl backdrop-blur-md flex flex-col justify-between cursor-pointer group transition"
+        >
           <div>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <Radar className="w-4 h-4 text-cyan-400" />
-                <h3 className="text-xs font-bold text-white uppercase tracking-wider">Top Risk Factors (SHAP)</h3>
+                <h3 className="text-xs font-bold text-white uppercase tracking-wider group-hover:text-purple-300 transition">
+                  Top Risk Factors (SHAP)
+                </h3>
               </div>
               <span className="text-[10px] font-mono text-cyan-300">Global Attribution</span>
             </div>
@@ -740,19 +921,38 @@ export default function DashboardView({ onSelectTransaction, onOpenCase, onOpenP
             )}
           </div>
 
-          <div className="mt-4 pt-3 border-t border-slate-800/80 text-[11px] text-slate-400 flex items-center justify-between font-mono">
-            <span>Explainability Engine:</span>
-            <span className="text-purple-300 font-bold">Tree & Linear SHAP</span>
+          <div className="mt-4 pt-3 border-t border-slate-800/80 text-[11px] text-purple-300 flex items-center justify-between font-mono">
+            <span>Click to inspect full SHAP attributions</span>
+            <span>&rarr;</span>
           </div>
         </div>
 
         {/* CHART D: Model Benchmark Comparison */}
-        <div className="p-5 sm:p-6 rounded-3xl bg-slate-900/60 border border-slate-800 shadow-xl backdrop-blur-md flex flex-col justify-between">
+        <div
+          onClick={() =>
+            setActiveModal({
+              type: 'MODEL',
+              title: 'Supervised ML Benchmark Comparison',
+              badge: '3 CHAMPIONS VALIDATED',
+              icon: Cpu,
+              subtitle: 'Precision-Recall AUC, F1, and Detection Latency Across Model Candidates',
+              data: {
+                active: activeModelName,
+                logistic: { name: 'Logistic Regression', f1: '0.4286', prAuc: '0.496', acc: '96.5%', rec: '56.3%' },
+                rf: { name: 'Random Forest', f1: '0.2857', rocAuc: '0.811', acc: '95.6%', rec: '37.5%' },
+                xgb: { name: 'XGBoost v2', f1: '0.3636', rocAuc: '0.812', acc: '97.0%', rec: '37.5%' },
+              },
+            })
+          }
+          className="p-5 sm:p-6 rounded-3xl bg-slate-900/60 border border-slate-800 hover:border-indigo-500/50 shadow-xl backdrop-blur-md flex flex-col justify-between cursor-pointer group transition"
+        >
           <div>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <BarChart3 className="w-4 h-4 text-purple-400" />
-                <h3 className="text-xs font-bold text-white uppercase tracking-wider">Model Performance</h3>
+                <h3 className="text-xs font-bold text-white uppercase tracking-wider group-hover:text-indigo-300 transition">
+                  Model Performance
+                </h3>
               </div>
               <span className="text-[10px] font-mono text-slate-400">Validated Test Split</span>
             </div>
@@ -799,19 +999,33 @@ export default function DashboardView({ onSelectTransaction, onOpenCase, onOpenP
             </div>
           </div>
 
-          <div className="mt-4 pt-3 border-t border-slate-800/80 text-[11px] text-slate-400 flex items-center justify-between font-mono">
-            <span>Selected Champion:</span>
-            <span className="text-cyan-300 font-bold">Logistic Regression</span>
+          <div className="mt-4 pt-3 border-t border-slate-800/80 text-[11px] text-indigo-300 flex items-center justify-between font-mono">
+            <span>Click to inspect model registry</span>
+            <span>&rarr;</span>
           </div>
         </div>
 
         {/* CHART E & F: Transaction Channel & Device Risk Matrix */}
-        <div className="p-5 sm:p-6 rounded-3xl bg-slate-900/60 border border-slate-800 shadow-xl backdrop-blur-md flex flex-col justify-between">
+        <div
+          onClick={() =>
+            setActiveModal({
+              type: 'CHANNEL',
+              title: 'Channel & Device Anomaly Matrix',
+              badge: `${typeRisks.length} CHANNELS`,
+              icon: CreditCard,
+              subtitle: 'Detailed fraud breakdown across Web, UPI Mobile, POS, and Bot Signatures',
+              data: typeRisks,
+            })
+          }
+          className="p-5 sm:p-6 rounded-3xl bg-slate-900/60 border border-slate-800 hover:border-emerald-500/50 shadow-xl backdrop-blur-md flex flex-col justify-between cursor-pointer group transition"
+        >
           <div>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <CreditCard className="w-4 h-4 text-emerald-400" />
-                <h3 className="text-xs font-bold text-white uppercase tracking-wider">Channel & Device Risk</h3>
+                <h3 className="text-xs font-bold text-white uppercase tracking-wider group-hover:text-emerald-300 transition">
+                  Channel &amp; Device Risk
+                </h3>
               </div>
               <span className="text-[10px] font-mono text-slate-400">Risk Rates</span>
             </div>
@@ -838,14 +1052,14 @@ export default function DashboardView({ onSelectTransaction, onOpenCase, onOpenP
             </div>
           </div>
 
-          <div className="mt-4 pt-3 border-t border-slate-800/80 text-[11px] text-slate-400 flex items-center justify-between font-mono">
-            <span>High Risk Devices:</span>
-            <span className="text-amber-400 font-bold">Android & Mac Signatures</span>
+          <div className="mt-4 pt-3 border-t border-slate-800/80 text-[11px] text-emerald-300 flex items-center justify-between font-mono">
+            <span>Click to inspect all channels</span>
+            <span>&rarr;</span>
           </div>
         </div>
       </div>
 
-      {/* 6. In-App Security Alert Center (Live In-App Alert Feed) */}
+      {/* 6. In-App Security Alert Center */}
       <div className="p-5 sm:p-6 rounded-3xl bg-slate-900/60 border border-amber-800/40 shadow-xl backdrop-blur-md">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
@@ -878,10 +1092,24 @@ export default function DashboardView({ onSelectTransaction, onOpenCase, onOpenP
             {alerts.slice(0, 4).map((alert) => (
               <div
                 key={alert.alert_id}
-                className={`p-3.5 rounded-2xl border transition-all text-xs space-y-2 ${
+                onClick={() =>
+                  setActiveModal({
+                    type: 'ALERT',
+                    title: `Security Alert #${alert.alert_id}`,
+                    badge: alert.severity,
+                    badgeColor:
+                      alert.severity === 'CRITICAL' || alert.severity === 'HIGH'
+                        ? 'bg-rose-950 text-rose-300 border-rose-800'
+                        : 'bg-amber-950 text-amber-300 border-amber-800',
+                    icon: ShieldAlert,
+                    subtitle: `Triggered at ${alert.created_at ? new Date(alert.created_at).toLocaleString() : 'Live'}`,
+                    data: alert,
+                  })
+                }
+                className={`p-3.5 rounded-2xl border transition-all text-xs space-y-2 cursor-pointer group ${
                   alert.is_acknowledged
                     ? 'bg-slate-950/50 border-slate-800 opacity-70'
-                    : 'bg-slate-950/90 border-amber-700/60 shadow-lg shadow-amber-950/20'
+                    : 'bg-slate-950/90 border-amber-700/60 shadow-lg shadow-amber-950/20 hover:border-amber-500'
                 }`}
               >
                 <div className="flex items-center justify-between">
@@ -904,26 +1132,22 @@ export default function DashboardView({ onSelectTransaction, onOpenCase, onOpenP
 
                 <div className="flex items-center justify-between pt-1 border-t border-slate-800/80">
                   <span className="text-[10px] font-mono text-slate-400">
-                    {alert.is_acknowledged ? `Acknowledged by ${alert.acknowledged_by || 'Investigator'}` : 'Requires Investigator Review'}
+                    {alert.is_acknowledged ? `Acknowledged by ${alert.acknowledged_by || 'Investigator'}` : 'Click to inspect in modal'}
                   </span>
                   <div className="flex items-center gap-1.5">
                     {!alert.is_acknowledged && (
                       <button
-                        onClick={() => handleAcknowledgeAlert(alert.alert_id)}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleAcknowledgeAlert(alert.alert_id)
+                        }}
                         disabled={acknowledgingId === alert.alert_id}
                         className="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[10px] font-semibold transition border border-slate-700 disabled:opacity-50"
                       >
                         {acknowledgingId === alert.alert_id ? 'Ack...' : 'Acknowledge'}
                       </button>
                     )}
-                    {onSelectTransaction && alert.entity_id && (
-                      <button
-                        onClick={() => onSelectTransaction(alert.entity_id)}
-                        className="px-2 py-0.5 rounded-lg bg-cyan-900/60 hover:bg-cyan-800 text-cyan-200 text-[10px] font-semibold transition border border-cyan-700"
-                      >
-                        Inspect &rarr;
-                      </button>
-                    )}
+                    <span className="text-cyan-400 font-mono text-xs group-hover:translate-x-1 transition-transform">&rarr;</span>
                   </div>
                 </div>
               </div>
@@ -964,12 +1188,26 @@ export default function DashboardView({ onSelectTransaction, onOpenCase, onOpenP
               </thead>
               <tbody className="divide-y divide-slate-800/60">
                 {stats.recent_high_risk_activity.map((tx) => (
-                  <tr key={tx.id || tx.transaction_id} className="hover:bg-slate-800/30 transition">
+                  <tr
+                    key={tx.id || tx.transaction_id}
+                    onClick={() =>
+                      setActiveModal({
+                        type: 'TX',
+                        title: `Transaction Assessment ${tx.transaction_id}`,
+                        badge: tx.risk_level || 'HIGH RISK',
+                        badgeColor: 'bg-rose-950 text-rose-300 border-rose-800',
+                        icon: ShieldAlert,
+                        subtitle: `Customer: ${tx.customer_id} • Amount: ${formatINR(tx.amount)}`,
+                        data: tx,
+                      })
+                    }
+                    className="hover:bg-slate-800/40 transition cursor-pointer"
+                  >
                     <td className="py-3 font-mono font-bold text-cyan-400">
                       {tx.transaction_id}
                     </td>
                     <td className="py-3 font-mono text-slate-300">{tx.customer_id}</td>
-                    <td className="py-3 font-mono text-white font-bold">${Number(tx.amount).toFixed(2)}</td>
+                    <td className="py-3 font-mono text-white font-bold">{formatINR(tx.amount)}</td>
                     <td className="py-3">
                       <span className="px-2.5 py-1 rounded-md text-[10px] font-mono font-bold bg-rose-950/90 text-rose-300 border border-rose-800/80 shadow-sm">
                         {tx.risk_score} / 100
@@ -985,7 +1223,18 @@ export default function DashboardView({ onSelectTransaction, onOpenCase, onOpenP
                     </td>
                     <td className="py-3 text-right">
                       <button
-                        onClick={() => onSelectTransaction && onSelectTransaction(tx.transaction_id)}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setActiveModal({
+                            type: 'TX',
+                            title: `Transaction Assessment ${tx.transaction_id}`,
+                            badge: tx.risk_level || 'HIGH RISK',
+                            badgeColor: 'bg-rose-950 text-rose-300 border-rose-800',
+                            icon: ShieldAlert,
+                            subtitle: `Customer: ${tx.customer_id} • Amount: ${formatINR(tx.amount)}`,
+                            data: tx,
+                          })
+                        }}
                         className="p-1.5 text-cyan-400 hover:text-cyan-300 rounded-lg hover:bg-slate-800 transition"
                         title="View Details"
                       >
@@ -999,6 +1248,234 @@ export default function DashboardView({ onSelectTransaction, onOpenCase, onOpenP
           </div>
         )}
       </div>
+
+      {/* ========================================================================= */}
+      {/* STANDARDIZED VIEWPORT-CENTERED INSPECTION MODAL (Feature 1-10) */}
+      {/* ========================================================================= */}
+      {activeModal && (
+        <GlobalCenterModal
+          isOpen={Boolean(activeModal)}
+          onClose={() => setActiveModal(null)}
+          title={activeModal.title}
+          subtitle={activeModal.subtitle}
+          badge={activeModal.badge}
+          badgeColor={activeModal.badgeColor}
+          icon={activeModal.icon || Sparkles}
+          maxWidth="max-w-2xl"
+          footer={
+            <div className="w-full flex items-center justify-between">
+              <span className="text-[10px] font-mono text-slate-500">
+                FraudLens AI Automated Intelligence Hub
+              </span>
+              <button
+                onClick={() => setActiveModal(null)}
+                className="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold transition shadow"
+              >
+                Close (Done)
+              </button>
+            </div>
+          }
+        >
+          {/* MODAL BODY 1: PERSONA DETAILS */}
+          {activeModal.type === 'PERSONA' && (
+            <div className="space-y-4 text-xs font-mono">
+              <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <span className="text-slate-500 block text-[10px] uppercase">Customer Name</span>
+                    <strong className="text-white text-sm">{activeModal.data.name}</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block text-[10px] uppercase">Account ID</span>
+                    <strong className="text-cyan-300">{activeModal.data.id}</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block text-[10px] uppercase">Fraud Rate Baseline</span>
+                    <strong className="text-emerald-400">{activeModal.data.fraudRate}</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block text-[10px] uppercase">Tenure</span>
+                    <strong className="text-slate-200">{activeModal.data.tenure}</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block text-[10px] uppercase">Simulated Balance</span>
+                    <strong className="text-emerald-300">{activeModal.data.balance}</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block text-[10px] uppercase">Location</span>
+                    <strong className="text-slate-200">{activeModal.data.location}</strong>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-slate-800/80">
+                  <span className="text-slate-500 block text-[10px] uppercase mb-1">Usual Merchants</span>
+                  <span className="text-slate-300">{activeModal.data.usualMerchants}</span>
+                </div>
+
+                <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-[11px] text-cyan-300">
+                  🛡️ Pre-Auth Policy: {activeModal.data.policy}
+                </div>
+              </div>
+
+              <button
+                onClick={() => {
+                  setActiveModal(null)
+                  onOpenPayment && onOpenPayment(`scenario_${activeModal.data.name.toLowerCase()}_safe`)
+                }}
+                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold transition flex items-center justify-center gap-2 shadow-lg"
+              >
+                <CreditCard className="w-4 h-4" />
+                <span>Open Pre-Auth Gateway for {activeModal.data.name}</span>
+              </button>
+            </div>
+          )}
+
+          {/* MODAL BODY 2: METRIC DRILLDOWN */}
+          {activeModal.type === 'METRIC' && (
+            <div className="space-y-4 text-xs font-mono">
+              <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-2.5">
+                {Object.entries(activeModal.data).map(([key, val]) => (
+                  <div key={key} className="flex items-center justify-between p-2 rounded-lg bg-slate-950/60 border border-slate-800/60">
+                    <span className="text-slate-400 capitalize">{key.replace(/([A-Z])/g, ' $1')}:</span>
+                    <strong className="text-white text-sm">{String(val)}</strong>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* MODAL BODY 3: TRANSACTION DETAIL */}
+          {activeModal.type === 'TX' && (
+            <div className="space-y-4 text-xs font-mono">
+              <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <span className="text-slate-500 block text-[10px] uppercase">Transaction ID</span>
+                    <strong className="text-cyan-400 font-bold">{activeModal.data.transaction_id}</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block text-[10px] uppercase">Customer</span>
+                    <strong className="text-white">{activeModal.data.customer_id}</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block text-[10px] uppercase">Amount</span>
+                    <strong className="text-emerald-400 text-base">{formatINR(activeModal.data.amount)}</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block text-[10px] uppercase">Risk Score</span>
+                    <strong className="text-rose-400 text-base">{activeModal.data.risk_score} / 100</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block text-[10px] uppercase">ML Probability</span>
+                    <strong className="text-purple-300">{(Number(activeModal.data.fraud_probability || 0) * 100).toFixed(1)}%</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block text-[10px] uppercase">Severity Level</span>
+                    <strong className="text-rose-400 uppercase">{activeModal.data.risk_level || 'HIGH'}</strong>
+                  </div>
+                </div>
+              </div>
+
+              {onSelectTransaction && (
+                <button
+                  onClick={() => {
+                    const txId = activeModal.data.transaction_id
+                    setActiveModal(null)
+                    onSelectTransaction(txId)
+                  }}
+                  className="w-full py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold transition flex items-center justify-center gap-2 shadow-lg"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  <span>Inspect Local TreeSHAP Attributions</span>
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* MODAL BODY 4: SHAP FACTORS */}
+          {activeModal.type === 'SHAP' && (
+            <div className="space-y-3 text-xs">
+              <p className="text-slate-300 text-xs">
+                Global TreeSHAP feature importances represent the absolute contribution of each feature towards fraud classification decisions:
+              </p>
+              <div className="space-y-2 font-mono">
+                {Array.isArray(activeModal.data) &&
+                  activeModal.data.map((f, i) => (
+                    <div key={i} className="p-3 bg-slate-900 rounded-xl border border-slate-800 flex items-center justify-between">
+                      <span className="text-white font-bold">{f.name}</span>
+                      <span className="text-purple-300 font-bold">+{f.importance?.toFixed(4)} mean |SHAP|</span>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+
+          {/* MODAL BODY 5: MODEL DETAILS */}
+          {activeModal.type === 'MODEL' && (
+            <div className="space-y-3 text-xs font-mono">
+              <div className="p-4 bg-slate-900 rounded-2xl border border-slate-800 space-y-2">
+                <div className="text-cyan-300 font-bold text-sm">Champion Model: {activeModal.data.modelName || 'Logistic Regression'}</div>
+                <div className="text-slate-400">Version: {activeModal.data.modelVersion} • Threshold: {activeModal.data.threshold}</div>
+                <div className="grid grid-cols-2 gap-2 pt-2 text-[11px]">
+                  <div className="p-2 bg-slate-950 rounded-lg border border-slate-800">
+                    <span className="text-slate-500 block">F1 Score</span>
+                    <strong className="text-emerald-400">{activeModal.data.f1Score}</strong>
+                  </div>
+                  <div className="p-2 bg-slate-950 rounded-lg border border-slate-800">
+                    <span className="text-slate-500 block">PR-AUC</span>
+                    <strong className="text-cyan-300">{activeModal.data.precisionAuc}</strong>
+                  </div>
+                  <div className="p-2 bg-slate-950 rounded-lg border border-slate-800">
+                    <span className="text-slate-500 block">Accuracy</span>
+                    <strong className="text-white">{activeModal.data.accuracy}</strong>
+                  </div>
+                  <div className="p-2 bg-slate-950 rounded-lg border border-slate-800">
+                    <span className="text-slate-500 block">Recall</span>
+                    <strong className="text-white">{activeModal.data.recall}</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* MODAL BODY 6: ALERT DETAIL */}
+          {activeModal.type === 'ALERT' && (
+            <div className="space-y-4 text-xs font-mono">
+              <div className="p-4 bg-slate-900 rounded-2xl border border-slate-800 space-y-3">
+                <div>
+                  <span className="text-slate-500 block text-[10px] uppercase">Alert Description</span>
+                  <p className="text-slate-100 font-sans text-xs mt-1 leading-relaxed">{activeModal.data.message}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800">
+                  <div>
+                    <span className="text-slate-500 block text-[10px] uppercase">Entity ID</span>
+                    <strong className="text-cyan-400">{activeModal.data.entity_id || 'System'}</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block text-[10px] uppercase">Status</span>
+                    <strong className={activeModal.data.is_acknowledged ? 'text-emerald-400' : 'text-amber-400'}>
+                      {activeModal.data.is_acknowledged ? 'ACKNOWLEDGED' : 'PENDING REVIEW'}
+                    </strong>
+                  </div>
+                </div>
+              </div>
+
+              {!activeModal.data.is_acknowledged && (
+                <button
+                  onClick={() => {
+                    handleAcknowledgeAlert(activeModal.data.alert_id)
+                    setActiveModal(null)
+                  }}
+                  className="w-full py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold transition flex items-center justify-center gap-2"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Acknowledge This Security Alert</span>
+                </button>
+              )}
+            </div>
+          )}
+        </GlobalCenterModal>
+      )}
     </div>
   )
 }

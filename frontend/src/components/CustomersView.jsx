@@ -22,6 +22,7 @@ import {
 import { customersApi } from '../services/api'
 import { formatINR } from '../utils/formatters'
 import { getCustomerPersona } from '../utils/customerHelper'
+import GlobalCenterModal from './common/GlobalCenterModal'
 
 export default function CustomersView({ onSelectTransaction, user, isAdmin }) {
   const customerPersona = getCustomerPersona(user)
@@ -107,94 +108,79 @@ export default function CustomersView({ onSelectTransaction, user, isAdmin }) {
 
   return (
     <div className="space-y-6">
-      {/* Top Banner */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-slate-950 to-indigo-950/70 border border-slate-800 p-6 shadow-xl">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold ${
-                isCustomer ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 'bg-cyan-950 text-cyan-400 border border-cyan-800'
-              }`}>
-                {isCustomer ? `AUTHENTICATED CUSTOMER: ${customerPersona.customerName}` : '15 SYNTHETIC CUSTOMER PROFILES'}
-              </span>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-indigo-950 text-indigo-300 border border-indigo-800">
-                {isCustomer ? `ACCOUNT ID: ${customerPersona.customerId}` : '10 MALE • 5 FEMALE TAMIL IDENTITIES'}
-              </span>
-            </div>
-            <h1 className="text-2xl font-black tracking-tight text-white flex items-center gap-2">
-              <Users className="w-6 h-6 text-cyan-400" />
-              {isCustomer ? 'My Customer Profile & Behavioral Baseline' : 'Customer Profiles & Behavioral Baseline Analysis'}
-            </h1>
-            <p className="text-sm text-slate-400 mt-1 max-w-2xl">
-              {isCustomer
-                ? `Review your individual spending baseline, typical ticket sizes in ₹ INR, historical velocity, and registered device fingerprints.`
-                : 'Monitor individual spending baselines, typical ticket sizes in ₹ INR, historical velocity, and detect account takeover anomalies.'}
-            </p>
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${
+              isCustomer ? 'bg-emerald-950 text-emerald-300 border border-emerald-800' : 'bg-cyan-950 text-cyan-300 border border-cyan-800'
+            }`}>
+              {isCustomer ? `MY CUSTOMER PROFILE: ${customerPersona.customerName}` : 'ADMIN CUSTOMER DIRECTORY'}
+            </span>
+            <span className="text-[10px] font-mono text-slate-400">
+              {isCustomer ? 'Zero Data Leakage (Self Only)' : 'Global Directory of Consumer Profiles'}
+            </span>
           </div>
+          <h2 className="text-xl font-bold text-white flex items-center gap-2">
+            <Users className="w-5 h-5 text-cyan-400" />
+            Customer Behavioral Profiles &amp; Liquidity
+          </h2>
+          <p className="text-xs text-slate-400 mt-0.5">
+            View profiles, active liquidity, historical ticket metrics, risk flags, and full transaction history.
+          </p>
+        </div>
 
+        <button
+          onClick={fetchCustomers}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white text-xs font-semibold transition"
+        >
+          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+          Refresh Customers
+        </button>
+      </div>
+
+      {/* Filter & Search Bar */}
+      <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 shadow-md flex items-center justify-between gap-4">
+        <form onSubmit={handleSearchSubmit} className="flex items-center gap-2 flex-1 max-w-md">
+          <div className="relative flex-1">
+            <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search customers by ID (e.g. CUST_MONISHA_001) or Name..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-slate-950/80 border border-slate-700/80 rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-100 placeholder-slate-400 focus:outline-none focus:border-cyan-500 font-mono"
+            />
+          </div>
           <button
-            onClick={fetchCustomers}
-            disabled={loading}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-medium text-xs border border-slate-700 transition shadow self-start md:self-auto"
+            type="submit"
+            className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition"
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-cyan-400' : ''}`} />
-            Refresh Directory
+            Search
           </button>
+        </form>
+
+        <div className="text-xs text-slate-400 font-mono">
+          Total Customers: <strong className="text-white">{total.toLocaleString()}</strong>
         </div>
       </div>
 
-      {/* Search Bar / Customer Isolation Notice */}
-      {isCustomer ? (
-        <div className="p-3.5 rounded-xl bg-slate-900/80 border border-emerald-800/60 shadow-md flex items-center justify-between text-xs text-slate-300">
-          <div className="flex items-center gap-2">
-            <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
-            <span>Customer Privacy Enforcement Active: You are strictly scoped to your verified account profile (<strong>{customerPersona.customerId}</strong>). Cross-customer viewing is restricted to System Administrators.</span>
-          </div>
-        </div>
-      ) : (
-        <div className="p-4 rounded-xl bg-slate-900/80 border border-slate-800 shadow-md flex flex-col sm:flex-row items-center justify-between gap-3">
-          <form onSubmit={handleSearchSubmit} className="flex items-center gap-2 w-full sm:max-w-md">
-            <div className="relative flex-1">
-              <Search className="w-4 h-4 absolute left-3 top-2.5 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Search customer by ID or Name (e.g. Murugan, CUST_001)..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-cyan-500"
-              />
-            </div>
-            <button
-              type="submit"
-              className="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-xs font-bold text-white transition shadow"
-            >
-              Search
-            </button>
-          </form>
-          <div className="text-xs text-slate-400 font-mono">
-            Showing <strong className="text-white">{customers.length}</strong> of <strong className="text-white">{total}</strong> registered profiles
-          </div>
-        </div>
-      )}
-
-      {/* Customer Cards Grid */}
+      {/* Customers Cards Grid */}
       {loading ? (
-        <div className="p-12 text-center text-xs text-slate-400 flex flex-col items-center gap-2 bg-slate-900/40 rounded-2xl border border-slate-800">
+        <div className="p-12 text-center text-xs text-slate-400 flex flex-col items-center gap-2">
           <RefreshCw className="w-6 h-6 animate-spin text-cyan-400" />
-          <span>Synchronizing customer profile baselines...</span>
+          <span>Loading customer behavioral profiles...</span>
         </div>
       ) : error ? (
         <div className="p-6 rounded-2xl bg-rose-950/40 border border-rose-800 text-rose-300 text-xs text-center">
           {error}
         </div>
       ) : customers.length === 0 ? (
-        <div className="p-12 text-center text-xs text-slate-400 space-y-2 bg-slate-900/60 rounded-2xl border border-slate-800">
-          <Users className="w-8 h-8 mx-auto text-slate-600" />
-          <div className="font-semibold text-slate-300">No customer records found</div>
-          <p>No customers match the active query.</p>
+        <div className="p-12 text-center text-xs text-slate-400">
+          No customer profiles found matching your search.
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {customers.map((c) => {
             const hasFraudHistory = (c.fraud_transaction_count || 0) > 0
             const hasHighRisk = (c.high_risk_count || 0) > 0
@@ -274,47 +260,46 @@ export default function CustomersView({ onSelectTransaction, user, isAdmin }) {
         </div>
       )}
 
-      {/* Customer Profile & Dedicated Transactions Modal */}
+      {/* Customer Profile & Dedicated Transactions Global Center Modal */}
       {selectedCust && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="max-w-3xl w-full rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl p-6 space-y-5 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <div className="flex items-center gap-2.5">
-                <div className="p-2 rounded-xl bg-cyan-950 text-cyan-400 border border-cyan-800">
-                  <UserCheck className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-white flex items-center gap-2">
-                    {selectedCust.name || selectedCust.customer_id}
-                    <span className="font-mono text-xs text-cyan-400 bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
-                      {selectedCust.customer_id}
-                    </span>
-                  </h3>
-                  <div className="text-xs text-slate-400">{selectedCust.email || `${selectedCust.customer_id.toLowerCase()}@customer.fraudlens.ai`}</div>
-                </div>
-              </div>
-              <button
-                onClick={() => setSelectedCust(null)}
-                className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition text-xs"
-              >
-                ✕ Close
-              </button>
-            </div>
+        <GlobalCenterModal
+          isOpen={Boolean(selectedCust)}
+          onClose={() => setSelectedCust(null)}
+          title={selectedCust.name || selectedCust.customer_id}
+          subtitle={`Customer ID: ${selectedCust.customer_id} • Email: ${selectedCust.email || `${selectedCust.customer_id.toLowerCase()}@customer.fraudlens.ai`}`}
+          badge={
+            (selectedCust.fraud_transaction_count || 0) > 0
+              ? 'FRAUD FLAGGED'
+              : (selectedCust.high_risk_count || 0) > 0
+              ? 'ELEVATED RISK'
+              : 'VERIFIED CUSTOMER'
+          }
+          badgeType={
+            (selectedCust.fraud_transaction_count || 0) > 0
+              ? 'danger'
+              : (selectedCust.high_risk_count || 0) > 0
+              ? 'warning'
+              : 'success'
+          }
+          icon={UserCheck}
+          maxWidth="max-w-3xl"
+        >
+          <div className="space-y-4">
             {/* Available Cash Liquidity & Wallet Reserve */}
-            <div className="p-3.5 rounded-xl bg-gradient-to-r from-emerald-950/70 via-slate-900 to-cyan-950/70 border border-emerald-600/70 flex items-center justify-between font-mono">
+            <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-950/80 via-slate-900 to-cyan-950/80 border border-emerald-600/70 flex items-center justify-between font-mono">
               <div>
                 <span className="text-[10px] text-emerald-400 uppercase tracking-wider block font-bold">
                   Available Cash Liquidity / Wallet
                 </span>
-                <span className="text-xl font-black text-emerald-300">
+                <span className="text-2xl font-black text-emerald-300">
                   {formatINR(selectedCust.simulated_balance || 1500000.0)}
                 </span>
               </div>
               <div className="text-right">
-                <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-900/90 text-emerald-200 border border-emerald-600 font-bold">
-                  +₹15 Lakhs Extra Cash Added
+                <span className="text-[10px] px-2.5 py-1 rounded-lg bg-emerald-900/90 text-emerald-200 border border-emerald-600 font-bold">
+                  +₹15 Lakhs Active Liquidity
                 </span>
-                <div className="text-[10px] text-slate-400 mt-0.5">Real-Time Instant Pre-Auth Liquidity</div>
+                <div className="text-[10px] text-slate-400 mt-1">Real-Time Instant Pre-Auth Liquidity</div>
               </div>
             </div>
 
@@ -374,7 +359,7 @@ export default function CustomersView({ onSelectTransaction, user, isAdmin }) {
                         <div className="text-right font-mono">
                           <div className="font-bold text-slate-200">{formatINR(tx.amount)}</div>
                           <span
-                            className={`px-1.5 py-0.2 rounded text-[9px] font-bold ${
+                            className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                               isHigh
                                 ? 'bg-rose-950 text-rose-300 border border-rose-800'
                                 : isMedium
@@ -391,17 +376,8 @@ export default function CustomersView({ onSelectTransaction, user, isAdmin }) {
                 </div>
               )}
             </div>
-
-            <div className="pt-2 border-t border-slate-800 flex justify-end">
-              <button
-                onClick={() => setSelectedCust(null)}
-                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-bold text-white transition"
-              >
-                Done
-              </button>
-            </div>
           </div>
-        </div>
+        </GlobalCenterModal>
       )}
     </div>
   )

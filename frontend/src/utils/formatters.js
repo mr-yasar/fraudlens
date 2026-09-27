@@ -46,3 +46,6 @@ export function formatDate(dateString) {
     return dateString
   }
 }
+
+export const formatDateTime = formatDate
+

@@ -17,6 +17,7 @@ import {
 import { transactionsApi, investigationsApi } from '../services/api'
 import { formatINR } from '../utils/formatters'
 import { getCustomerPersona } from '../utils/customerHelper'
+import GlobalCenterModal from './common/GlobalCenterModal'
 
 export default function TransactionsView({ onViewExplanation, user, isAdmin }) {
   const customerPersona = getCustomerPersona(user)
@@ -48,7 +49,6 @@ export default function TransactionsView({ onViewExplanation, user, isAdmin }) {
   const [evalForm, setEvalForm] = useState({
     transaction_id: 'TX-LIVE-001',
     customer_id: 'CUST-1001',
-
     amount: 1250.0,
     transaction_hour: 14,
     merchant_category: 'electronics',
@@ -96,7 +96,6 @@ export default function TransactionsView({ onViewExplanation, user, isAdmin }) {
       alert(err instanceof Error ? err.message : 'Error fetching transaction details')
     }
   }
-
 
   const handleCreateCase = async (txId) => {
     try {
@@ -198,18 +197,18 @@ export default function TransactionsView({ onViewExplanation, user, isAdmin }) {
               placeholder="Search by Transaction ID or Customer ID..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-slate-950/80 border border-slate-700/80 rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-100 placeholder-slate-400 focus:outline-none focus:border-cyan-500"
+              className="w-full bg-slate-950/80 border border-slate-700/80 rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-100 placeholder-slate-400 focus:outline-none focus:border-cyan-500 font-mono"
             />
           </div>
           <button
             type="submit"
-            className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-200 border border-slate-700 transition"
+            className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition"
           >
             Search
           </button>
         </form>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           {/* Risk Level Filter */}
           <select
             value={riskFilter}
@@ -220,9 +219,9 @@ export default function TransactionsView({ onViewExplanation, user, isAdmin }) {
             className="bg-slate-950/80 border border-slate-700/80 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500"
           >
             <option value="">All Risk Levels</option>
-            <option value="LOW">LOW</option>
-            <option value="MEDIUM">MEDIUM</option>
-            <option value="HIGH">HIGH</option>
+            <option value="LOW">Low Risk</option>
+            <option value="MEDIUM">Medium Risk</option>
+            <option value="HIGH">High Risk</option>
           </select>
 
           {/* Prediction Filter */}
@@ -234,149 +233,165 @@ export default function TransactionsView({ onViewExplanation, user, isAdmin }) {
             }}
             className="bg-slate-950/80 border border-slate-700/80 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-cyan-500"
           >
-            <option value="">All Predictions</option>
+            <option value="">All Decisions</option>
             <option value="0">Genuine (0)</option>
             <option value="1">Fraud (1)</option>
           </select>
 
           <button
-            onClick={fetchTransactions}
-            className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition"
-            title="Refresh"
+            onClick={() => {
+              setRiskFilter('')
+              setPredictionFilter('')
+              setSearchQuery('')
+              setPage(1)
+              fetchTransactions()
+            }}
+            className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 border border-slate-700 transition"
+            title="Reset Filters"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className="w-4 h-4" />
           </button>
         </div>
       </div>
 
-      {/* Transaction Table */}
+      {/* Main Transactions Table */}
       <div className="rounded-2xl bg-slate-900/60 border border-slate-800 shadow-xl overflow-hidden backdrop-blur-md">
-        {loading ? (
-          <div className="p-8 text-center text-xs text-slate-400 flex flex-col items-center gap-2">
-            <RefreshCw className="w-5 h-5 animate-spin text-cyan-400" />
-            <span>Retrieving transaction stream from database...</span>
-          </div>
-        ) : error ? (
-          <div className="p-6 text-center text-xs text-rose-400">{error}</div>
-        ) : transactions.length === 0 ? (
-          <div className="p-12 text-center text-xs text-slate-400 space-y-2">
-            <CreditCard className="w-8 h-8 mx-auto text-slate-600" />
-            <div className="font-semibold text-slate-300">No transactions found</div>
-            <p>Try adjusting your search criteria or risk filter.</p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-950/60 text-[10px] font-mono uppercase text-slate-400 border-b border-slate-800">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs">
+            <thead className="bg-slate-950/80 text-[10px] uppercase font-mono text-slate-400 border-b border-slate-800">
+              <tr>
+                <th className="py-3 px-4">Transaction ID</th>
+                <th className="py-3 px-4">Customer</th>
+                <th className="py-3 px-4">Merchant</th>
+                <th className="py-3 px-4">Amount</th>
+                <th className="py-3 px-4">Risk Level</th>
+                <th className="py-3 px-4">ML Score</th>
+                <th className="py-3 px-4">Decision</th>
+                <th className="py-3 px-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-800/60 font-mono">
+              {loading ? (
                 <tr>
-                  <th className="py-3 px-4">Transaction ID</th>
-                  <th className="py-3 px-4">Customer</th>
-                  {!isCustomer && <th className="py-3 px-4">Target Merchant</th>}
-                  <th className="py-3 px-4">Amount</th>
-                  <th className="py-3 px-4">Category</th>
-                  <th className="py-3 px-4">Country</th>
-                  <th className="py-3 px-4">Probability</th>
-                  <th className="py-3 px-4">Prediction</th>
-                  <th className="py-3 px-4">Risk Level</th>
-                  <th className="py-3 px-4 text-right">Actions</th>
+                  <td colSpan={8} className="py-12 text-center text-slate-400">
+                    <RefreshCw className="w-6 h-6 animate-spin mx-auto text-cyan-400 mb-2" />
+                    Loading transaction ledger...
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-800/60">
-                {transactions.map((t) => {
-                  const isHigh = t.risk_level === 'HIGH'
-                  const isMed = t.risk_level === 'MEDIUM'
-                  const isFraud = t.prediction === 1
+              ) : error ? (
+                <tr>
+                  <td colSpan={8} className="py-8 text-center text-rose-400">
+                    {error}
+                  </td>
+                </tr>
+              ) : transactions.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="py-12 text-center text-slate-400">
+                    No transactions match the selected criteria.
+                  </td>
+                </tr>
+              ) : (
+                transactions.map((tx) => {
+                  const isFraud = tx.prediction === 1 || tx.prediction === '1'
+                  const isHigh = tx.risk_level === 'HIGH'
+                  const isMed = tx.risk_level === 'MEDIUM'
 
                   return (
-                    <tr key={t.id || t.transaction_id} className="hover:bg-slate-800/40 transition">
-                      <td className="py-3 px-4 font-mono font-bold text-cyan-400">
-                        {t.transaction_id}
+                    <tr
+                      key={tx.id || tx.transaction_id}
+                      className="hover:bg-slate-800/40 transition group cursor-pointer"
+                      onClick={() => handleOpenDetail(tx.transaction_id)}
+                    >
+                      <td className="py-3 px-4 font-bold text-cyan-400">
+                        {tx.transaction_id}
                       </td>
-                      <td className="py-3 px-4 font-mono text-slate-300">{t.customer_id}</td>
-                      {!isCustomer && (
-                        <td className="py-3 px-4 font-medium text-purple-300">
-                          <div className="flex items-center gap-1.5 truncate max-w-[170px]">
-                            <Store className="w-3.5 h-3.5 text-purple-400 shrink-0" />
-                            <span className="truncate">{t.beneficiary || 'NovaMart Fresh'}</span>
-                          </div>
-                        </td>
-                      )}
-                      <td className="py-3 px-4 font-mono font-bold text-white">
-                        {formatINR(t.amount)}
+                      <td className="py-3 px-4 text-slate-300">
+                        {tx.customer_id}
                       </td>
-                      <td className="py-3 px-4 capitalize text-slate-300">{t.merchant_category || 'N/A'}</td>
-                      <td className="py-3 px-4 font-mono text-slate-400">{t.transaction_country || 'US'}</td>
-                      <td className="py-3 px-4 font-mono">
-                        {t.fraud_probability !== null ? `${(t.fraud_probability * 100).toFixed(1)}%` : 'N/A'}
+                      <td className="py-3 px-4 text-white font-sans">
+                        <div className="font-medium text-xs text-slate-200">
+                          {tx.merchant_name || tx.merchant_category || 'Commercial Retail'}
+                        </div>
+                        <div className="text-[10px] text-slate-400 font-mono">
+                          {tx.merchant_id || tx.merchant_category}
+                        </div>
                       </td>
-                      <td className="py-3 px-4">
-                        <span
-                          className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase ${
-                            isFraud
-                              ? 'bg-rose-950/80 text-rose-300 border border-rose-800/60'
-                              : 'bg-emerald-950/80 text-emerald-300 border border-emerald-800/60'
-                          }`}
-                        >
-                          {isFraud ? 'FRAUD' : 'GENUINE'}
-                        </span>
+                      <td className="py-3 px-4 font-bold text-white font-mono">
+                        {formatINR(tx.amount)}
                       </td>
                       <td className="py-3 px-4">
                         <span
-                          className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase flex items-center gap-1 w-fit ${
+                          className={`px-2 py-0.5 rounded text-[10px] font-bold ${
                             isHigh
-                              ? 'bg-rose-950 text-rose-400 border border-rose-800'
+                              ? 'bg-rose-950 text-rose-300 border border-rose-800'
                               : isMed
-                              ? 'bg-amber-950 text-amber-400 border border-amber-800'
-                              : 'bg-emerald-950 text-emerald-400 border border-emerald-800'
+                              ? 'bg-amber-950 text-amber-300 border border-amber-800'
+                              : 'bg-emerald-950 text-emerald-300 border border-emerald-800'
                           }`}
                         >
-                          <span
-                            className={`w-1.5 h-1.5 rounded-full ${
-                              isHigh ? 'bg-rose-400' : isMed ? 'bg-amber-400' : 'bg-emerald-400'
-                            }`}
-                          />
-                          {t.risk_level || 'LOW'} ({t.risk_score || 0})
+                          {tx.risk_level || 'LOW'}
                         </span>
                       </td>
-                      <td className="py-3 px-4 text-right space-x-1">
-                        <button
-                          onClick={() => handleOpenDetail(t.transaction_id)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-cyan-300 hover:bg-slate-800 transition"
-                          title="Inspect Attributes"
+                      <td className="py-3 px-4">
+                        <span className={`font-bold ${isHigh ? 'text-rose-400' : isMed ? 'text-amber-400' : 'text-emerald-400'}`}>
+                          {tx.risk_score} / 100
+                        </span>
+                      </td>
+                      <td className="py-3 px-4">
+                        <span
+                          className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
+                            isFraud
+                              ? 'bg-rose-950 text-rose-400 border border-rose-900'
+                              : 'bg-emerald-950 text-emerald-400 border border-emerald-900'
+                          }`}
                         >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        {onViewExplanation && (
+                          {isFraud ? 'BLOCKED' : 'APPROVED'}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-right" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-end gap-1.5">
                           <button
-                            onClick={() => onViewExplanation(t.transaction_id)}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-purple-300 hover:bg-slate-800 transition"
-                            title="SHAP Explainability"
+                            onClick={() => handleOpenDetail(tx.transaction_id)}
+                            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition"
+                            title="Inspect Details"
                           >
-                            <Sparkles className="w-4 h-4" />
+                            <Eye className="w-3.5 h-3.5" />
                           </button>
-                        )}
-                        <button
-                          onClick={() => handleCreateCase(t.transaction_id)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-800 transition"
-                          title="Open Investigation Case"
-                        >
-                          <ShieldAlert className="w-4 h-4" />
-                        </button>
+                          {onViewExplanation && (
+                            <button
+                              onClick={() => onViewExplanation(tx.transaction_id)}
+                              className="p-1.5 rounded-lg bg-purple-950/70 hover:bg-purple-900 border border-purple-800/80 text-purple-300 hover:text-white transition"
+                              title="Explain With SHAP"
+                            >
+                              <Sparkles className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                          {!isAdmin ? null : (
+                            <button
+                              onClick={() => handleCreateCase(tx.transaction_id)}
+                              className="p-1.5 rounded-lg bg-rose-950/70 hover:bg-rose-900 border border-rose-800/80 text-rose-300 hover:text-white transition"
+                              title="Open Forensic Case"
+                            >
+                              <ShieldAlert className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   )
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+                })
+              )}
+            </tbody>
+          </table>
+        </div>
 
-        {/* Pagination Footer */}
-        <div className="p-3 bg-slate-950/40 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+        {/* Pagination Bar */}
+        <div className="p-4 bg-slate-950/80 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
           <div>
-            Showing Page <span className="text-white font-mono">{page}</span> of{' '}
-            <span className="text-white font-mono">{totalPages}</span> ({total} total transactions)
+            Showing <strong className="text-white">{transactions.length}</strong> of{' '}
+            <strong className="text-white">{total.toLocaleString()}</strong> records
           </div>
+
           <div className="flex items-center gap-2">
             <button
               disabled={page <= 1}
@@ -385,6 +400,9 @@ export default function TransactionsView({ onViewExplanation, user, isAdmin }) {
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
+            <span className="font-mono text-xs text-slate-300">
+              Page {page} of {totalPages}
+            </span>
             <button
               disabled={page >= totalPages}
               onClick={() => setPage(page + 1)}
@@ -396,55 +414,47 @@ export default function TransactionsView({ onViewExplanation, user, isAdmin }) {
         </div>
       </div>
 
-      {/* Transaction Details Slide-over / Modal */}
+      {/* Transaction Details Modal */}
       {selectedTx && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
-          <div className="max-w-xl w-full rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <div className="flex items-center gap-2">
-                <CreditCard className="w-5 h-5 text-cyan-400" />
-                <h3 className="text-base font-bold text-white">Transaction Profile</h3>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setSelectedTx(null)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white text-xs font-semibold transition"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
-                  Back to List
-                </button>
-                <button
-                  onClick={() => setSelectedTx(null)}
-                  className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition"
-                  title="Close"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 text-xs">
-              <div className="p-3 bg-slate-950/70 border border-slate-800 rounded-xl">
+        <GlobalCenterModal
+          isOpen={Boolean(selectedTx)}
+          onClose={() => setSelectedTx(null)}
+          title={`Transaction ${selectedTx.transaction_id}`}
+          subtitle={`Customer ID: ${selectedTx.customer_id} • Merchant: ${selectedTx.merchant_name || selectedTx.merchant_category || 'Commercial Retail'}`}
+          badge={selectedTx.risk_level || 'ANALYZED'}
+          badgeType={
+            selectedTx.risk_level === 'HIGH'
+              ? 'danger'
+              : selectedTx.risk_level === 'MEDIUM'
+              ? 'warning'
+              : 'success'
+          }
+          icon={CreditCard}
+          maxWidth="max-w-2xl"
+        >
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+              <div className="p-3 bg-slate-950/80 border border-slate-800 rounded-xl">
                 <span className="text-[10px] text-slate-400 uppercase font-mono block">Transaction ID</span>
                 <span className="font-mono font-bold text-cyan-400">{selectedTx.transaction_id}</span>
               </div>
-              <div className="p-3 bg-slate-950/70 border border-slate-800 rounded-xl">
+              <div className="p-3 bg-slate-950/80 border border-slate-800 rounded-xl">
                 <span className="text-[10px] text-slate-400 uppercase font-mono block">Customer Profile</span>
                 <span className="font-mono font-bold text-slate-200">{selectedTx.customer_id}</span>
               </div>
-              <div className="p-3 bg-slate-950/70 border border-slate-800 rounded-xl">
+              <div className="p-3 bg-slate-950/80 border border-slate-800 rounded-xl">
                 <span className="text-[10px] text-slate-400 uppercase font-mono block">Amount</span>
                 <span className="font-mono font-bold text-white text-sm">{formatINR(selectedTx.amount)}</span>
               </div>
-              <div className="p-3 bg-slate-950/70 border border-slate-800 rounded-xl">
+              <div className="p-3 bg-slate-950/80 border border-slate-800 rounded-xl">
                 <span className="text-[10px] text-slate-400 uppercase font-mono block">Merchant Category</span>
                 <span className="capitalize text-slate-200">{selectedTx.merchant_category || 'N/A'}</span>
               </div>
-              <div className="p-3 bg-slate-950/70 border border-slate-800 rounded-xl">
+              <div className="p-3 bg-slate-950/80 border border-slate-800 rounded-xl">
                 <span className="text-[10px] text-slate-400 uppercase font-mono block">Country &amp; Device</span>
                 <span className="text-slate-200">{selectedTx.transaction_country || 'US'} • {selectedTx.device_type || 'Unknown'}</span>
               </div>
-              <div className="p-3 bg-slate-950/70 border border-slate-800 rounded-xl">
+              <div className="p-3 bg-slate-950/80 border border-slate-800 rounded-xl">
                 <span className="text-[10px] text-slate-400 uppercase font-mono block">ML Probability</span>
                 <span className="font-mono text-purple-300 font-bold">
                   {(Number(selectedTx.fraud_probability || 0) * 100).toFixed(1)}%
@@ -463,7 +473,7 @@ export default function TransactionsView({ onViewExplanation, user, isAdmin }) {
               </div>
             </div>
 
-            <div className="flex justify-end gap-2 pt-2">
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-800">
               {onViewExplanation && (
                 <button
                   onClick={() => {
@@ -471,44 +481,29 @@ export default function TransactionsView({ onViewExplanation, user, isAdmin }) {
                     setSelectedTx(null)
                     onViewExplanation(txId)
                   }}
-                  className="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold flex items-center gap-1.5"
+                  className="px-3.5 py-2 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold flex items-center gap-1.5 transition active:scale-95"
                 >
-                  <Sparkles className="w-3.5 h-3.5" /> View SHAP Breakdown
+                  <Sparkles className="w-3.5 h-3.5" /> View TreeSHAP Explanation &rarr;
                 </button>
               )}
-              <button
-                onClick={() => setSelectedTx(null)}
-                className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold"
-              >
-                Close
-              </button>
             </div>
           </div>
-        </div>
+        </GlobalCenterModal>
       )}
 
       {/* Real-time Evaluation Modal */}
       {showEvaluateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
-          <div className="max-w-xl w-full rounded-2xl bg-slate-900 border border-cyan-800/60 shadow-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <div>
-                <h3 className="text-base font-bold text-white flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-cyan-400" />
-                  Real-Time Transaction Evaluation
-                </h3>
-                <p className="text-xs text-slate-400">
-                  Runs full ML inference, multi-factor risk scoring, and commits transaction to database.
-                </p>
-              </div>
-              <button
-                onClick={() => setShowEvaluateModal(false)}
-                className="p-1 text-slate-400 hover:text-white rounded-lg"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
+        <GlobalCenterModal
+          isOpen={showEvaluateModal}
+          onClose={() => setShowEvaluateModal(false)}
+          title="Real-Time Transaction Evaluation"
+          subtitle="Runs full ML inference, multi-factor risk scoring, and commits transaction to database."
+          badge="PIPELINE INFERENCE"
+          badgeType="info"
+          icon={Sparkles}
+          maxWidth="max-w-xl"
+        >
+          <div className="space-y-4">
             {evalError && (
               <div className="p-3 rounded-xl bg-rose-950/70 border border-rose-800 text-rose-300 text-xs">
                 {evalError}
@@ -588,7 +583,7 @@ export default function TransactionsView({ onViewExplanation, user, isAdmin }) {
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-3">
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
                 <button
                   type="button"
                   onClick={() => setShowEvaluateModal(false)}
@@ -649,7 +644,7 @@ export default function TransactionsView({ onViewExplanation, user, isAdmin }) {
               </div>
             )}
           </div>
-        </div>
+        </GlobalCenterModal>
       )}
     </div>
   )
