@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 import { investigationsApi } from '../services/api'
 import AiInvestigationModal from './AiInvestigationModal'
+import GlobalCenterModal from './common/GlobalCenterModal'
 
 export default function InvestigationsView({
   onInspectExplanation,
@@ -387,39 +388,19 @@ export default function InvestigationsView({
         </div>
       </div>
 
-      {/* Case Management Drawer / Modal */}
+      {/* Case Management Modal */}
       {selectedCase && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="max-w-2xl w-full rounded-2xl bg-slate-900 border border-cyan-800/70 shadow-2xl p-6 space-y-5 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <div className="flex items-center gap-2">
-                <ShieldAlert className="w-5 h-5 text-cyan-400" />
-                <div>
-                  <h3 className="text-base font-bold text-white">
-                    Investigation Dossier: <span className="font-mono text-cyan-400">{selectedCase.case_id}</span>
-                  </h3>
-                  <div className="text-[10px] text-slate-400 font-mono">
-                    Created: {new Date(selectedCase.created_at).toLocaleString()}
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setSelectedCase(null)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white text-xs font-semibold transition"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
-                  Back to Cases
-                </button>
-                <button
-                  onClick={() => setSelectedCase(null)}
-                  className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition"
-                  title="Close"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
+        <GlobalCenterModal
+          isOpen={Boolean(selectedCase)}
+          onClose={() => setSelectedCase(null)}
+          title={`Investigation Dossier: ${selectedCase.case_id}`}
+          subtitle={`Created: ${new Date(selectedCase.created_at).toLocaleString()}`}
+          icon={ShieldAlert}
+          badge={selectedCase.status || 'OPEN'}
+          badgeType={selectedCase.status === 'RESOLVED' ? 'success' : 'danger'}
+          maxWidth="max-w-2xl"
+        >
+          <div className="space-y-5">
 
             {/* AI Copilot & Voice Briefing Feature Banner */}
             <div className="p-3.5 rounded-xl bg-gradient-to-r from-purple-950/80 via-indigo-950/70 to-slate-900 border border-purple-700/60 flex flex-wrap items-center justify-between gap-3 shadow-lg">
@@ -566,7 +547,7 @@ export default function InvestigationsView({
               </div>
             </form>
           </div>
-        </div>
+        </GlobalCenterModal>
       )}
 
       {/* Autonomous AI Copilot, Diagrams & Voice Briefing Modal */}

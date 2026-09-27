@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import {
   Sparkles,
   Bot,
@@ -255,10 +256,55 @@ export default function AiInvestigationModal({
     sound.playSuccess && sound.playSuccess()
   }
 
-  if (!isOpen) return null
+  // Background Scroll Lock & Exact Position Restoration
+  useEffect(() => {
+    if (!isOpen || typeof document === 'undefined') return
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-fadeIn select-none overflow-y-auto">
+    const windowY = window.scrollY || window.pageYOffset || 0
+    const scrollContainers = Array.from(
+      document.querySelectorAll('.overflow-y-auto, .overflow-auto, main, #root')
+    )
+    const containerEntries = scrollContainers
+      .filter((el) => !el.closest('[role="dialog"]'))
+      .map((el) => ({
+        el,
+        scrollTop: el.scrollTop,
+        originalOverflow: el.style.overflowY || el.style.overflow || '',
+      }))
+
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth
+    const originalBodyPadding = document.body.style.paddingRight
+    const originalBodyOverflow = document.body.style.overflow
+
+    if (scrollbarWidth > 0) {
+      document.body.style.paddingRight = `${scrollbarWidth}px`
+    }
+    document.body.style.overflow = 'hidden'
+
+    containerEntries.forEach(({ el }) => {
+      el.style.overflow = 'hidden'
+    })
+
+    return () => {
+      document.body.style.overflow = originalBodyOverflow || ''
+      document.body.style.paddingRight = originalBodyPadding || ''
+      containerEntries.forEach(({ el, scrollTop, originalOverflow }) => {
+        el.style.overflow = originalOverflow
+        el.scrollTop = scrollTop
+      })
+      window.scrollTo(0, windowY)
+    }
+  }, [isOpen])
+
+  if (!isOpen || typeof document === 'undefined') return null
+
+  const modalNode = (
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-[99999] flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md animate-fadeIn select-none overflow-y-auto"
+      style={{ isolation: 'isolate' }}
+    >
       <div className="relative w-full max-w-4xl rounded-3xl bg-slate-950 border border-purple-500/40 shadow-[0_0_60px_rgba(168,85,247,0.25)] flex flex-col max-h-[92vh] overflow-hidden my-auto text-slate-100">
         {/* Top Header Glow */}
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-500 via-cyan-500 to-indigo-500" />
@@ -740,4 +786,6 @@ export default function AiInvestigationModal({
       </div>
     </div>
   )
+
+  return createPortal(modalNode, document.body)
 }

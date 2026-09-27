@@ -10,6 +10,7 @@ import {
   X,
 } from 'lucide-react'
 import { auditLogsApi } from '../services/api'
+import GlobalCenterModal from './common/GlobalCenterModal'
 
 
 export default function AuditLogsView() {
@@ -241,23 +242,28 @@ export default function AuditLogsView() {
 
       {/* Log Detail Modal */}
       {selectedLog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="max-w-lg w-full rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl p-6 space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="w-5 h-5 text-cyan-400" />
-                <h3 className="text-base font-bold text-white font-mono">
-                  Audit Entry #{selectedLog.id}
-                </h3>
-              </div>
+        <GlobalCenterModal
+          isOpen={Boolean(selectedLog)}
+          onClose={() => setSelectedLog(null)}
+          title={`Audit Entry #${selectedLog.id}`}
+          subtitle={`Operator: ${selectedLog.user_email || `ID ${selectedLog.user_id}`} • ${selectedLog.created_at}`}
+          icon={ShieldCheck}
+          badge={selectedLog.action}
+          badgeType="info"
+          maxWidth="max-w-lg"
+          footer={
+            <div className="flex justify-end w-full">
               <button
+                type="button"
                 onClick={() => setSelectedLog(null)}
-                className="p-1 text-slate-400 hover:text-white rounded-lg"
+                className="px-4 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold cursor-pointer"
               >
-                <X className="w-5 h-5" />
+                Close
               </button>
             </div>
-
+          }
+        >
+          <div className="space-y-4">
             <div className="space-y-2 text-xs font-mono">
               <div className="flex justify-between py-1 border-b border-slate-800/60">
                 <span className="text-slate-400">Timestamp:</span>
@@ -287,17 +293,8 @@ export default function AuditLogsView() {
                   : selectedLog.details || 'No additional metadata'}
               </pre>
             </div>
-
-            <div className="flex justify-end pt-2">
-              <button
-                onClick={() => setSelectedLog(null)}
-                className="px-4 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold"
-              >
-                Close
-              </button>
-            </div>
           </div>
-        </div>
+        </GlobalCenterModal>
       )}
     </div>
   )

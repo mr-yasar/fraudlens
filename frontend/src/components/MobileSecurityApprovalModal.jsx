@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import {
   Smartphone,
   ShieldAlert,
@@ -65,6 +66,46 @@ export default function MobileSecurityApprovalModal({
     useRef(null),
     useRef(null),
   ]
+
+  // Background Scroll Lock & Exact Position Restoration
+  useEffect(() => {
+    if (!isOpen || typeof document === 'undefined') return
+
+    const windowY = window.scrollY || window.pageYOffset || 0
+    const scrollContainers = Array.from(
+      document.querySelectorAll('.overflow-y-auto, .overflow-auto, main, #root')
+    )
+    const containerEntries = scrollContainers
+      .filter((el) => !el.closest('[role="dialog"]'))
+      .map((el) => ({
+        el,
+        scrollTop: el.scrollTop,
+        originalOverflow: el.style.overflowY || el.style.overflow || '',
+      }))
+
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth
+    const originalBodyPadding = document.body.style.paddingRight
+    const originalBodyOverflow = document.body.style.overflow
+
+    if (scrollbarWidth > 0) {
+      document.body.style.paddingRight = `${scrollbarWidth}px`
+    }
+    document.body.style.overflow = 'hidden'
+
+    containerEntries.forEach(({ el }) => {
+      el.style.overflow = 'hidden'
+    })
+
+    return () => {
+      document.body.style.overflow = originalBodyOverflow || ''
+      document.body.style.paddingRight = originalBodyPadding || ''
+      containerEntries.forEach(({ el, scrollTop, originalOverflow }) => {
+        el.style.overflow = originalOverflow
+        el.scrollTop = scrollTop
+      })
+      window.scrollTo(0, windowY)
+    }
+  }, [isOpen])
 
   // Update clock every minute
   useEffect(() => {
@@ -295,8 +336,15 @@ export default function MobileSecurityApprovalModal({
     }, 2000)
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 bg-black/85 backdrop-blur-md animate-fadeIn select-none overflow-y-auto">
+  if (!isOpen || typeof document === 'undefined') return null
+
+  const modalNode = (
+    <div
+      role="dialog"
+      aria-modal="true"
+      className="fixed inset-0 z-[99999] flex items-center justify-center p-2 bg-black/85 backdrop-blur-md animate-fadeIn select-none overflow-y-auto"
+      style={{ isolation: 'isolate' }}
+    >
       {/* Outer Modal Container */}
       <div className="relative w-full max-w-sm flex flex-col items-center my-auto">
         {/* Dismiss Button */}
@@ -595,4 +643,6 @@ export default function MobileSecurityApprovalModal({
       </div>
     </div>
   )
+
+  return createPortal(modalNode, document.body)
 }

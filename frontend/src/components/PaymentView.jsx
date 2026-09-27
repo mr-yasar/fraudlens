@@ -56,6 +56,7 @@ import { paymentApi, transactionsApi } from '../services/api'
 import { formatINR, formatDateTime } from '../utils/formatters'
 import { getCustomerPersona } from '../utils/customerHelper'
 import MobileSecurityApprovalModal from './MobileSecurityApprovalModal'
+import GlobalCenterModal from './common/GlobalCenterModal'
 
 // Bank accounts available for customer debit
 const LINKED_BANK_ACCOUNTS = [
@@ -2176,99 +2177,23 @@ export default function PaymentView({
 
       {/* OFFICIAL DIGITAL RECEIPT SLIP MODAL */}
       {receiptModalOpen && receiptTx && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-          <div className="w-full max-w-md bg-slate-950 border border-cyan-500/60 rounded-3xl p-6 shadow-[0_0_50px_rgba(6,182,212,0.3)] space-y-4 relative animate-in fade-in zoom-in duration-200">
-            {/* Corner Brackets */}
-            <div className="absolute -top-1.5 -left-1.5 w-5 h-5 border-t-2 border-l-2 border-cyan-400 rounded-tl-lg pointer-events-none" />
-            <div className="absolute -top-1.5 -right-1.5 w-5 h-5 border-t-2 border-r-2 border-cyan-400 rounded-tr-lg pointer-events-none" />
-
-            {/* Receipt Header */}
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div className="flex items-center gap-2">
-                <div className="p-2 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
-                  <ShieldCheck className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-extrabold text-white">FRAUDLENS DIGITAL RECEIPT</h3>
-                  <div className="text-[10px] font-mono text-cyan-300">
-                    TXN REF: {(receiptTx.transaction_id || receiptTx.id || 'PAY-99214').slice(0, 16)}
-                  </div>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setReceiptModalOpen(false)}
-                className="text-slate-400 hover:text-white text-sm font-bold p-1"
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Receipt Body */}
-            <div className="space-y-3 bg-slate-900/90 p-4 rounded-2xl border border-slate-800 text-xs font-mono">
-              <div className="text-center py-2 border-b border-slate-800">
-                <div className="text-[10px] text-slate-400 uppercase">Paid Monetary Amount</div>
-                <div className="text-2xl font-black text-emerald-400 mt-0.5">
-                  {formatINR(receiptTx.amount)}
-                </div>
-                <div className="text-[10px] text-emerald-300 font-bold mt-1 flex items-center justify-center gap-1">
-                  <CheckCircle2 className="w-3 h-3" />
-                  <span>PRE-AUTH VERIFIED &amp; TRANSFERRED</span>
-                </div>
-              </div>
-
-              <div className="space-y-1.5 pt-1">
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-400">Paid To:</span>
-                  <span className="font-bold text-white">
-                    {receiptTx.merchant_name || receiptTx.merchant || 'Recipient'}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-400">Customer Name:</span>
-                  <span className="text-slate-200">{customerPersona.name}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-400">Debited Account:</span>
-                  <span className="text-slate-200">
-                    {receiptTx.debit_bank || 'HDFC Bank'} ({receiptTx.debit_account || '•••• 4821'})
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-400">Payment Instrument:</span>
-                  <span className="text-cyan-300 uppercase">
-                    {receiptTx.payment_method || 'UPI Transfer'}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-400">Date &amp; Timestamp:</span>
-                  <span className="text-slate-300">
-                    {formatDateTime(receiptTx.timestamp || new Date())}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-400">Bank UTR / Ref #:</span>
-                  <span className="text-purple-300 font-bold">
-                    UTR-982149102482
-                  </span>
-                </div>
-                <div className="flex items-center justify-between pt-1 border-t border-slate-800">
-                  <span className="text-slate-400">AI Risk Assessment:</span>
-                  <span className="text-emerald-400 font-bold">
-                    {receiptTx.risk_score !== undefined ? `${receiptTx.risk_score}/100` : '15/100'} (LOW FRAUD RISK)
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Receipt Modal Action Buttons */}
-            <div className="grid grid-cols-2 gap-2 pt-1">
+        <GlobalCenterModal
+          isOpen={receiptModalOpen && Boolean(receiptTx)}
+          onClose={() => setReceiptModalOpen(false)}
+          title="FRAUDLENS DIGITAL RECEIPT"
+          subtitle={`TXN REF: ${(receiptTx.transaction_id || receiptTx.id || 'PAY-99214').slice(0, 16)}`}
+          icon={ShieldCheck}
+          badge="PRE-AUTH VERIFIED"
+          badgeType="success"
+          maxWidth="max-w-md"
+          footer={
+            <div className="grid grid-cols-2 gap-2 w-full">
               <button
                 type="button"
                 onClick={() => {
                   window.print()
                 }}
-                className="py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 border border-slate-700"
+                className="py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 border border-slate-700 cursor-pointer"
               >
                 <Printer className="w-3.5 h-3.5" />
                 <span>Print Receipt</span>
@@ -2276,14 +2201,71 @@ export default function PaymentView({
               <button
                 type="button"
                 onClick={() => setReceiptModalOpen(false)}
-                className="py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-md"
+                className="py-2.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-md shadow-cyan-900/50 cursor-pointer"
               >
                 <Check className="w-3.5 h-3.5" />
                 <span>Done</span>
               </button>
             </div>
+          }
+        >
+          {/* Receipt Body */}
+          <div className="space-y-3 bg-slate-900/90 p-4 rounded-2xl border border-slate-800 text-xs font-mono">
+            <div className="text-center py-2 border-b border-slate-800">
+              <div className="text-[10px] text-slate-400 uppercase">Paid Monetary Amount</div>
+              <div className="text-2xl font-black text-emerald-400 mt-0.5">
+                {formatINR(receiptTx.amount)}
+              </div>
+              <div className="text-[10px] text-emerald-300 font-bold mt-1 flex items-center justify-center gap-1">
+                <CheckCircle2 className="w-3 h-3" />
+                <span>PRE-AUTH VERIFIED &amp; TRANSFERRED</span>
+              </div>
+            </div>
+
+            <div className="space-y-1.5 pt-1">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-400">Paid To:</span>
+                <span className="font-bold text-white">
+                  {receiptTx.merchant_name || receiptTx.merchant || 'Recipient'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-400">Customer Name:</span>
+                <span className="text-slate-200">{customerPersona.name}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-400">Debited Account:</span>
+                <span className="text-slate-200">
+                  {receiptTx.debit_bank || 'HDFC Bank'} ({receiptTx.debit_account || '•••• 4821'})
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-400">Payment Instrument:</span>
+                <span className="text-cyan-300 uppercase">
+                  {receiptTx.payment_method || 'UPI Transfer'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-400">Date &amp; Timestamp:</span>
+                <span className="text-slate-300">
+                  {formatDateTime(receiptTx.timestamp || new Date())}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-400">Bank UTR / Ref #:</span>
+                <span className="text-purple-300 font-bold">
+                  UTR-982149102482
+                </span>
+              </div>
+              <div className="flex items-center justify-between pt-1 border-t border-slate-800">
+                <span className="text-slate-400">AI Risk Assessment:</span>
+                <span className="text-emerald-400 font-bold">
+                  {receiptTx.risk_score !== undefined ? `${receiptTx.risk_score}/100` : '15/100'} (LOW FRAUD RISK)
+                </span>
+              </div>
+            </div>
           </div>
-        </div>
+        </GlobalCenterModal>
       )}
 
       {/* Mobile Smartphone Security Push Notification Modal */}

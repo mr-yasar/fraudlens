@@ -58,6 +58,7 @@ import {
 } from 'lucide-react'
 
 import AIOrb from './AIOrb'
+import GlobalCenterModal from '../common/GlobalCenterModal'
 import CaseWorkspacePanel from './CaseWorkspacePanel'
 import EvidenceDashboard from './EvidenceDashboard'
 import {
@@ -848,56 +849,49 @@ export default function AiInvestigationCommandCenter({
 
       {/* ── KEY VERIFICATION MODAL ── */}
       {showKeyModal && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
-          <div
-            className={`w-full max-w-md rounded-2xl border p-5 shadow-2xl ${
-              isLight ? 'bg-white text-slate-800 border-slate-200' : 'bg-[#0b142d] text-white border-white/20'
-            }`}
-          >
-            <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-200 dark:border-white/10">
-              <h3 className="font-bold text-sm font-mono flex items-center gap-2">
-                <Key className="w-4 h-4 text-cyan-500" />
-                <span>Live AI API Key Connectivity</span>
-              </h3>
-              <button onClick={() => setShowKeyModal(false)} className="p-1 rounded hover:bg-slate-100 dark:hover:bg-white/10">
-                <X className="w-4 h-4" />
-              </button>
+        <GlobalCenterModal
+          isOpen={showKeyModal}
+          onClose={() => setShowKeyModal(false)}
+          title="Live AI API Key Connectivity"
+          subtitle="Multi-LLM redundant failover network & verification"
+          icon={Key}
+          badge="SECURE MESH"
+          badgeType="info"
+          maxWidth="max-w-md"
+        >
+          {testingKeys ? (
+            <div className="py-8 flex flex-col items-center justify-center gap-2">
+              <RefreshCw className="w-6 h-6 text-cyan-500 animate-spin" />
+              <span className="text-xs font-mono text-slate-400">Verifying Gemini, Grok, and Mistral keys...</span>
             </div>
-
-            {testingKeys ? (
-              <div className="py-8 flex flex-col items-center justify-center gap-2">
-                <RefreshCw className="w-6 h-6 text-cyan-500 animate-spin" />
-                <span className="text-xs font-mono">Verifying Gemini, Grok, and Mistral keys...</span>
+          ) : (
+            <div className="space-y-3 font-mono text-xs">
+              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="font-bold text-white">Google Gemini</span>
+                  <span className="text-emerald-400 font-bold">Operational</span>
+                </div>
+                <p className="text-[10px] text-slate-400">Gemini 3.6 Flash & 3.7 Reasoning Escalation active.</p>
               </div>
-            ) : (
-              <div className="space-y-3 font-mono text-xs">
-                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-white/10">
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="font-bold">Google Gemini</span>
-                    <span className="text-emerald-500 font-bold">Operational</span>
-                  </div>
-                  <p className="text-[10px] text-slate-500">Gemini 3.6 Flash & 3.7 Reasoning Escalation active.</p>
-                </div>
 
-                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-white/10">
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="font-bold">xAI Grok</span>
-                    <span className="text-emerald-500 font-bold">Operational</span>
-                  </div>
-                  <p className="text-[10px] text-slate-500">Grok-2 independent forensic validation active.</p>
+              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="font-bold text-white">xAI Grok</span>
+                  <span className="text-emerald-400 font-bold">Operational</span>
                 </div>
-
-                <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-white/10">
-                  <div className="flex justify-between items-center mb-1">
-                    <span className="font-bold">Mistral AI</span>
-                    <span className="text-emerald-500 font-bold">Operational</span>
-                  </div>
-                  <p className="text-[10px] text-slate-500">Mistral Large multi-LLM failover active.</p>
-                </div>
+                <p className="text-[10px] text-slate-400">Grok-2 independent forensic validation active.</p>
               </div>
-            )}
-          </div>
-        </div>
+
+              <div className="p-3 rounded-xl bg-slate-900 border border-slate-800">
+                <div className="flex justify-between items-center mb-1">
+                  <span className="font-bold text-white">Mistral AI</span>
+                  <span className="text-emerald-400 font-bold">Operational</span>
+                </div>
+                <p className="text-[10px] text-slate-400">Mistral Large multi-LLM failover active.</p>
+              </div>
+            </div>
+          )}
+        </GlobalCenterModal>
       )}
     </div>
   )
