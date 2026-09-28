@@ -70,21 +70,6 @@ export function getCustomerPersona(user) {
     }
   }
 
-  if (email.includes('priya') || name.includes('priya')) {
-    return {
-      customerId: 'CUST_REAL_002',
-      name: 'Priya',
-      customerName: 'Priya',
-      email: user.email || 'priya@fraudlens.ai',
-      fraudRate: '4.5%',
-      baselineType: 'Active Retail Banking (Dynamic Risk Check)',
-      badgeColor: 'bg-sky-950/80 text-sky-300 border-sky-700/60',
-      color: 'sky',
-      defaultPresetId: 'scenario_a_normal',
-      isCustomer: true,
-      isPremium: false,
-    }
-  }
 
   if (email.includes('ajay') || name.includes('ajay') || email.includes('premium') || name.includes('alexander') || user?.account_tier === 'PREMIUM' || user?.account_tier === 'ENTERPRISE') {
     return {

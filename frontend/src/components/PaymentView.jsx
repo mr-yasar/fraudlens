@@ -411,49 +411,6 @@ export default function PaymentView({
       },
     },
 
-    // Priya (Dynamic Active Banking)
-    {
-      id: 'scenario_priya_retail',
-      title: 'Priya: Supermarket Shopping (₹3,250)',
-      badge: 'PRIYA → SAFE ALLOW',
-      badgeColor: 'bg-sky-950/80 text-sky-300 border-sky-700/60',
-      description: 'Regular weekend grocery shopping of ₹3,250 at Reliance Retail via UPI. Verified safe spending pattern -> Auto-Approved.',
-      data: {
-        customer_id: 'CUST_REAL_002',
-        amount: 3250.0,
-        currency: 'INR',
-        merchant_name: 'Reliance Smart Superstore',
-        merchant_category: 'grocery',
-        beneficiary_name: 'Reliance Retail Ltd',
-        payment_method: 'upi',
-        device_type: 'mobile_android',
-        location: 'Chennai',
-        transaction_country: 'IN',
-        transaction_type: 'online_payment',
-        failed_attempts: 0,
-      },
-    },
-    {
-      id: 'scenario_priya_stepup',
-      title: 'Priya: High-Ticket Electronics (₹48,000)',
-      badge: 'PRIYA → STEP-UP OTP',
-      badgeColor: 'bg-amber-950/80 text-amber-300 border-amber-700/60',
-      description: 'High-value consumer electronics purchase of ₹48,000 from new online vendor. Triggers Step-Up Phone OTP Verification.',
-      data: {
-        customer_id: 'CUST_REAL_002',
-        amount: 48000.0,
-        currency: 'INR',
-        merchant_name: 'Croma Digital Appliances',
-        merchant_category: 'electronics',
-        beneficiary_name: 'Croma Retail Infotech',
-        payment_method: 'upi',
-        device_type: 'mobile_android',
-        location: 'Bangalore',
-        transaction_country: 'IN',
-        transaction_type: 'online_payment',
-        failed_attempts: 1,
-      },
-    },
 
     // New User Cold Start
     {

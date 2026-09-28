@@ -231,7 +231,7 @@ export default function LoginCard({
         <div className="pt-3 border-t border-slate-800/80 space-y-2">
           <div className="text-[10px] font-mono font-bold text-slate-400 flex items-center justify-between">
             <span className="text-cyan-400">1-CLICK INSTANT LOGIN:</span>
-            <span className="text-[9px] text-slate-400 font-mono">1, 2, 3, 4 + ADMIN</span>
+            <span className="text-[9px] text-slate-400 font-mono">USERS 1-4 + ADMIN</span>
           </div>
 
           <div className="grid grid-cols-2 gap-2">
@@ -295,29 +295,7 @@ export default function LoginCard({
               <span className="text-[9px] text-slate-400 font-mono">ATO Botnet Defense</span>
             </button>
 
-            {/* 4. User 4: Priya */}
-            <button
-              type="button"
-              onClick={() => {
-                setEmail('priya@fraudlens.ai')
-                setPassword('Customer@1234')
-                sound.playBlip()
-              }}
-              className="p-2 rounded-xl bg-slate-900/90 hover:bg-sky-950/70 border border-slate-800 hover:border-sky-500/70 text-slate-300 hover:text-sky-300 transition flex flex-col items-start text-left gap-0.5 group shadow-md"
-            >
-              <div className="flex items-center justify-between w-full">
-                <span className="font-bold text-xs text-white group-hover:text-sky-300 font-mono flex items-center gap-1.5">
-                  <span className="w-4 h-4 rounded bg-sky-950 text-sky-400 border border-sky-700 text-[10px] flex items-center justify-center font-bold">4</span>
-                  Priya
-                </span>
-                <span className="text-[8px] font-mono bg-sky-950 text-sky-300 px-1 py-0.2 rounded border border-sky-800 font-bold">ACTIVE</span>
-              </div>
-              <span className="text-[9px] text-slate-400 font-mono">Dynamic Retail Balance</span>
-            </button>
-          </div>
-
-          {/* User 5: Ajay */}
-          <div className="grid grid-cols-2 gap-2">
+            {/* 4. User 4: Ajay */}
             <button
               type="button"
               onClick={() => {
@@ -329,17 +307,13 @@ export default function LoginCard({
             >
               <div className="flex items-center justify-between w-full">
                 <span className="font-bold text-xs text-white group-hover:text-indigo-300 font-mono flex items-center gap-1.5">
-                  <span className="w-4 h-4 rounded bg-indigo-950 text-indigo-400 border border-indigo-700 text-[10px] flex items-center justify-center font-bold">5</span>
+                  <span className="w-4 h-4 rounded bg-indigo-950 text-indigo-400 border border-indigo-700 text-[10px] flex items-center justify-center font-bold">4</span>
                   Ajay
                 </span>
                 <span className="text-[8px] font-mono bg-indigo-950 text-indigo-300 px-1 py-0.2 rounded border border-indigo-700 font-bold">ENTERPRISE</span>
               </div>
               <span className="text-[9px] text-slate-400 font-mono">Enclave &amp; Adaptive AI</span>
             </button>
-            <div className="p-2 rounded-xl bg-slate-950/60 border border-slate-800/60 text-slate-500 flex flex-col justify-center text-[10px] font-mono">
-              <span className="text-cyan-400 font-bold">FRAUDLENS CORE</span>
-              <span>Autonomous Risk Engine</span>
-            </div>
           </div>
 
           {/* Admin: System Administrator */}

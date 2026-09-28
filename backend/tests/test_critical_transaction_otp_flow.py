@@ -36,9 +36,9 @@ USERS_CONFIG = [
         "customer_id": "CUST_SOWMIYA_003",
     },
     {
-        "name": "Priya",
-        "email": "priya@fraudlens.ai",
-        "customer_id": "CUST_REAL_002",
+        "name": "Ajay",
+        "email": "ajay@fraudlens.ai",
+        "customer_id": "CUST_AJAY_004",
     },
 ]
 
