@@ -16,6 +16,7 @@ import {
   Lightbulb,
   BrainCircuit,
   Radio,
+  CheckCircle2,
 } from 'lucide-react'
 
 import { AuthProvider, useAuth } from './context/AuthContext'
@@ -39,6 +40,16 @@ import SecurityUnlockTransition from './components/SecurityUnlockTransition'
 import HowItWorksModal from './components/HowItWorksModal'
 import AiAssistantPanel from './components/AiAssistantPanel'
 import AiInvestigationCommandCenter from './components/ai/AiInvestigationCommandCenter'
+import PremiumSecurityDashboard from './components/premium/PremiumSecurityDashboard'
+import PremiumTransactionCenter from './components/premium/PremiumTransactionCenter'
+import PremiumSecurityCenter from './components/premium/PremiumSecurityCenter'
+import PremiumDeviceSecurity from './components/premium/PremiumDeviceSecurity'
+import PremiumAlertCenter from './components/premium/PremiumAlertCenter'
+import PremiumAuditTrail from './components/premium/PremiumAuditTrail'
+import FleetSecurityView from './components/FleetSecurityView'
+import PersonalizedWelcomeOverlay from './components/common/PersonalizedWelcomeOverlay'
+import LogoutConfirmModal from './components/common/LogoutConfirmModal'
+import SecurityLogoutDoor from './components/common/SecurityLogoutDoor'
 import { systemApi } from './services/api'
 import { getCustomerPersona } from './utils/customerHelper'
 
@@ -46,6 +57,7 @@ function CommandCenterApp() {
   const { user, isAuthenticated, isAdmin, login, register, logout, loading: authLoading, error: authError } = useAuth()
   const isCustomer = user?.role?.toLowerCase() === 'customer' || user?.role?.toLowerCase() === 'user'
   const customerPersona = getCustomerPersona(user)
+  const isPremium = user?.account_tier === 'PREMIUM' || customerPersona?.isPremium
 
   // Navigation State
   const [activeView, setActiveView] = useState('dashboard')
@@ -163,15 +175,59 @@ function CommandCenterApp() {
     navigateTo('investigations')
   }
 
+  // Refresh & Feedback State
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const [refreshToast, setRefreshToast] = useState(false)
+  const [showWelcome, setShowWelcome] = useState(false)
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
+
   const isConnected = !healthLoading && !healthError && healthData?.status === 'healthy'
   const [isTransitioning, setIsTransitioning] = useState(false)
 
-  // If user is not authenticated and not in unlock transition, display login scene
-  if (!isAuthenticated && !isTransitioning) {
+  const handleRefresh = async () => {
+    setIsRefreshing(true)
+    try {
+      await checkHealth()
+    } catch {
+      // ignore errors
+    } finally {
+      setIsRefreshing(false)
+      setRefreshToast(true)
+      setTimeout(() => setRefreshToast(false), 2200)
+    }
+  }
+
+  const handleTriggerLogout = useCallback(() => {
+    if (isLoggingOut) return
+    setShowLogoutConfirm(true)
+  }, [isLoggingOut])
+
+  const handleConfirmLogout = useCallback(() => {
+    setShowLogoutConfirm(false)
+    setIsLoggingOut(true)
+  }, [])
+
+  const handleFinalizeLogout = useCallback(async () => {
+    try {
+      await logout()
+    } catch {
+      // ignore errors
+    } finally {
+      setIsLoggingOut(false)
+      setShowWelcome(false)
+      setActiveView('dashboard')
+      setNavHistory([])
+    }
+  }, [logout])
+
+  // If user is not authenticated and not in unlock transition and not in logout exit, display login scene
+  if (!isAuthenticated && !isTransitioning && !isLoggingOut) {
     return (
       <LoginScene
         onLoginSuccess={() => {
-          setIsTransitioning(true)
+          setIsTransitioning(false)
+          setShowWelcome(true)
           setActiveView('dashboard')
         }}
         login={login}
@@ -187,6 +243,14 @@ function CommandCenterApp() {
   // AUTHENTICATED COMMAND CENTER APPLICATION SHELL
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-cyan-500/30 selection:text-cyan-200 relative overflow-hidden">
+      {/* Personalized Welcome Overlay (2.3s Tailored Experience) */}
+      {showWelcome && (
+        <PersonalizedWelcomeOverlay
+          user={user}
+          onComplete={() => setShowWelcome(false)}
+        />
+      )}
+
       {/* Cinematic Security Access Unlock Transition */}
       {isTransitioning && (
         <SecurityUnlockTransition
@@ -194,9 +258,37 @@ function CommandCenterApp() {
         />
       )}
 
+      {/* Security Logout Door Lockdown Animation (2.8s) */}
+      {isLoggingOut && (
+        <SecurityLogoutDoor
+          userName={customerPersona?.name || user?.name || user?.email?.split('@')[0] || 'Operator'}
+          onComplete={handleFinalizeLogout}
+        />
+      )}
+
+      {/* Logout Confirmation Dialog */}
+      <LogoutConfirmModal
+        isOpen={showLogoutConfirm}
+        onClose={() => setShowLogoutConfirm(false)}
+        onConfirm={handleConfirmLogout}
+        userName={customerPersona?.name || user?.name || user?.email?.split('@')[0] || 'Operator'}
+      />
+
+      {/* Refresh Toast Feedback */}
+      {refreshToast && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed top-20 right-6 z-50 flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-900/95 border border-cyan-500/60 text-cyan-200 text-xs font-mono shadow-[0_10px_30px_rgba(0,0,0,0.8),0_0_20px_rgba(6,182,212,0.25)] animate-fade-in pointer-events-none"
+        >
+          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+          <span className="font-semibold text-slate-200">Dashboard refreshed</span>
+        </div>
+      )}
+
       <div
         className={`flex flex-1 overflow-hidden transition-all duration-700 ease-out ${
-          isTransitioning ? 'opacity-75 scale-[0.99] filter blur-[0.5px]' : 'opacity-100 scale-100 filter-none'
+          isTransitioning || isLoggingOut ? 'opacity-75 scale-[0.99] filter blur-[0.5px]' : 'opacity-100 scale-100 filter-none'
         }`}
       >
         {/* Responsive Sidebar Navigation */}
@@ -206,7 +298,7 @@ function CommandCenterApp() {
             setActiveView={navigateTo}
             isAdmin={isAdmin}
             user={user}
-            logout={logout}
+            logout={handleTriggerLogout}
             mobileOpen={mobileOpen}
             setMobileOpen={setMobileOpen}
             onOpenHowItWorks={() => setShowHowItWorks(true)}
@@ -224,13 +316,15 @@ function CommandCenterApp() {
             isTransitioning ? 'translate-y-0.5' : 'translate-y-0'
           }`}
         >
-          {/* Top Operational Header */}
-          <header className="border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md sticky top-0 z-30 px-4 sm:px-6 h-16 flex items-center justify-between">
-            <div className="flex items-center gap-3">
+          {/* Top Operational Navigation Bar (Clean, Minimal, Enterprise-Grade) */}
+          <header className="border-b border-slate-800/80 bg-slate-950/70 backdrop-blur-xl sticky top-0 z-30 px-4 sm:px-6 h-16 flex items-center justify-between">
+            {/* LEFT: Branding, Mobile Menu & Active View Context */}
+            <div className="flex items-center gap-3 min-w-0">
+              {/* Mobile sidebar toggle */}
               <button
                 onClick={() => setMobileOpen(true)}
-                className="lg:hidden p-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white"
-                aria-label="Open sidebar navigation"
+                className="lg:hidden p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800 transition"
+                aria-label="Open navigation menu"
               >
                 <Menu className="w-5 h-5" />
               </button>
@@ -240,139 +334,73 @@ function CommandCenterApp() {
                 <button
                   onClick={navigateBack}
                   title="Go back (Alt+←)"
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-cyan-700 text-slate-300 hover:text-cyan-300 text-xs font-semibold transition-all group"
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-cyan-500/50 text-slate-300 hover:text-cyan-300 text-xs font-semibold transition group cursor-pointer"
+                  aria-label="Navigate back"
                 >
-                  <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
-                  <span className="hidden sm:inline">
-                    {navHistory[navHistory.length - 1].replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
-                  </span>
-                  <span className="sm:hidden">Back</span>
+                  <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform text-cyan-400" />
+                  <span className="hidden sm:inline">Back</span>
                 </button>
               )}
 
-              <div className="font-mono text-xs text-slate-400">
-                Active Module:{' '}
-                <strong className="text-cyan-400 uppercase tracking-wide">
-                  {activeView.replace(/-/g, ' ')}
-                </strong>
-              </div>
+              {/* FraudLens AI Brand & Page Title */}
+              <div className="flex items-center gap-2.5 truncate">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-cyan-500 via-indigo-600 to-purple-600 p-1 flex items-center justify-center shadow-[0_0_12px_rgba(6,182,212,0.35)] shrink-0">
+                    <ShieldCheck className="w-4 h-4 text-white" />
+                  </div>
+                  <span className="font-extrabold text-sm tracking-tight text-white hidden md:inline">
+                    FraudLens <span className="text-cyan-400">AI</span>
+                  </span>
+                </div>
 
-              {/* Real-Time Session Status (Zero-Leak Multi-Tenant Isolation) */}
-              {isCustomer ? (
-                <div className="hidden xl:flex items-center gap-2 px-2.5 py-1 rounded-xl bg-slate-950/80 border border-emerald-800/80 shadow-inner">
-                  <span className="text-[10px] font-mono text-emerald-400 uppercase font-bold flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                    Verified Customer:
-                  </span>
-                  <span className="text-[11px] font-mono font-bold text-white">
-                    {customerPersona.name}
-                  </span>
-                  <span className="text-[10px] font-mono font-bold bg-emerald-950 px-1.5 py-0.5 rounded text-emerald-300 border border-emerald-800">
-                    Private Session
-                  </span>
-                </div>
-              ) : (
-                <div className="hidden xl:flex items-center gap-2 px-2.5 py-1 rounded-xl bg-slate-950/80 border border-slate-800/80 shadow-inner">
-                  <span className="text-[10px] font-mono text-cyan-400 uppercase font-bold flex items-center gap-1">
-                    <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
-                    Security Clearance:
-                  </span>
-                  <span className="text-[11px] font-mono font-bold text-white">
-                    {isAdmin ? 'System Administrator' : 'Fraud Investigator'}
-                  </span>
-                  <span className="text-[10px] font-mono font-bold bg-cyan-950 px-1.5 py-0.5 rounded text-cyan-300 border border-cyan-800">
-                    Zero-Leak Protected
-                  </span>
-                </div>
-              )}
+                <span className="text-slate-600 hidden md:inline">/</span>
+
+                <span className="text-xs font-semibold text-slate-300 truncate tracking-wide">
+                  {activeView.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
+                </span>
+              </div>
             </div>
 
-            <div className="flex items-center space-x-2.5">
-              {/* Direct Quick Shortcut: Payment Gateway for Customer, Risk Analyzer for Admin/Investigator */}
-              {isCustomer ? (
-                <button
-                  onClick={() => navigateTo('payment')}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition border ${
-                    activeView === 'payment'
-                      ? 'bg-cyan-600 text-white border-cyan-400 shadow-md shadow-cyan-900/50'
-                      : 'bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border-slate-700'
-                  }`}
-                  title="Open Pre-Auth Payment Gateway"
-                >
-                  <CreditCard className="w-3.5 h-3.5 text-cyan-400" />
-                  <span className="hidden sm:inline">Payment Gateway</span>
-                </button>
-              ) : (
-                <button
-                  onClick={() => navigateTo('analyzer')}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition border ${
-                    activeView === 'analyzer'
-                      ? 'bg-cyan-600 text-white border-cyan-400 shadow-md shadow-cyan-900/50'
-                      : 'bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border-slate-700'
-                  }`}
-                  title="Open Transaction Risk Analyzer"
-                >
-                  <BrainCircuit className="w-3.5 h-3.5 text-cyan-400" />
-                  <span className="hidden sm:inline">Risk Analyzer</span>
-                </button>
-              )}
+            {/* CENTER: Minimal & Spacious */}
+            <div className="hidden md:flex flex-1" />
 
-              {/* Unified How It Works (System Guide & AI Voice Explainer) */}
+            {/* RIGHT: Refresh, User Profile, Logout */}
+            <div className="flex items-center gap-2 sm:gap-3">
+              {/* Refresh Action */}
               <button
-                onClick={() => setShowHowItWorks(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-600 via-indigo-600 to-purple-600 hover:from-cyan-500 hover:to-indigo-500 text-white text-xs font-bold shadow-lg shadow-cyan-950/40 transition border border-cyan-400/50 group"
-                title="Open How It Works: Interactive System Guide, Architecture, Personas & AI Voice Explainer"
+                onClick={handleRefresh}
+                disabled={isRefreshing}
+                className="p-2 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-cyan-300 border border-slate-800 hover:border-slate-700 transition relative cursor-pointer"
+                title="Refresh Dashboard"
+                aria-label="Refresh Dashboard"
               >
-                <Lightbulb className="w-3.5 h-3.5 text-cyan-200 group-hover:scale-110 transition-transform animate-pulse" />
-                <span className="hidden sm:inline">How It Works</span>
-                <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-cyan-950/90 text-cyan-200 border border-cyan-700/80">
-                  Guide + Voice
-                </span>
+                <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-cyan-400' : ''}`} />
               </button>
 
-              {/* Backend Connectivity Status */}
-              <div className="hidden sm:flex items-center space-x-2 bg-slate-900/80 px-3 py-1.5 rounded-full border border-slate-800 text-xs">
-                <span
-                  className={`w-2 h-2 rounded-full ${
-                    isConnected ? 'bg-emerald-400 animate-pulse' : 'bg-rose-500'
-                  }`}
-                />
-                <span className="font-medium text-slate-300">
-                  {isConnected ? `Backend Connected (${latency}ms)` : 'Offline'}
-                </span>
+              {/* User Profile Pill */}
+              <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-slate-900/80 border border-slate-800 text-xs">
+                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-cyan-500 to-indigo-600 text-white flex items-center justify-center font-bold text-[10px] shrink-0 uppercase shadow-inner">
+                  {customerPersona?.name ? customerPersona.name.charAt(0) : (user?.name ? user.name.charAt(0) : (user?.email ? user.email.charAt(0) : 'U'))}
+                </div>
+                <div className="hidden sm:flex flex-col text-left leading-tight">
+                  <span className="font-bold text-slate-200 text-xs truncate max-w-[110px]">
+                    {customerPersona?.name || user?.name || user?.email?.split('@')[0] || 'User'}
+                  </span>
+                  <span className="text-[10px] font-mono text-slate-400">
+                    {isAdmin ? 'System Admin' : (customerPersona?.name === 'Ajay' ? 'Enterprise' : 'User')}
+                  </span>
+                </div>
               </div>
 
-              {/* User Profile Badge */}
-              <div className="flex items-center space-x-2 bg-slate-900/80 border border-slate-800 px-3 py-1.5 rounded-full text-xs">
-                <span className="w-2 h-2 rounded-full bg-cyan-400" />
-                <span className="font-semibold text-slate-200 hidden md:inline">{user?.email}</span>
-                <span
-                  className={`px-1.5 py-0.5 rounded text-[10px] uppercase font-bold font-mono ${
-                    isAdmin
-                      ? 'bg-purple-950 text-purple-300 border border-purple-800'
-                      : 'bg-cyan-950 text-cyan-300 border border-cyan-800'
-                  }`}
-                >
-                  {user?.role}
-                </span>
-              </div>
-
+              {/* Logout Action */}
               <button
-                onClick={checkHealth}
-                disabled={healthLoading}
-                className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition"
-                title="Refresh Status"
-              >
-                <RefreshCw className={`w-4 h-4 ${healthLoading ? 'animate-spin' : ''}`} />
-              </button>
-
-              <button
-                onClick={logout}
-                className="p-2 rounded-xl bg-slate-800 hover:bg-rose-950/50 text-slate-300 hover:text-rose-400 border border-slate-700 hover:border-rose-700/60 transition"
+                onClick={handleTriggerLogout}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900/80 hover:bg-rose-950/40 text-slate-300 hover:text-rose-300 border border-slate-800 hover:border-rose-700/60 text-xs font-semibold transition group cursor-pointer"
                 title="Sign Out"
                 aria-label="Sign Out"
               >
-                <LogOut className="w-4 h-4" />
+                <LogOut className="w-3.5 h-3.5 text-slate-400 group-hover:text-rose-400 group-hover:translate-x-0.5 transition" />
+                <span className="hidden sm:inline">Logout</span>
               </button>
             </div>
           </header>
@@ -381,12 +409,50 @@ function CommandCenterApp() {
           <main className={activeView === 'ai-copilot' ? 'flex-1 overflow-hidden' : 'p-4 sm:p-6 lg:p-8 flex-1'}>
             <ErrorBoundary onReset={() => setActiveView('dashboard')}>
               {activeView === 'dashboard' && (
-                <DashboardView
+                isPremium ? (
+                  <PremiumSecurityDashboard
+                    user={user}
+                    onNavigate={navigateTo}
+                  />
+                ) : (
+                  <DashboardView
+                    user={user}
+                    isAdmin={isAdmin}
+                    onSelectTransaction={handleSelectTransaction}
+                    onOpenCase={() => navigateTo('investigations')}
+                    onOpenPayment={handleSelectPersona}
+                  />
+                )
+              )}
+
+              {(activeView === 'executive-transactions' || activeView === 'premium-transactions') && (
+                <PremiumTransactionCenter
+                  user={user}
+                />
+              )}
+
+              {(activeView === 'security-center' || activeView === 'premium-security-center') && (
+                <PremiumSecurityCenter
+                  user={user}
+                />
+              )}
+
+              {(activeView === 'fleet-security' || activeView === 'premium-devices' || activeView === 'premium-sessions') && (
+                <FleetSecurityView
                   user={user}
                   isAdmin={isAdmin}
-                  onSelectTransaction={handleSelectTransaction}
-                  onOpenCase={() => navigateTo('investigations')}
-                  onOpenPayment={handleSelectPersona}
+                />
+              )}
+
+              {(activeView === 'security-alerts' || activeView === 'premium-alerts') && (
+                <PremiumAlertCenter
+                  user={user}
+                />
+              )}
+
+              {(activeView === 'audit-trail' || activeView === 'premium-audit') && (
+                <PremiumAuditTrail
+                  user={user}
                 />
               )}
 

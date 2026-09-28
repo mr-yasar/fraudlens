@@ -21,6 +21,11 @@ class AuditLog(Base):
     action = Column(String(100), nullable=False)
     resource_type = Column(String(100), nullable=False)
     resource_id = Column(String(100), nullable=True)
+    entity = Column(String(100), nullable=True)
+    entity_id = Column(String(100), nullable=True)
+    ip_address = Column(String(50), nullable=True)
+    device_id = Column(String(100), nullable=True)
+    result = Column(String(50), default="SUCCESS", nullable=True)  # SUCCESS, FAILURE, DENIED
     details = Column(Text, nullable=True)
     created_at = Column(
         DateTime(timezone=True),
@@ -38,5 +43,6 @@ class AuditLog(Base):
 
     def __repr__(self) -> str:
         return f"<AuditLog id={self.id} action='{self.action}' resource='{self.resource_type}:{self.resource_id}'>"
+
 
 

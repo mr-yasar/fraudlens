@@ -125,3 +125,8 @@ class EventBroadcaster:
     def get_recent_events(self, limit: int = 20) -> List[Dict[str, Any]]:
         """Retrieve recent events buffer."""
         return self._recent_events[-limit:]
+
+
+# Global singleton instance
+event_broadcaster = EventBroadcaster.get_instance()
+

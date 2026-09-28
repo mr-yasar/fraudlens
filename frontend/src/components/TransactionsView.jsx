@@ -18,6 +18,7 @@ import { transactionsApi, investigationsApi } from '../services/api'
 import { formatINR } from '../utils/formatters'
 import { getCustomerPersona } from '../utils/customerHelper'
 import GlobalCenterModal from './common/GlobalCenterModal'
+import ContextualModuleHelp from './common/ContextualModuleHelp'
 
 export default function TransactionsView({ onViewExplanation, user, isAdmin }) {
   const customerPersona = getCustomerPersona(user)
@@ -67,7 +68,7 @@ export default function TransactionsView({ onViewExplanation, user, isAdmin }) {
         risk_level: riskFilter,
         prediction: predictionFilter,
         search: searchQuery,
-        customer_id: isCustomer ? customerPersona.customerId : undefined,
+        customer_id: isCustomer ? (customerPersona.backendCustomerId || customerPersona.customerId) : undefined,
       })
       setTransactions(data.items || [])
       setTotal(data.total || 0)
@@ -152,10 +153,13 @@ export default function TransactionsView({ onViewExplanation, user, isAdmin }) {
               {isCustomer ? 'Personal Account Isolation Active (My Data Only)' : 'Full Multi-Merchant Audit (29,009 Records Across 29 Merchants)'}
             </span>
           </div>
-          <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            {isCustomer ? <CreditCard className="w-5 h-5 text-emerald-400" /> : <Store className="w-5 h-5 text-purple-400" />}
-            {isCustomer ? 'My Account Transactions' : 'All Merchant Transactions & Master Audit Stream'}
-          </h2>
+          <div className="flex items-center gap-3">
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              {isCustomer ? <CreditCard className="w-5 h-5 text-emerald-400" /> : <Store className="w-5 h-5 text-purple-400" />}
+              {isCustomer ? 'My Account Transactions' : 'All Merchant Transactions & Master Audit Stream'}
+            </h2>
+            <ContextualModuleHelp moduleKey="transactions" />
+          </div>
           <p className="text-xs text-slate-400 mt-0.5">
             {isCustomer
               ? `Real-time ledger of authorized payments, personal risk scores, and telemetry for ${customerPersona.customerName} (${customerPersona.fraudRate} fraud baseline).`

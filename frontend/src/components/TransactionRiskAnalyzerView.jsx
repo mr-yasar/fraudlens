@@ -25,6 +25,7 @@ import {
 } from 'lucide-react'
 import { formatINR } from '../utils/formatters'
 import SearchableMerchantSelect from './common/SearchableMerchantSelect'
+import ContextualModuleHelp from './common/ContextualModuleHelp'
 import CANONICAL_MASTER_MERCHANTS from '../data/canonicalMerchants'
 import { getCustomerPersona } from '../utils/customerHelper'
 
@@ -36,19 +37,20 @@ export default function TransactionRiskAnalyzerView({ user, isAdmin, onViewExpla
   const [loadingMerchants, setLoadingMerchants] = useState(false)
 
   // Active persona dataset mode (for Admin to toggle, or locked to customer for logged-in customer)
-  const isMonisha = (customerPersona.customerId || '').includes('MONISHA')
-  const isMohana = (customerPersona.customerId || '').includes('MOHANA')
-  const isSowmiya = (customerPersona.customerId || '').includes('SOWMIYA')
+  const isAjay = (customerPersona.customerId || '').includes('PREMIUM') || (customerPersona.customerId || '').includes('AJAY') || customerPersona.isPremium || (customerPersona.name || '').toLowerCase().includes('ajay') || (user?.email || '').toLowerCase().includes('ajay') || (user?.name || '').toLowerCase().includes('ajay')
+  const isMonisha = !isAjay && (customerPersona.customerId || '').includes('MONISHA')
+  const isMohana = !isAjay && (customerPersona.customerId || '').includes('MOHANA')
+  const isSowmiya = !isAjay && (customerPersona.customerId || '').includes('SOWMIYA')
 
-  const initialCustomerAvg = isMonisha ? '1950' : isMohana ? '8500' : isSowmiya ? '28500' : '1450'
-  const initialDevice = isMonisha ? 'mobile_ios' : 'mobile_android'
+  const initialCustomerAvg = isAjay ? '45000' : isMonisha ? '1950' : isMohana ? '8500' : isSowmiya ? '28500' : '1450'
+  const initialDevice = isAjay ? 'desktop_macos' : isMonisha ? 'mobile_ios' : 'mobile_android'
 
   // Form State
-  const [merchantId, setMerchantId] = useState(isMonisha ? 'M001' : isMohana ? 'M002' : 'M001')
-  const [amount, setAmount] = useState(isMonisha ? '1250' : isMohana ? '14500' : '1250')
+  const [merchantId, setMerchantId] = useState(isAjay ? 'M029' : isMonisha ? 'M001' : isMohana ? 'M002' : 'M001')
+  const [amount, setAmount] = useState(isAjay ? '38500' : isMonisha ? '1250' : isMohana ? '14500' : '1250')
   const [customerHistoricalAvg, setCustomerHistoricalAvg] = useState(initialCustomerAvg)
-  const [previousTxAmount, setPreviousTxAmount] = useState(isMonisha ? '1300' : isMohana ? '6500' : '1300')
-  const [transactionType, setTransactionType] = useState('UPI')
+  const [previousTxAmount, setPreviousTxAmount] = useState(isAjay ? '42000' : isMonisha ? '1300' : isMohana ? '6500' : '1300')
+  const [transactionType, setTransactionType] = useState(isAjay ? 'TRANSFER' : 'UPI')
   const [deviceType, setDeviceType] = useState(initialDevice)
   const [transactionHour, setTransactionHour] = useState('14')
   const [isNewDevice, setIsNewDevice] = useState(false)
@@ -114,7 +116,67 @@ export default function TransactionRiskAnalyzerView({ user, isAdmin, onViewExpla
     setAnalysisResult(null)
     setError(null)
     setIsFormDirty(false)
-    if (type === 'normal' || type === 'monisha_grocery') {
+    if (type === 'ajay_saas') {
+      setMerchantId('M029') // CloudDesk Digital
+      setAmount('38500')
+      setCustomerHistoricalAvg('45000')
+      setPreviousTxAmount('42000')
+      setTransactionType('TRANSFER')
+      setDeviceType('desktop_macos')
+      setTransactionHour('14')
+      setIsNewDevice(false)
+      setIsNewBeneficiary(false)
+      setIsLocationChanged(false)
+      setLocationDistanceKm('0')
+      setTxLast1h('1')
+      setTxLast24h('2')
+      setFailedAttempts('0')
+    } else if (type === 'ajay_night_spike') {
+      setMerchantId('M029') // CloudDesk Digital
+      setAmount('68000')
+      setCustomerHistoricalAvg('45000')
+      setPreviousTxAmount('15000')
+      setTransactionType('TRANSFER')
+      setDeviceType('desktop_macos')
+      setTransactionHour('23')
+      setIsNewDevice(false)
+      setIsNewBeneficiary(false)
+      setIsLocationChanged(false)
+      setLocationDistanceKm('0')
+      setTxLast1h('3')
+      setTxLast24h('5')
+      setFailedAttempts('1')
+    } else if (type === 'ajay_high_hardware') {
+      setMerchantId('M002') // CircuitBay Electronics
+      setAmount('145000')
+      setCustomerHistoricalAvg('45000')
+      setPreviousTxAmount('38000')
+      setTransactionType('CARD')
+      setDeviceType('mobile_ios')
+      setTransactionHour('17')
+      setIsNewDevice(true)
+      setIsNewBeneficiary(false)
+      setIsLocationChanged(true)
+      setLocationDistanceKm('45')
+      setTxLast1h('2')
+      setTxLast24h('4')
+      setFailedAttempts('0')
+    } else if (type === 'ajay_critical_proxy') {
+      setMerchantId('M027') // Regal Estate Escrow
+      setAmount('450000')
+      setCustomerHistoricalAvg('45000')
+      setPreviousTxAmount('12000')
+      setTransactionType('ONLINE')
+      setDeviceType('unknown_bot')
+      setTransactionHour('3')
+      setIsNewDevice(true)
+      setIsNewBeneficiary(true)
+      setIsLocationChanged(true)
+      setLocationDistanceKm('3500')
+      setTxLast1h('8')
+      setTxLast24h('18')
+      setFailedAttempts('4')
+    } else if (type === 'normal' || type === 'monisha_grocery') {
       setMerchantId('M001') // NovaMart Fresh
       setAmount('1250')
       setCustomerHistoricalAvg('1950')
@@ -208,7 +270,7 @@ export default function TransactionRiskAnalyzerView({ user, isAdmin, onViewExpla
   }
 
   const handleReset = () => {
-    applyPreset(isMonisha ? 'monisha_grocery' : isMohana ? 'mohana_gadget' : isSowmiya ? 'sowmiya_botnet' : 'normal')
+    applyPreset(isAjay ? 'ajay_saas' : isMonisha ? 'monisha_grocery' : isMohana ? 'mohana_gadget' : isSowmiya ? 'sowmiya_botnet' : 'normal')
   }
 
   const handleAnalyze = async (e) => {
@@ -391,10 +453,13 @@ export default function TransactionRiskAnalyzerView({ user, isAdmin, onViewExpla
                 </span>
               )}
             </div>
-            <h1 className="text-2xl font-black tracking-tight text-white flex items-center gap-2">
-              <BrainCircuit className="w-6 h-6 text-cyan-400" />
-              Transaction Risk Analyzer &amp; Explainability
-            </h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-black tracking-tight text-white flex items-center gap-2">
+                <BrainCircuit className="w-6 h-6 text-cyan-400" />
+                Transaction Risk Analyzer &amp; Explainability
+              </h1>
+              <ContextualModuleHelp moduleKey="analyzer" />
+            </div>
             <p className="text-sm text-slate-400 mt-1 max-w-2xl">
               {isCustomer
                 ? `Evaluate transactions in real-time calibrated against ${customerPersona.name}'s verified behavioral baseline, merchant risk profiles, and TreeSHAP explainability.`
@@ -404,7 +469,42 @@ export default function TransactionRiskAnalyzerView({ user, isAdmin, onViewExpla
 
           {/* Presets & Reset */}
           <div className="flex flex-wrap items-center gap-2">
-            {isMonisha ? (
+            {isAjay ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => applyPreset('ajay_saas')}
+                  className="px-3 py-1.5 rounded-lg bg-indigo-950/80 hover:bg-indigo-900/90 text-indigo-300 font-mono text-xs border border-indigo-700/60 transition shadow-sm"
+                  title="Ajay: Enterprise Cloud SaaS (₹38,500)"
+                >
+                  Ajay: Cloud SaaS (₹38,500)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => applyPreset('ajay_night_spike')}
+                  className="px-3 py-1.5 rounded-lg bg-amber-950/80 hover:bg-amber-900/90 text-amber-300 font-mono text-xs border border-amber-700/60 transition shadow-sm"
+                  title="Ajay: Off-Hours Compute Burst (₹68,000)"
+                >
+                  Ajay: Night Burst (₹68,000)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => applyPreset('ajay_high_hardware')}
+                  className="px-3 py-1.5 rounded-lg bg-orange-950/80 hover:bg-orange-900/90 text-orange-300 font-mono text-xs border border-orange-700/60 transition shadow-sm"
+                  title="Ajay: High-Ticket Hardware Acquisition (₹145,000)"
+                >
+                  Ajay: Hardware (₹145,000)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => applyPreset('ajay_critical_proxy')}
+                  className="px-3 py-1.5 rounded-lg bg-rose-950/80 hover:bg-rose-900/90 text-rose-300 font-mono text-xs border border-rose-700/60 transition shadow-sm"
+                  title="Ajay: Foreign Proxy & High Ticket Threat (₹450,000)"
+                >
+                  Ajay: Proxy Threat (₹450,000)
+                </button>
+              </>
+            ) : isMonisha ? (
               <>
                 <button
                   type="button"
@@ -639,52 +739,112 @@ export default function TransactionRiskAnalyzerView({ user, isAdmin, onViewExpla
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <span className="text-[10px] font-mono text-slate-400">Persona Profile:</span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setCustomerHistoricalAvg('1250')
-                      setPreviousTxAmount('1100')
-                      setIsFormDirty(true)
-                    }}
-                    className={`px-2 py-0.5 rounded text-[10px] font-mono border transition ${
-                      customerHistoricalAvg === '1250'
-                        ? 'bg-emerald-950 text-emerald-300 border-emerald-700'
-                        : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white'
-                    }`}
-                  >
-                    Monisha (₹1.2k)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setCustomerHistoricalAvg('14500')
-                      setPreviousTxAmount('12000')
-                      setIsFormDirty(true)
-                    }}
-                    className={`px-2 py-0.5 rounded text-[10px] font-mono border transition ${
-                      customerHistoricalAvg === '14500'
-                        ? 'bg-amber-950 text-amber-300 border-amber-700'
-                        : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white'
-                    }`}
-                  >
-                    Mohana (₹14.5k)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setCustomerHistoricalAvg('80000')
-                      setPreviousTxAmount('75000')
-                      setIsFormDirty(true)
-                    }}
-                    className={`px-2 py-0.5 rounded text-[10px] font-mono border transition ${
-                      customerHistoricalAvg === '80000'
-                        ? 'bg-rose-950 text-rose-300 border-rose-700'
-                        : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white'
-                    }`}
-                  >
-                    Luxury (₹80k)
-                  </button>
+                  {isAjay ? (
+                    <>
+                      <span className="text-[10px] font-mono text-cyan-400">Ajay Baseline Intel:</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCustomerHistoricalAvg('45000')
+                          setPreviousTxAmount('42000')
+                          setIsFormDirty(true)
+                        }}
+                        className={`px-2 py-0.5 rounded text-[10px] font-mono border transition ${
+                          customerHistoricalAvg === '45000'
+                            ? 'bg-cyan-950 text-cyan-300 border-cyan-700'
+                            : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white'
+                        }`}
+                      >
+                        Ajay Routine (₹45k)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCustomerHistoricalAvg('45000')
+                          setPreviousTxAmount('15000')
+                          setIsFormDirty(true)
+                        }}
+                        className={`px-2 py-0.5 rounded text-[10px] font-mono border transition ${
+                          previousTxAmount === '15000'
+                            ? 'bg-amber-950 text-amber-300 border-amber-700'
+                            : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white'
+                        }`}
+                      >
+                        SaaS Surge (₹68k)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCustomerHistoricalAvg('45000')
+                          setPreviousTxAmount('38000')
+                          setIsFormDirty(true)
+                        }}
+                        className={`px-2 py-0.5 rounded text-[10px] font-mono border transition ${
+                          previousTxAmount === '38000'
+                            ? 'bg-purple-950 text-purple-300 border-purple-700'
+                            : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white'
+                        }`}
+                      >
+                        High-Ticket (₹145k)
+                      </button>
+                    </>
+                  ) : isCustomer ? (
+                    <>
+                      <span className="text-[10px] font-mono text-emerald-400">{customerPersona.name} Profile:</span>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-slate-900 text-slate-200 border border-slate-800">
+                        Avg Ticket: ₹{Number(customerHistoricalAvg).toLocaleString()}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-[10px] font-mono text-slate-400">Spending Tier Baseline:</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCustomerHistoricalAvg('1250')
+                          setPreviousTxAmount('1100')
+                          setIsFormDirty(true)
+                        }}
+                        className={`px-2 py-0.5 rounded text-[10px] font-mono border transition ${
+                          customerHistoricalAvg === '1250'
+                            ? 'bg-emerald-950 text-emerald-300 border-emerald-700'
+                            : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white'
+                        }`}
+                      >
+                        Tier 1: Everyday (₹1.2k)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCustomerHistoricalAvg('14500')
+                          setPreviousTxAmount('12000')
+                          setIsFormDirty(true)
+                        }}
+                        className={`px-2 py-0.5 rounded text-[10px] font-mono border transition ${
+                          customerHistoricalAvg === '14500'
+                            ? 'bg-amber-950 text-amber-300 border-amber-700'
+                            : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white'
+                        }`}
+                      >
+                        Tier 2: Velocity (₹14.5k)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCustomerHistoricalAvg('45000')
+                          setPreviousTxAmount('42000')
+                          setIsFormDirty(true)
+                        }}
+                        className={`px-2 py-0.5 rounded text-[10px] font-mono border transition ${
+                          customerHistoricalAvg === '45000'
+                            ? 'bg-indigo-950 text-indigo-300 border-indigo-700'
+                            : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white'
+                        }`}
+                      >
+                        Tier 3: Executive (₹45k)
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
 

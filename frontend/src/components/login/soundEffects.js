@@ -166,6 +166,102 @@ class SoundEffectsEngine {
       // Audio failure ignored
     }
   }
+
+  /** Subtle laser radar scan pass across the security door */
+  playDoorScan() {
+    const ctx = this._getAudioContext()
+    if (!ctx) return
+    try {
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+
+      osc.type = 'sine'
+      osc.frequency.setValueAtTime(520, ctx.currentTime)
+      osc.frequency.exponentialRampToValueAtTime(1400, ctx.currentTime + 0.18)
+
+      gain.gain.setValueAtTime(0.035, ctx.currentTime)
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2)
+
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+
+      osc.start()
+      osc.stop(ctx.currentTime + 0.2)
+    } catch {
+      // Audio failure ignored
+    }
+  }
+
+  /** Satisfying crisp digital vault latch lock clamp */
+  playVaultLock() {
+    const ctx = this._getAudioContext()
+    if (!ctx) return
+    try {
+      // Primary metallic lock click
+      const osc1 = ctx.createOscillator()
+      const gain1 = ctx.createGain()
+
+      osc1.type = 'triangle'
+      osc1.frequency.setValueAtTime(280, ctx.currentTime)
+      osc1.frequency.exponentialRampToValueAtTime(75, ctx.currentTime + 0.12)
+
+      gain1.gain.setValueAtTime(0.09, ctx.currentTime)
+      gain1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15)
+
+      osc1.connect(gain1)
+      gain1.connect(ctx.destination)
+
+      osc1.start()
+      osc1.stop(ctx.currentTime + 0.15)
+
+      // Secondary magnetic seal hum
+      const osc2 = ctx.createOscillator()
+      const gain2 = ctx.createGain()
+
+      osc2.type = 'sine'
+      osc2.frequency.setValueAtTime(110, ctx.currentTime + 0.05)
+      osc2.frequency.exponentialRampToValueAtTime(55, ctx.currentTime + 0.3)
+
+      gain2.gain.setValueAtTime(0.06, ctx.currentTime + 0.05)
+      gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35)
+
+      osc2.connect(gain2)
+      gain2.connect(ctx.destination)
+
+      osc2.start(ctx.currentTime + 0.05)
+      osc2.stop(ctx.currentTime + 0.35)
+    } catch {
+      // Audio failure ignored
+    }
+  }
+
+  /** Soft harmonic session sealed chord */
+  playSecureExit() {
+    const ctx = this._getAudioContext()
+    if (!ctx) return
+    try {
+      const freqs = [587.33, 440, 329.63] // Descending harmonic triad (D5 -> A4 -> E4)
+      freqs.forEach((freq, idx) => {
+        const osc = ctx.createOscillator()
+        const gain = ctx.createGain()
+
+        osc.type = 'sine'
+        osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.09)
+        osc.frequency.exponentialRampToValueAtTime(freq * 0.9, ctx.currentTime + idx * 0.09 + 0.3)
+
+        gain.gain.setValueAtTime(0.045, ctx.currentTime + idx * 0.09)
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.09 + 0.35)
+
+        osc.connect(gain)
+        gain.connect(ctx.destination)
+
+        osc.start(ctx.currentTime + idx * 0.09)
+        osc.stop(ctx.currentTime + idx * 0.09 + 0.35)
+      })
+    } catch {
+      // Audio failure ignored
+    }
+  }
 }
 
 export const sound = new SoundEffectsEngine()

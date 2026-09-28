@@ -542,5 +542,132 @@ export const aiApi = {
   },
 }
 
+// 12. Premium 4th-User Security Environment API
+export const premiumApi = {
+  getDashboard: async () => {
+    const res = await fetch(`${BASE_URL}/premium/dashboard`, {
+      headers: getAuthHeaders(),
+    })
+    return handleResponse(res)
+  },
+  getSecurityCenter: async () => {
+    const res = await fetch(`${BASE_URL}/premium/security-center`, {
+      headers: getAuthHeaders(),
+    })
+    return handleResponse(res)
+  },
+  getDevices: async () => {
+    const res = await fetch(`${BASE_URL}/premium/devices`, {
+      headers: getAuthHeaders(),
+    })
+    return handleResponse(res)
+  },
+  trustDevice: async (deviceId) => {
+    const res = await fetch(`${BASE_URL}/premium/devices/${deviceId}/trust`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+    })
+    return handleResponse(res)
+  },
+  revokeDevice: async (deviceId) => {
+    const res = await fetch(`${BASE_URL}/premium/devices/${deviceId}/revoke`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+    })
+    return handleResponse(res)
+  },
+  getSessions: async () => {
+    const res = await fetch(`${BASE_URL}/premium/sessions`, {
+      headers: getAuthHeaders(),
+    })
+    return handleResponse(res)
+  },
+  revokeSession: async (sessionId) => {
+    const res = await fetch(`${BASE_URL}/premium/sessions/${sessionId}/revoke`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+    })
+    return handleResponse(res)
+  },
+  getTransactions: async ({ page = 1, limit = 20, status = '', risk_level = '' } = {}) => {
+    const params = new URLSearchParams({ page, limit })
+    if (status) params.append('status', status)
+    if (risk_level) params.append('risk_level', risk_level)
+    const res = await fetch(`${BASE_URL}/premium/transactions?${params.toString()}`, {
+      headers: getAuthHeaders(),
+    })
+    return handleResponse(res)
+  },
+  getTransaction: async (txId) => {
+    const res = await fetch(`${BASE_URL}/premium/transactions/${txId}`, {
+      headers: getAuthHeaders(),
+    })
+    return handleResponse(res)
+  },
+  evaluateTransaction: async (payload) => {
+    const res = await fetch(`${BASE_URL}/premium/transactions/evaluate`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(payload),
+    })
+    return handleResponse(res)
+  },
+  requestOtp: async (payload) => {
+    const res = await fetch(`${BASE_URL}/premium/verification/request-otp`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(payload),
+    })
+    return handleResponse(res)
+  },
+  verifyOtp: async (payload) => {
+    const res = await fetch(`${BASE_URL}/premium/verification/verify-otp`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(payload),
+    })
+    return handleResponse(res)
+  },
+  getAlerts: async ({ status = '', severity = '' } = {}) => {
+    const params = new URLSearchParams()
+    if (status) params.append('status', status)
+    if (severity) params.append('severity', severity)
+    const res = await fetch(`${BASE_URL}/premium/alerts?${params.toString()}`, {
+      headers: getAuthHeaders(),
+    })
+    return handleResponse(res)
+  },
+  acknowledgeAlert: async (alertId) => {
+    const res = await fetch(`${BASE_URL}/premium/alerts/${alertId}/acknowledge`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+    })
+    return handleResponse(res)
+  },
+  getAuditTrail: async ({ page = 1, limit = 50, action = '' } = {}) => {
+    const params = new URLSearchParams({ page, limit })
+    if (action) params.append('action', action)
+    const res = await fetch(`${BASE_URL}/premium/audit-trail?${params.toString()}`, {
+      headers: getAuthHeaders(),
+    })
+    return handleResponse(res)
+  },
+  getScenarios: async () => {
+    const res = await fetch(`${BASE_URL}/premium/scenarios`, {
+      headers: getAuthHeaders(),
+    })
+    return handleResponse(res)
+  },
+  runScenario: async (scenarioId) => {
+    const res = await fetch(`${BASE_URL}/premium/scenarios/run`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ scenario_id: scenarioId }),
+    })
+    return handleResponse(res)
+  },
+}
+
+
 
 

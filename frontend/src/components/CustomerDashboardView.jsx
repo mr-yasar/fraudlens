@@ -35,6 +35,7 @@ import { dashboardApi } from '../services/api'
 import MobileSecurityApprovalModal from './MobileSecurityApprovalModal'
 import { sound } from './login/soundEffects'
 import GlobalCenterModal from './common/GlobalCenterModal'
+import ContextualModuleHelp from './common/ContextualModuleHelp'
 
 export default function CustomerDashboardView({
   user,
@@ -370,6 +371,7 @@ export default function CustomerDashboardView({
                 <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-cyan-950 text-cyan-300 border border-cyan-800">
                   {customerId}
                 </span>
+                <ContextualModuleHelp moduleKey="dashboard" />
               </div>
               <p className="text-xs text-slate-400 mt-1 flex items-center gap-3">
                 <span className="flex items-center gap-1">

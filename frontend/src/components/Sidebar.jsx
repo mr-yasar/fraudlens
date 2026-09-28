@@ -42,13 +42,28 @@ export default function Sidebar({
 }) {
   const isCustomer = user?.role?.toLowerCase() === 'customer' || user?.role?.toLowerCase() === 'user'
   const customerPersona = getCustomerPersona(user)
+  const isPremium = user?.account_tier === 'PREMIUM' || customerPersona?.isPremium
 
-  // Role-scoped navigation: Live Radar & Fraud Cases is combined for ALL user roles
-  // Payment Gateway is Customer-only. Risk Analyzer is Admin/Investigator.
-  const primaryNav = isCustomer
+  // Role-scoped navigation
+  const primaryNav = isPremium
+    ? [
+        { id: 'dashboard', label: 'Executive Overview', icon: LayoutDashboard },
+        { id: 'analyzer', label: 'Transaction Risk Analyzer', icon: BrainCircuit, isHighlight: true },
+        { id: 'executive-transactions', label: 'Transactions & Scenarios', icon: Zap, isHighlight: true },
+        { id: 'transactions', label: 'My Transaction History', icon: History, isHighlight: true },
+        { id: 'security-center', label: 'Security Center', icon: ShieldCheck, isHighlight: true },
+        { id: 'fleet-security', label: 'Fleet & Device Security', icon: Radio, isHighlight: true },
+        { id: 'payment', label: 'Payment Gateway', icon: CreditCard, isHighlight: true },
+        { id: 'live-monitor', label: 'Live Radar & Fraud Cases', icon: Radio, isHighlight: true },
+        { id: 'security-alerts', label: 'Security Alerts', icon: ShieldAlert },
+        { id: 'audit-trail', label: 'Compliance Audit Trail', icon: FileSpreadsheet },
+        { id: 'ai-copilot', label: 'AI Security Assistant', icon: Bot, isHighlight: true },
+      ]
+    : isCustomer
     ? [
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
         { id: 'analyzer', label: 'Transaction Risk Analyzer', icon: BrainCircuit, isHighlight: true },
+        { id: 'fleet-security', label: 'Fleet & Device Security', icon: Radio, isHighlight: true },
         { id: 'payment', label: 'Payment Gateway', icon: CreditCard, isHighlight: true },
         { id: 'transactions', label: 'My Transactions', icon: History },
         { id: 'live-monitor', label: 'Live Radar & Fraud Cases', icon: Radio, isHighlight: true },
@@ -105,7 +120,7 @@ export default function Sidebar({
                   FraudLens <span className="text-cyan-400">AI</span>
                 </div>
                 <div className="text-[10px] text-slate-400 font-mono tracking-tight">
-                  {isCustomer ? 'Customer Portal' : 'Security Command Center'}
+                  {isPremium ? 'Enterprise Security Portal' : isCustomer ? 'Customer Portal' : 'Security Command Center'}
                 </div>
               </div>
             </div>
@@ -122,8 +137,40 @@ export default function Sidebar({
 
           {/* Navigation Links */}
           <nav className="p-3 space-y-5 overflow-y-auto max-h-[calc(100vh-140px)]">
-            {/* Real-Time Personas Quick Launch Panel (Admin audits all 3; Customer watches only their own) */}
-            {isCustomer ? (
+            {/* Real-Time Personas Quick Launch Panel */}
+            {isPremium ? (
+              <div className="p-3 rounded-2xl bg-gradient-to-br from-indigo-950/90 via-purple-950/80 to-slate-950/90 border-2 border-indigo-500/60 shadow-[0_0_20px_rgba(99,102,241,0.25)]">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[10px] font-mono uppercase tracking-wider text-indigo-300 font-extrabold flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-indigo-400 animate-pulse" />
+                    Enterprise Security
+                  </span>
+                  <span className="text-[9px] font-mono bg-indigo-900 text-indigo-200 px-1.5 py-0.5 rounded border border-indigo-500 font-bold">
+                    ENTERPRISE
+                  </span>
+                </div>
+                <div className="p-2.5 rounded-xl bg-slate-950/90 border border-slate-800 space-y-1">
+                  <div className="text-xs font-bold text-white flex items-center justify-between">
+                    <span>{customerPersona.name}</span>
+                    <span className="text-[10px] font-mono text-emerald-400 font-semibold">{customerPersona.fraudRate}</span>
+                  </div>
+                  <div className="text-[10px] text-slate-400 font-mono">
+                    ID: <strong className="text-cyan-400">{customerPersona.customerId}</strong>
+                  </div>
+                  <div className="text-[10px] text-indigo-300 font-mono">
+                    {customerPersona.baselineType}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleSelect('executive-transactions')}
+                  className="w-full mt-2.5 py-1.5 px-2 rounded-lg bg-indigo-900/90 hover:bg-indigo-800 border border-indigo-500/80 text-indigo-200 text-xs font-semibold flex items-center justify-center gap-1.5 transition"
+                >
+                  <Zap className="w-3.5 h-3.5 text-indigo-300" />
+                  <span>Transact &amp; Scenarios</span>
+                </button>
+              </div>
+            ) : isCustomer ? (
               <div className="p-3 rounded-2xl bg-gradient-to-br from-slate-900/90 via-slate-950/90 to-emerald-950/30 border border-emerald-800/50 shadow-lg">
                 <div className="flex items-center justify-between mb-1.5">
                   <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-300 font-extrabold flex items-center gap-1.5">

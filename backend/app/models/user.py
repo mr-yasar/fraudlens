@@ -17,6 +17,8 @@ class User(Base):
     email = Column(String(255), unique=True, index=True, nullable=False)
     password_hash = Column(String(255), nullable=False)
     role = Column(String(50), nullable=False, default="analyst")
+    account_tier = Column(String(50), nullable=True, default="STANDARD")  # STANDARD, PREMIUM, ENTERPRISE
+    account_status = Column(String(50), nullable=True, default="ACTIVE")  # ACTIVE, SUSPENDED, LOCKED
     is_active = Column(Boolean, nullable=False, default=True)
     created_at = Column(
         DateTime(timezone=True),

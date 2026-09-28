@@ -57,7 +57,7 @@ export default function LoginCard({
 
   return (
     <div
-      className={`w-full max-w-md lg:w-[32vw] lg:max-w-[460px] lg:mr-[3.8vw] rounded-3xl bg-slate-950/85 backdrop-blur-xl border-2 border-cyan-400/60 p-5 sm:p-6 shadow-[0_0_50px_rgba(6,182,212,0.35),inset_0_0_20px_rgba(6,182,212,0.15)] relative transition-all duration-700 ${
+      className={`w-full max-w-md lg:w-[380px] xl:w-[420px] lg:mr-8 xl:mr-16 2xl:mr-24 rounded-3xl bg-slate-950/90 backdrop-blur-2xl border-2 border-cyan-400/60 p-5 sm:p-6 shadow-[0_0_50px_rgba(6,182,212,0.35),inset_0_0_20px_rgba(6,182,212,0.15)] relative transition-all duration-700 ${
         isTransitioningOut
           ? 'scale-75 opacity-0 blur-md pointer-events-none'
           : 'scale-100 opacity-100'
@@ -89,7 +89,7 @@ export default function LoginCard({
           Sign In to Access Platform
         </h3>
         <p className="text-xs text-slate-300 mt-0.5">
-          Select one of the 4 role portals below or enter your credentials.
+          Enter your credentials or choose 1-click instant login below.
         </p>
       </div>
 
@@ -227,32 +227,15 @@ export default function LoginCard({
           )}
         </button>
 
-        {/* Distinct 4 Portals: 1 Admin + 3 Unique User Logins */}
+        {/* 1-Click Quick Auth: 1, 2, 3, 4 and Admin */}
         <div className="pt-3 border-t border-slate-800/80 space-y-2">
           <div className="text-[10px] font-mono font-bold text-slate-400 flex items-center justify-between">
-            <span className="text-cyan-400">SELECT 1-CLICK AUTH PORTAL:</span>
-            <span className="text-[9px] text-slate-400 font-mono">ADMIN + 3 CUSTOMERS</span>
+            <span className="text-cyan-400">1-CLICK INSTANT LOGIN:</span>
+            <span className="text-[9px] text-slate-400 font-mono">1, 2, 3, 4 + ADMIN</span>
           </div>
 
           <div className="grid grid-cols-2 gap-2">
-            {/* 1. Admin Login Portal */}
-            <button
-              type="button"
-              onClick={() => {
-                setEmail('admin@fraudlens.internal')
-                setPassword('AdminSecure@2026!')
-                sound.playBlip()
-              }}
-              className="p-2.5 rounded-xl bg-slate-900/90 hover:bg-purple-950/70 border border-slate-800 hover:border-purple-500/70 text-slate-300 hover:text-purple-300 transition flex flex-col items-center justify-center text-center gap-1 group shadow-md"
-            >
-              <div className="flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-purple-400 group-hover:scale-110 transition-transform" />
-                <span className="font-bold text-xs text-white group-hover:text-purple-300 font-mono">Admin</span>
-              </div>
-              <span className="text-[10px] text-purple-300/80 font-mono">Full Audit Access</span>
-            </button>
-
-            {/* 2. User 1: Monisha (Safe Habitual) */}
+            {/* 1. User 1: Monisha */}
             <button
               type="button"
               onClick={() => {
@@ -260,16 +243,19 @@ export default function LoginCard({
                 setPassword('Customer@1234')
                 sound.playBlip()
               }}
-              className="p-2.5 rounded-xl bg-slate-900/90 hover:bg-emerald-950/70 border border-slate-800 hover:border-emerald-500/70 text-slate-300 hover:text-emerald-300 transition flex flex-col items-center justify-center text-center gap-1 group shadow-md"
+              className="p-2 rounded-xl bg-slate-900/90 hover:bg-emerald-950/70 border border-slate-800 hover:border-emerald-500/70 text-slate-300 hover:text-emerald-300 transition flex flex-col items-start text-left gap-0.5 group shadow-md"
             >
-              <div className="flex items-center gap-1.5">
-                <UserCheck className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" />
-                <span className="font-bold text-xs text-white group-hover:text-emerald-300 font-mono">Monisha</span>
+              <div className="flex items-center justify-between w-full">
+                <span className="font-bold text-xs text-white group-hover:text-emerald-300 font-mono flex items-center gap-1.5">
+                  <span className="w-4 h-4 rounded bg-emerald-950 text-emerald-400 border border-emerald-700 text-[10px] flex items-center justify-center font-bold">1</span>
+                  Monisha
+                </span>
+                <span className="text-[8px] font-mono bg-emerald-950 text-emerald-300 px-1 py-0.2 rounded border border-emerald-800">SAFE</span>
               </div>
-              <span className="text-[10px] text-emerald-400/80 font-mono">User 1 • Safe Account</span>
+              <span className="text-[9px] text-slate-400 font-mono">Habitual (3% Low-Risk)</span>
             </button>
 
-            {/* 3. User 2: Mohana (Elevated Velocity) */}
+            {/* 2. User 2: Mohana */}
             <button
               type="button"
               onClick={() => {
@@ -277,16 +263,19 @@ export default function LoginCard({
                 setPassword('Customer@1234')
                 sound.playBlip()
               }}
-              className="p-2.5 rounded-xl bg-slate-900/90 hover:bg-amber-950/70 border border-slate-800 hover:border-amber-500/70 text-slate-300 hover:text-amber-300 transition flex flex-col items-center justify-center text-center gap-1 group shadow-md"
+              className="p-2 rounded-xl bg-slate-900/90 hover:bg-amber-950/70 border border-slate-800 hover:border-amber-500/70 text-slate-300 hover:text-amber-300 transition flex flex-col items-start text-left gap-0.5 group shadow-md"
             >
-              <div className="flex items-center gap-1.5">
-                <User className="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform" />
-                <span className="font-bold text-xs text-white group-hover:text-amber-300 font-mono">Mohana</span>
+              <div className="flex items-center justify-between w-full">
+                <span className="font-bold text-xs text-white group-hover:text-amber-300 font-mono flex items-center gap-1.5">
+                  <span className="w-4 h-4 rounded bg-amber-950 text-amber-400 border border-amber-700 text-[10px] flex items-center justify-center font-bold">2</span>
+                  Mohana
+                </span>
+                <span className="text-[8px] font-mono bg-amber-950 text-amber-300 px-1 py-0.2 rounded border border-amber-800">STEP-UP</span>
               </div>
-              <span className="text-[10px] text-amber-400/80 font-mono">User 2 • Step-Up OTP</span>
+              <span className="text-[9px] text-slate-400 font-mono">Velocity OTP Challenge</span>
             </button>
 
-            {/* 4. User 3: Sowmiya (Botnet ATO Attack) */}
+            {/* 3. User 3: Soumya */}
             <button
               type="button"
               onClick={() => {
@@ -294,15 +283,63 @@ export default function LoginCard({
                 setPassword('Customer@1234')
                 sound.playBlip()
               }}
-              className="p-2.5 rounded-xl bg-slate-900/90 hover:bg-rose-950/70 border border-slate-800 hover:border-rose-500/70 text-slate-300 hover:text-rose-300 transition flex flex-col items-center justify-center text-center gap-1 group shadow-md"
+              className="p-2 rounded-xl bg-slate-900/90 hover:bg-rose-950/70 border border-slate-800 hover:border-rose-500/70 text-slate-300 hover:text-rose-300 transition flex flex-col items-start text-left gap-0.5 group shadow-md"
             >
-              <div className="flex items-center gap-1.5">
-                <ShieldAlert className="w-4 h-4 text-rose-400 group-hover:scale-110 transition-transform" />
-                <span className="font-bold text-xs text-white group-hover:text-rose-300 font-mono">Sowmiya</span>
+              <div className="flex items-center justify-between w-full">
+                <span className="font-bold text-xs text-white group-hover:text-rose-300 font-mono flex items-center gap-1.5">
+                  <span className="w-4 h-4 rounded bg-rose-950 text-rose-400 border border-rose-700 text-[10px] flex items-center justify-center font-bold">3</span>
+                  Soumya
+                </span>
+                <span className="text-[8px] font-mono bg-rose-950 text-rose-300 px-1 py-0.2 rounded border border-rose-800">BLOCK</span>
               </div>
-              <span className="text-[10px] text-rose-400/80 font-mono">User 3 • ATO Defense</span>
+              <span className="text-[9px] text-slate-400 font-mono">ATO Botnet Defense</span>
+            </button>
+
+            {/* 4. User 4: Ajay */}
+            <button
+              type="button"
+              onClick={() => {
+                setEmail('ajay@fraudlens.ai')
+                setPassword('Customer@1234')
+                sound.playBlip()
+              }}
+              className="p-2 rounded-xl bg-slate-900/90 hover:bg-indigo-950/70 border border-slate-800 hover:border-indigo-500/70 text-slate-300 hover:text-indigo-300 transition flex flex-col items-start text-left gap-0.5 group shadow-md"
+            >
+              <div className="flex items-center justify-between w-full">
+                <span className="font-bold text-xs text-white group-hover:text-indigo-300 font-mono flex items-center gap-1.5">
+                  <span className="w-4 h-4 rounded bg-indigo-950 text-indigo-400 border border-indigo-700 text-[10px] flex items-center justify-center font-bold">4</span>
+                  Ajay
+                </span>
+                <span className="text-[8px] font-mono bg-indigo-950 text-indigo-300 px-1 py-0.2 rounded border border-indigo-700 font-bold">ENTERPRISE</span>
+              </div>
+              <span className="text-[9px] text-slate-400 font-mono">Enclave &amp; Adaptive AI</span>
             </button>
           </div>
+
+          {/* Admin: System Administrator */}
+          <button
+            type="button"
+            onClick={() => {
+              setEmail('admin@fraudlens.internal')
+              setPassword('AdminSecure@2026!')
+              sound.playBlip()
+            }}
+            className="w-full p-2.5 rounded-xl bg-slate-900/90 hover:bg-purple-950/70 border border-slate-800 hover:border-purple-500/70 text-slate-300 hover:text-purple-300 transition flex items-center justify-between group shadow-md"
+          >
+            <div className="flex items-center gap-2.5">
+              <div className="p-1.5 rounded-lg bg-purple-900/80 border border-purple-400/50 text-purple-300 group-hover:scale-110 transition-transform">
+                <ShieldCheck className="w-4 h-4 text-purple-400" />
+              </div>
+              <div className="text-left">
+                <div className="flex items-center gap-1.5">
+                  <span className="font-bold text-xs text-white font-mono">System Administrator</span>
+                  <span className="text-[9px] font-mono bg-purple-900/90 text-purple-200 px-1.5 py-0.2 rounded border border-purple-500 font-extrabold">ADMIN AUDIT</span>
+                </div>
+                <div className="text-[10px] text-purple-300/80 font-mono">Full Security Clearance &amp; System Configuration</div>
+              </div>
+            </div>
+            <span className="text-[10px] font-mono text-purple-400 group-hover:text-purple-200 font-bold">1-Click</span>
+          </button>
         </div>
       </form>
     </div>

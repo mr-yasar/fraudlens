@@ -67,7 +67,7 @@ def list_customers(
             user_cust_id = "CUST_MONISHA_001"
         elif "mohana" in email_l:
             user_cust_id = "CUST_MOHANA_002"
-        elif "sowmiya" in email_l:
+        elif "soumya" in email_l or "sowmiya" in email_l:
             user_cust_id = "CUST_SOWMIYA_003"
         else:
             cust_rec = db.query(Customer).filter(func.lower(Customer.email) == email_l).first()
@@ -158,7 +158,7 @@ def get_customer_detail(
             user_cust_id = "CUST_MONISHA_001"
         elif "mohana" in email_l:
             user_cust_id = "CUST_MOHANA_002"
-        elif "sowmiya" in email_l:
+        elif "soumya" in email_l or "sowmiya" in email_l:
             user_cust_id = "CUST_SOWMIYA_003"
         else:
             cust_rec = db.query(Customer).filter(func.lower(Customer.email) == email_l).first()

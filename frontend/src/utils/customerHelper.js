@@ -54,11 +54,11 @@ export function getCustomerPersona(user) {
     }
   }
 
-  if (email.includes('sowmiya') || name.includes('sowmiya')) {
+  if (email.includes('soumya') || name.includes('soumya') || email.includes('sowmiya') || name.includes('sowmiya')) {
     return {
-      customerId: 'CUST_SOWMIYA_003',
-      name: 'Sowmiya',
-      customerName: 'Sowmiya',
+      customerId: 'CUST_SOUMYA_003',
+      name: 'Soumya',
+      customerName: 'Soumya',
       email: user.email,
       fraudRate: '26.0%',
       baselineType: 'Botnet ATO Attack (Pre-Auth Block)',
@@ -66,6 +66,25 @@ export function getCustomerPersona(user) {
       color: 'rose',
       defaultPresetId: 'scenario_sowmiya_block',
       isCustomer,
+      isPremium: false,
+    }
+  }
+
+  if (email.includes('ajay') || name.includes('ajay') || email.includes('premium') || name.includes('alexander') || user?.account_tier === 'PREMIUM' || user?.account_tier === 'ENTERPRISE') {
+    return {
+      customerId: 'CUST_AJAY_004',
+      backendCustomerId: 'CUST_PREMIUM_004',
+      name: 'Ajay',
+      customerName: 'Ajay',
+      email: user.email || 'ajay@fraudlens.ai',
+      tier: 'ENTERPRISE',
+      isPremium: true,
+      fraudRate: '0.2%',
+      baselineType: 'Enterprise Security Tier (Adaptive AI + Enclave Vault)',
+      badgeColor: 'bg-indigo-950/90 text-indigo-200 border-indigo-500/70 shadow-[0_0_15px_rgba(99,102,241,0.35)]',
+      color: 'indigo',
+      defaultPresetId: 'scenario_a_normal',
+      isCustomer: true,
     }
   }
 
@@ -80,5 +99,6 @@ export function getCustomerPersona(user) {
     color: 'cyan',
     defaultPresetId: 'scenario_4_cold_start',
     isCustomer,
+    isPremium: user?.account_tier === 'PREMIUM',
   }
 }

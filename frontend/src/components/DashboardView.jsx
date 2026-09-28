@@ -38,6 +38,7 @@ import {
 import { getCustomerPersona } from '../utils/customerHelper'
 import CustomerDashboardView from './CustomerDashboardView'
 import GlobalCenterModal from './common/GlobalCenterModal'
+import ContextualModuleHelp from './common/ContextualModuleHelp'
 import { formatINR } from '../utils/formatters'
 
 export default function DashboardView({ onSelectTransaction, onOpenCase, onOpenPayment, user, isAdmin }) {
@@ -221,9 +222,12 @@ export default function DashboardView({ onSelectTransaction, onOpenCase, onOpenP
                 </span>
                 <span className="text-[10px] font-mono text-slate-400">All 3 Canonical Personas Active</span>
               </div>
-              <h2 className="text-base sm:text-lg font-bold text-white mt-1">
-                Real-Time Evaluation Personas &amp; Behavioral Profiles
-              </h2>
+              <div className="flex items-center gap-3 mt-1">
+                <h2 className="text-base sm:text-lg font-bold text-white">
+                  Real-Time Evaluation Personas &amp; Behavioral Profiles
+                </h2>
+                <ContextualModuleHelp moduleKey="dashboard" />
+              </div>
             </div>
             <button
               onClick={() => onOpenPayment && onOpenPayment('scenario_monisha_safe')}

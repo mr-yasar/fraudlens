@@ -129,11 +129,13 @@ def get_customer_id_for_user(user: Optional[User], db: Optional[Session] = None)
     email_l = (user.email or "").lower()
     name_l = (user.name or "").lower()
 
+    if "ajay" in email_l or "ajay" in name_l or "premium" in email_l or "alexander" in name_l or "alexander" in email_l or "alex" in email_l:
+        return "CUST_PREMIUM_004"
     if "monisha" in email_l or "monisha" in name_l:
         return "CUST_MONISHA_001"
     if "mohana" in email_l or "mohana" in name_l:
         return "CUST_MOHANA_002"
-    if "sowmiya" in email_l or "sowmiya" in name_l:
+    if "soumya" in email_l or "soumya" in name_l or "sowmiya" in email_l or "sowmiya" in name_l:
         return "CUST_SOWMIYA_003"
     if "arun" in email_l or "arun" in name_l:
         return "CUST_REAL_001"
@@ -150,4 +152,5 @@ def get_customer_id_for_user(user: Optional[User], db: Optional[Session] = None)
             return cust.customer_id
 
     return f"CUST-USER-{user.id}"
+
 

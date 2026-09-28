@@ -14,6 +14,7 @@ import {
 import LiveTransactionMonitorView from './LiveTransactionMonitorView'
 import InvestigationsView from './InvestigationsView'
 import { getCustomerPersona } from '../utils/customerHelper'
+import ContextualModuleHelp from './common/ContextualModuleHelp'
 
 /**
  * LiveMonitorAndInvestigationHub
@@ -83,12 +84,15 @@ export default function LiveMonitorAndInvestigationHub({
               </span>
             </div>
 
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-3">
-              <div className="p-2 rounded-xl bg-gradient-to-tr from-cyan-600 via-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/20">
-                <Radio className="w-6 h-6" />
-              </div>
-              <span>Live Monitor &amp; Fraud Investigation Hub</span>
-            </h1>
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-gradient-to-tr from-cyan-600 via-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/20">
+                  <Radio className="w-6 h-6" />
+                </div>
+                <span>Live Monitor &amp; Fraud Investigation Hub</span>
+              </h1>
+              <ContextualModuleHelp moduleKey="live-monitor" />
+            </div>
 
             <p className="text-xs sm:text-sm text-slate-400 max-w-2xl leading-relaxed">
               {isCustomer ? (

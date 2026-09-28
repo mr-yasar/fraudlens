@@ -25,12 +25,14 @@ from backend.app.api.v1.endpoints.adaptive_intelligence import router as adaptiv
 from backend.app.api.v1.endpoints.merchants import router as merchants_router
 from backend.app.api.v1.endpoints.governance import router as governance_router
 from backend.app.api.v1.endpoints.ai_assistant import router as ai_assistant_router
+from backend.app.api.v1.endpoints.premium import router as premium_router
 
 api_router = APIRouter()
 
 # Register endpoint routers
 api_router.include_router(health_router, tags=["Health"])
 api_router.include_router(auth_router, prefix="/auth", tags=["Authentication & Users"])
+api_router.include_router(premium_router, prefix="/premium", tags=["Premium User Security Environment"])
 api_router.include_router(protected_router, tags=["Protected RBAC Operations"])
 api_router.include_router(merchants_router, prefix="/merchants", tags=["Merchant Intelligence"])
 api_router.include_router(payment_router, prefix="/payment", tags=["Transaction Risk Simulation"])
@@ -53,5 +55,6 @@ api_router.include_router(admin_ml_router, prefix="/admin", tags=["Admin ML & Da
 api_router.include_router(dashboard_router, prefix="/dashboard", tags=["Dashboard & Analytics"])
 api_router.include_router(audit_logs_router, prefix="/audit-logs", tags=["Audit Logging"])
 api_router.include_router(ai_assistant_router, prefix="/ai", tags=["AI Assistant (Gemini + Grok)"])
+
 
 

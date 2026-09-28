@@ -15,6 +15,10 @@ from backend.app.models.alert import Alert
 from backend.app.models.beneficiary import Beneficiary
 from backend.app.models.device import CustomerDevice
 from backend.app.models.approval import TransactionApproval, ApprovalStatus
+from backend.app.models.session import UserSession
+from backend.app.models.risk_event import RiskEvent
+from backend.app.models.verification_event import VerificationEvent
+from backend.app.models.behavioral_profile import BehavioralProfile
 
 __all__ = [
     "Base",
@@ -36,4 +40,9 @@ __all__ = [
     "CustomerDevice",
     "TransactionApproval",
     "ApprovalStatus",
+    "UserSession",
+    "RiskEvent",
+    "VerificationEvent",
+    "BehavioralProfile",
 ]
+

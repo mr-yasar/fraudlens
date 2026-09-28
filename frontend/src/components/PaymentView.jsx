@@ -57,6 +57,7 @@ import { formatINR, formatDateTime } from '../utils/formatters'
 import { getCustomerPersona } from '../utils/customerHelper'
 import MobileSecurityApprovalModal from './MobileSecurityApprovalModal'
 import GlobalCenterModal from './common/GlobalCenterModal'
+import ContextualModuleHelp from './common/ContextualModuleHelp'
 
 // Bank accounts available for customer debit
 const LINKED_BANK_ACCOUNTS = [
@@ -832,7 +833,7 @@ export default function PaymentView({
             <CreditCard className="w-7 h-7" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-xl font-bold text-white tracking-wide">
                 Real-Time Pre-Auth Payment Gateway
               </h1>
@@ -842,6 +843,7 @@ export default function PaymentView({
               <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-950 text-emerald-300 border border-emerald-800">
                 INR (₹) LIVE
               </span>
+              <ContextualModuleHelp moduleKey="payment" />
             </div>
             <p className="text-xs text-slate-300 mt-1 max-w-2xl">
               {isCustomer ? (

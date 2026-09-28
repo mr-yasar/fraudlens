@@ -57,6 +57,7 @@ const TOPICS = [
 export default function HowItWorksModal({ isOpen, onClose, user, isAdmin }) {
   const isCustomer = !isAdmin && (user?.role?.toLowerCase() === 'customer' || user?.role?.toLowerCase() === 'user')
   const customerPersona = getCustomerPersona(user)
+  const isPremium = user?.account_tier === 'PREMIUM' || customerPersona?.isPremium || (customerPersona?.customerId || '').includes('PREMIUM') || (customerPersona?.name || '').toLowerCase().includes('ajay')
 
   // Main Tabs
   const [activeMainTab, setActiveMainTab] = useState('pipeline') // 'pipeline' | 'ai_voice' | 'personas' | 'security'
@@ -380,7 +381,7 @@ export default function HowItWorksModal({ isOpen, onClose, user, isAdmin }) {
             }`}
           >
             <Users className="w-4 h-4 text-emerald-400" />
-            <span>3. Personas &amp; 29 Merchants</span>
+            <span>{isPremium ? '3. Ajay Profile & Pure Dataset' : '3. Personas & 29 Merchants'}</span>
           </button>
 
           <button
@@ -841,71 +842,158 @@ export default function HowItWorksModal({ isOpen, onClose, user, isAdmin }) {
           )}
 
           {/* ================================================================
-              TAB 3: PERSONAS & 29 MERCHANTS
+              TAB 3: PERSONAS & 29 MERCHANTS / DEDICATED AJAY PURE DATASET
               ================================================================ */}
           {activeMainTab === 'personas' && (
             <div className="space-y-6">
-              {/* Customer Personas & Liquidity */}
-              <div className="space-y-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <h4 className="text-sm font-bold text-white font-mono flex items-center gap-2">
-                    <Users className="w-4 h-4 text-emerald-400" />
-                    Algorithm Benchmark Testing Personas
-                  </h4>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-700 font-bold">
-                    💰 ₹15 Lakhs Extra Cash Liquidity Active Per Customer
-                  </span>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {/* Monisha */}
-                  <div className="p-4 rounded-2xl bg-slate-900 border border-emerald-500/30 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-emerald-300 font-mono">Monisha</span>
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 font-bold border border-emerald-800">
-                        3% Fraud Rate
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-300 leading-relaxed">
-                      Routine, predictable domestic shopper. Frequent small purchases at NovaMart Fresh on trusted iOS device.
-                    </p>
-                    <div className="text-[11px] font-mono text-emerald-400 pt-2 border-t border-slate-800">
-                      Outcome: 99.8% Auto-Approved
-                    </div>
+              {isPremium ? (
+                /* Ajay's Dedicated Pure Dataset & Enterprise Security Profile */
+                <div className="space-y-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h4 className="text-sm font-bold text-white font-mono flex items-center gap-2">
+                      <Users className="w-4 h-4 text-cyan-400" />
+                      Ajay — Dedicated Enterprise Security Profile
+                    </h4>
+                    <span className="text-[10px] font-mono px-2.5 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-700 font-bold">
+                      🛡️ Isolated Enterprise Tier • Zero Cross-User Leakage
+                    </span>
                   </div>
 
-                  {/* Mohana */}
-                  <div className="p-4 rounded-2xl bg-slate-900 border border-amber-500/30 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-amber-300 font-mono">Mohana</span>
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-950 text-amber-300 font-bold border border-amber-800">
-                        12% Fraud Rate
-                      </span>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Ajay Profile Card */}
+                    <div className="p-5 rounded-2xl bg-gradient-to-br from-indigo-950/80 via-slate-900 to-purple-950/80 border-2 border-indigo-500/50 space-y-3 shadow-lg">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-bold text-white font-mono">Ajay</span>
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-900 text-indigo-200 font-bold border border-indigo-500">
+                            Enterprise Security Tier
+                          </span>
+                        </div>
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 font-bold border border-emerald-800">
+                          0.2% Clean Baseline
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-300 leading-relaxed">
+                        High-ticket corporate settlements, SaaS infrastructure, and digital logistics anchored to Apple Hardware Enclave and biometric passkeys.
+                      </p>
+                      <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800 text-[11px] font-mono">
+                        <div>
+                          <span className="text-slate-400">Baseline Avg:</span>{' '}
+                          <strong className="text-white">₹45,000</strong>
+                        </div>
+                        <div>
+                          <span className="text-slate-400">Wallet Liquidity:</span>{' '}
+                          <strong className="text-emerald-400">₹25,00,000</strong>
+                        </div>
+                        <div>
+                          <span className="text-slate-400">Active Devices:</span>{' '}
+                          <strong className="text-cyan-300">MacBook M3, iPhone 15 PM</strong>
+                        </div>
+                        <div>
+                          <span className="text-slate-400">Friction Policy:</span>{' '}
+                          <strong className="text-purple-300">Adaptive Multi-Signal</strong>
+                        </div>
+                      </div>
+                      <div className="text-[11px] font-mono text-emerald-400 pt-2 border-t border-slate-800 flex items-center justify-between">
+                        <span>Outcome: 99.8% Auto-Approved</span>
+                        <span className="text-cyan-400">Step-Up on Anomaly</span>
+                      </div>
                     </div>
-                    <p className="text-xs text-slate-300 leading-relaxed">
-                      Tech enthusiast with irregular purchase hours. Velocity bursts at electronics stores occasionally trigger adaptive OTP challenges.
-                    </p>
-                    <div className="text-[11px] font-mono text-amber-400 pt-2 border-t border-slate-800">
-                      Outcome: Adaptive Mobile OTP
-                    </div>
-                  </div>
 
-                  {/* Sowmiya */}
-                  <div className="p-4 rounded-2xl bg-slate-900 border border-rose-500/30 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-rose-300 font-mono">Sowmiya</span>
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-rose-950 text-rose-300 font-bold border border-rose-800">
-                        26% Fraud Rate
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-300 leading-relaxed">
-                      High-risk account under adversarial testing. Targeted by credential stuffing and midnight luxury/bullion attacks.
-                    </p>
-                    <div className="text-[11px] font-mono text-rose-400 pt-2 border-t border-slate-800">
-                      Outcome: Hard Block &amp; Case Created
+                    {/* Pure Dataset Card */}
+                    <div className="p-5 rounded-2xl bg-slate-900 border-2 border-cyan-500/40 space-y-3 shadow-lg">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-cyan-300 font-mono flex items-center gap-2">
+                          <Layers className="w-4 h-4 text-cyan-400" />
+                          Pure Customer Dataset
+                        </span>
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-700 font-bold">
+                          1,500 Clean Records
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-300 leading-relaxed">
+                        Exclusively trained on <strong className="text-white font-mono">dataset_customer_ajay_pure.csv</strong> with 55 canonical telemetry features, zero domestic test contamination, and authentic enterprise risk profiles.
+                      </p>
+                      <div className="space-y-1.5 pt-1 text-[11px] font-mono text-slate-400 border-t border-slate-800">
+                        <div className="flex items-center gap-1.5 text-slate-300">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                          <span>File: <code className="text-cyan-300">data/raw/dataset_customer_ajay_pure.csv</code></span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-slate-300">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                          <span>Zero data leakage: Strict database ownership checks</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 text-slate-300">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                          <span>Pre-Auth Gate: Sub-4ms multi-signal decision engine</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              ) : (
+                /* Customer Personas & Liquidity for standard accounts */
+                <div className="space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h4 className="text-sm font-bold text-white font-mono flex items-center gap-2">
+                      <Users className="w-4 h-4 text-emerald-400" />
+                      Algorithm Benchmark Testing Personas
+                    </h4>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-700 font-bold">
+                      💰 ₹15 Lakhs Extra Cash Liquidity Active Per Customer
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* Monisha */}
+                    <div className="p-4 rounded-2xl bg-slate-900 border border-emerald-500/30 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-emerald-300 font-mono">Monisha</span>
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 font-bold border border-emerald-800">
+                          3% Fraud Rate
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-300 leading-relaxed">
+                        Routine, predictable domestic shopper. Frequent small purchases at NovaMart Fresh on trusted iOS device.
+                      </p>
+                      <div className="text-[11px] font-mono text-emerald-400 pt-2 border-t border-slate-800">
+                        Outcome: 99.8% Auto-Approved
+                      </div>
+                    </div>
+
+                    {/* Mohana */}
+                    <div className="p-4 rounded-2xl bg-slate-900 border border-amber-500/30 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-amber-300 font-mono">Mohana</span>
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-950 text-amber-300 font-bold border border-amber-800">
+                          12% Fraud Rate
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-300 leading-relaxed">
+                        Tech enthusiast with irregular purchase hours. Velocity bursts at electronics stores occasionally trigger adaptive OTP challenges.
+                      </p>
+                      <div className="text-[11px] font-mono text-amber-400 pt-2 border-t border-slate-800">
+                        Outcome: Adaptive Mobile OTP
+                      </div>
+                    </div>
+
+                    {/* Sowmiya */}
+                    <div className="p-4 rounded-2xl bg-slate-900 border border-rose-500/30 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-rose-300 font-mono">Sowmiya</span>
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-rose-950 text-rose-300 font-bold border border-rose-800">
+                          26% Fraud Rate
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-300 leading-relaxed">
+                        High-risk account under adversarial testing. Targeted by credential stuffing and midnight luxury/bullion attacks.
+                      </p>
+                      <div className="text-[11px] font-mono text-rose-400 pt-2 border-t border-slate-800">
+                        Outcome: Hard Block &amp; Case Created
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* 29 Merchant Categories */}
               <div className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-3">
