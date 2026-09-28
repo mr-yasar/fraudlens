@@ -271,10 +271,20 @@ const MODULE_INTEL = {
   },
 }
 
+// Aliases for sub-views and routes
+MODULE_INTEL['premium-devices'] = MODULE_INTEL['fleet-security']
+MODULE_INTEL['premium-sessions'] = MODULE_INTEL['fleet-security']
+MODULE_INTEL['premium-alerts'] = MODULE_INTEL['security-alerts']
+MODULE_INTEL['premium-audit'] = MODULE_INTEL['audit-trail']
+MODULE_INTEL['admin-models'] = MODULE_INTEL['model-lab']
+MODULE_INTEL['admin-dataset'] = MODULE_INTEL['dataset-health']
+MODULE_INTEL['admin-ml'] = MODULE_INTEL['model-lab']
+
 export default function ModuleInfoExplainer({
   activeView = 'dashboard',
   isOpenExternal = false,
   onOpenChange = null,
+  showFloatingButton = true,
 }) {
   const [isOpenInternal, setIsOpenInternal] = useState(false)
   const isControlled = typeof onOpenChange === 'function'
@@ -824,24 +834,26 @@ export default function ModuleInfoExplainer({
       {/* =========================================================================
           1. PROMINENT FLOATING (i) INFO CAPSULE AT BOTTOM RIGHT
           ========================================================================= */}
-      <div className="fixed bottom-4 sm:bottom-6 right-20 sm:right-24 md:right-28 z-40">
-        <button
-          onClick={handleOpen}
-          className="relative group px-3 py-2 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-950 to-slate-900 border-2 border-cyan-400/80 hover:border-cyan-300 text-slate-100 hover:text-white shadow-[0_10px_25px_rgba(0,0,0,0.8),0_0_20px_rgba(6,182,212,0.4)] hover:shadow-[0_10px_35px_rgba(6,182,212,0.7)] transition-all duration-300 flex items-center gap-2 cursor-pointer active:scale-95"
-          title={`Click to view what the "${intel.title}" module does`}
-          aria-label={`Open information about ${intel.title}`}
-        >
-          <span className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-cyan-500 via-indigo-500 to-purple-500 opacity-50 group-hover:opacity-100 blur-xs transition-opacity duration-300 pointer-events-none" />
+      {showFloatingButton && (
+        <div className="fixed bottom-4 sm:bottom-6 right-20 sm:right-24 md:right-28 z-40">
+          <button
+            onClick={handleOpen}
+            className="relative group px-3 py-2 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-950 to-slate-900 border-2 border-cyan-400/80 hover:border-cyan-300 text-slate-100 hover:text-white shadow-[0_10px_25px_rgba(0,0,0,0.8),0_0_20px_rgba(6,182,212,0.4)] hover:shadow-[0_10px_35px_rgba(6,182,212,0.7)] transition-all duration-300 flex items-center gap-2 cursor-pointer active:scale-95"
+            title={`Click to view what the "${intel.title}" module does`}
+            aria-label={`Open information about ${intel.title}`}
+          >
+            <span className="absolute -inset-1 rounded-2xl bg-gradient-to-r from-cyan-500 via-indigo-500 to-purple-500 opacity-50 group-hover:opacity-100 blur-xs transition-opacity duration-300 pointer-events-none" />
 
-          <div className="relative z-10 w-5 h-5 rounded-full bg-cyan-950 border border-cyan-400 text-cyan-300 flex items-center justify-center font-mono font-black text-xs shadow-[0_0_10px_rgba(6,182,212,0.5)] group-hover:scale-110 transition-transform">
-            i
-          </div>
+            <div className="relative z-10 w-5 h-5 rounded-full bg-cyan-950 border border-cyan-400 text-cyan-300 flex items-center justify-center font-mono font-black text-xs shadow-[0_0_10px_rgba(6,182,212,0.5)] group-hover:scale-110 transition-transform">
+              i
+            </div>
 
-          <span className="relative z-10 text-xs font-bold tracking-wide font-mono text-cyan-200 group-hover:text-white uppercase hidden xs:inline">
-            Module Guide
-          </span>
-        </button>
-      </div>
+            <span className="relative z-10 text-xs font-bold tracking-wide font-mono text-cyan-200 group-hover:text-white uppercase hidden xs:inline">
+              Module Guide
+            </span>
+          </button>
+        </div>
+      )}
 
       {/* =========================================================================
           2. COMPACT, VISUAL-FIRST CHARCOAL GREY POPUP

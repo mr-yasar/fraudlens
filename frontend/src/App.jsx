@@ -50,6 +50,7 @@ import FleetSecurityView from './components/FleetSecurityView'
 import PersonalizedWelcomeOverlay from './components/common/PersonalizedWelcomeOverlay'
 import LogoutConfirmModal from './components/common/LogoutConfirmModal'
 import SecurityLogoutDoor from './components/common/SecurityLogoutDoor'
+import ModuleInfoExplainer from './components/common/ModuleInfoExplainer'
 import { systemApi } from './services/api'
 import { getCustomerPersona } from './utils/customerHelper'
 
@@ -181,6 +182,7 @@ function CommandCenterApp() {
   const [showWelcome, setShowWelcome] = useState(false)
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const [explainerOpen, setExplainerOpen] = useState(false)
 
   const isConnected = !healthLoading && !healthError && healthData?.status === 'healthy'
   const [isTransitioning, setIsTransitioning] = useState(false)
@@ -377,6 +379,17 @@ function CommandCenterApp() {
                 <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin text-cyan-400' : ''}`} />
               </button>
 
+              {/* High-Graphics Interactive Module Guide Button */}
+              <button
+                onClick={() => setExplainerOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-slate-900 to-cyan-950/70 hover:from-cyan-950/90 hover:to-indigo-950/90 text-cyan-300 hover:text-white border border-cyan-500/40 hover:border-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.25)] hover:shadow-[0_0_25px_rgba(6,182,212,0.5)] text-xs font-bold transition-all duration-300 group cursor-pointer active:scale-95"
+                title="View interactive high-graphics 3D module guide"
+                aria-label="View Module Guide"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-cyan-400 group-hover:rotate-12 transition-transform" />
+                <span className="hidden sm:inline">Module Guide</span>
+              </button>
+
               {/* User Profile Pill */}
               <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-slate-900/80 border border-slate-800 text-xs">
                 <div className="w-6 h-6 rounded-full bg-gradient-to-br from-cyan-500 to-indigo-600 text-white flex items-center justify-center font-bold text-[10px] shrink-0 uppercase shadow-inner">
@@ -561,6 +574,14 @@ function CommandCenterApp() {
         onClose={() => setShowHowItWorks(false)}
         user={user}
         isAdmin={isAdmin}
+      />
+
+      {/* High-Graphics 60 FPS HTML5 Canvas Module Explainer */}
+      <ModuleInfoExplainer
+        activeView={activeView}
+        isOpenExternal={explainerOpen}
+        onOpenChange={setExplainerOpen}
+        showFloatingButton={true}
       />
     </div>
   )
