@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { Info, X, ShieldCheck, Zap, Sparkles } from 'lucide-react'
 
 const CONTEXTUAL_HELP_DATA = {
@@ -214,6 +215,94 @@ export default function ContextualModuleHelp({ moduleKey = 'analyzer', className
     return () => window.removeEventListener('keydown', handleKey)
   }, [isOpen])
 
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => {
+      document.body.style.overflow = ''
+    }
+  }, [isOpen])
+
+  const modalContent = isOpen ? (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={`module-help-title-${moduleKey}`}
+      className="fixed inset-0 z-[99999] flex items-center justify-center p-4 sm:p-6 bg-slate-950/80 backdrop-blur-md transition-all duration-300 animate-fade-in"
+      onClick={() => setIsOpen(false)}
+      onTouchEnd={(e) => {
+        if (e.target === e.currentTarget) setIsOpen(false)
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        onTouchEnd={(e) => e.stopPropagation()}
+        className="relative w-full max-w-md max-h-[85vh] overflow-y-auto rounded-2xl bg-slate-900/95 border border-slate-700/80 p-5 sm:p-6 shadow-[0_25px_60px_rgba(0,0,0,0.9),0_0_30px_rgba(6,182,212,0.25)] text-left animate-scale-in space-y-4 text-slate-100"
+      >
+        {/* Header */}
+        <div className="flex items-start justify-between gap-3 border-b border-slate-800 pb-3">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-[9px] font-mono px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-700/60 font-bold uppercase">
+                {data.badge}
+              </span>
+              <span className="text-[10px] font-mono text-slate-400">CONTEXTUAL GUIDE</span>
+            </div>
+            <h4 id={`module-help-title-${moduleKey}`} className="text-base font-bold text-white tracking-tight flex items-center gap-1.5">
+              <ShieldCheck className="w-4 h-4 text-cyan-400 shrink-0" />
+              <span>{data.title}</span>
+            </h4>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setIsOpen(false)}
+            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
+            aria-label="Close module info popup"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Summary */}
+        <p className="text-xs sm:text-sm text-slate-300 font-medium leading-relaxed">
+          {data.summary}
+        </p>
+
+        {/* Key Points */}
+        <div className="space-y-2 pt-1">
+          <div className="text-[10px] font-mono uppercase tracking-wider text-cyan-400 font-bold flex items-center gap-1">
+            <Zap className="w-3 h-3 text-cyan-400" />
+            WHAT YOU CAN DO &amp; CONTROLS:
+          </div>
+          <div className="space-y-2 text-xs sm:text-sm text-slate-300 leading-snug">
+            {data.points.map((pt, idx) => (
+              <div key={idx} className="flex items-start gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 mt-1.5 shrink-0" />
+                <span>{pt}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="pt-3 border-t border-slate-800 flex items-center justify-between">
+          <span className="text-[10px] font-mono text-slate-400">FraudLens AI Contextual Help</span>
+          <button
+            type="button"
+            onClick={() => setIsOpen(false)}
+            className="px-4 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold transition cursor-pointer shadow-md"
+          >
+            Got It
+          </button>
+        </div>
+      </div>
+    </div>
+  ) : null
+
   return (
     <div className={`relative inline-flex items-center ${className}`}>
       {/* Contextual Trigger Button */}
@@ -232,76 +321,8 @@ export default function ContextualModuleHelp({ moduleKey = 'analyzer', className
         </span>
       </button>
 
-      {/* Contextual Popover / Modal */}
-      {isOpen && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-fade-in"
-          onClick={() => setIsOpen(false)}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-md rounded-2xl bg-slate-950/95 border border-slate-700/80 p-5 shadow-[0_20px_50px_rgba(0,0,0,0.85),0_0_25px_rgba(6,182,212,0.2)] text-left animate-scale-in space-y-3.5"
-          >
-            {/* Header */}
-            <div className="flex items-start justify-between gap-3 border-b border-slate-800/80 pb-3">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="text-[9px] font-mono px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-700/60 font-bold uppercase">
-                    {data.badge}
-                  </span>
-                  <span className="text-[10px] font-mono text-slate-400">CONTEXTUAL GUIDE</span>
-                </div>
-                <h4 className="text-base font-bold text-white tracking-tight flex items-center gap-1.5">
-                  <ShieldCheck className="w-4 h-4 text-cyan-400" />
-                  <span>{data.title}</span>
-                </h4>
-              </div>
-
-              <button
-                onClick={() => setIsOpen(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition cursor-pointer"
-                aria-label="Close"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Summary */}
-            <p className="text-xs text-slate-300 font-medium leading-relaxed">
-              {data.summary}
-            </p>
-
-            {/* Key Points */}
-            <div className="space-y-2 pt-1">
-              <div className="text-[10px] font-mono uppercase tracking-wider text-cyan-400 font-bold flex items-center gap-1">
-                <Zap className="w-3 h-3" />
-                WHAT YOU CAN DO &amp; CONTROLS:
-              </div>
-              <div className="space-y-1.5 text-xs text-slate-300 leading-snug">
-                {data.points.map((pt, idx) => (
-                  <div key={idx} className="flex items-start gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 mt-1.5 shrink-0" />
-                    <span>{pt}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="pt-2 border-t border-slate-800/80 flex items-center justify-between">
-              <span className="text-[10px] font-mono text-slate-500">FraudLens AI Contextual Help</span>
-              <button
-                onClick={() => setIsOpen(false)}
-                className="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 text-xs font-semibold transition cursor-pointer"
-              >
-                Got It
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Render Modal into Portal */}
+      {typeof document !== 'undefined' && modalContent && createPortal(modalContent, document.body)}
     </div>
   )
 }

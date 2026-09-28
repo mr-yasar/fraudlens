@@ -56,9 +56,9 @@ export function getCustomerPersona(user) {
 
   if (email.includes('soumya') || name.includes('soumya') || email.includes('sowmiya') || name.includes('sowmiya')) {
     return {
-      customerId: 'CUST_SOUMYA_003',
-      name: 'Soumya',
-      customerName: 'Soumya',
+      customerId: 'CUST_SOWMIYA_003',
+      name: 'Sowmiya',
+      customerName: 'Sowmiya',
       email: user.email,
       fraudRate: '26.0%',
       baselineType: 'Botnet ATO Attack (Pre-Auth Block)',
@@ -70,10 +70,25 @@ export function getCustomerPersona(user) {
     }
   }
 
+  if (email.includes('priya') || name.includes('priya')) {
+    return {
+      customerId: 'CUST_REAL_002',
+      name: 'Priya',
+      customerName: 'Priya',
+      email: user.email || 'priya@fraudlens.ai',
+      fraudRate: '4.5%',
+      baselineType: 'Active Retail Banking (Dynamic Risk Check)',
+      badgeColor: 'bg-sky-950/80 text-sky-300 border-sky-700/60',
+      color: 'sky',
+      defaultPresetId: 'scenario_a_normal',
+      isCustomer: true,
+      isPremium: false,
+    }
+  }
+
   if (email.includes('ajay') || name.includes('ajay') || email.includes('premium') || name.includes('alexander') || user?.account_tier === 'PREMIUM' || user?.account_tier === 'ENTERPRISE') {
     return {
       customerId: 'CUST_AJAY_004',
-      backendCustomerId: 'CUST_PREMIUM_004',
       name: 'Ajay',
       customerName: 'Ajay',
       email: user.email || 'ajay@fraudlens.ai',

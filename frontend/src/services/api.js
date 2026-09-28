@@ -16,9 +16,11 @@ function getAuthHeaders() {
 
 async function handleResponse(response) {
   if (response.status === 401) {
-    // If unauthorized, clear cached credentials
+    // If unauthorized, clear all cached credentials and session data
     localStorage.removeItem('fraudlens_token')
     localStorage.removeItem('fraudlens_user')
+    localStorage.removeItem('access_token')
+    try { sessionStorage.clear() } catch {}
   }
 
   if (!response.ok) {

@@ -114,6 +114,10 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('fraudlens_token')
     localStorage.removeItem('access_token')
     localStorage.removeItem('fraudlens_user')
+    // Clear sessionStorage to prevent data leakage on back-button
+    try { sessionStorage.clear() } catch {}
+    // Replace history state to prevent back-button re-entry
+    try { window.history.replaceState(null, '', window.location.pathname) } catch {}
   }, [])
 
   // Verify token on mount
@@ -137,7 +141,8 @@ export function AuthProvider({ children }) {
   const isAuthenticated = !!token && !!user
   const userRole = (user?.role || '').toUpperCase()
   const userEmail = (user?.email || '').toLowerCase()
-  const isAdmin = userRole === 'ADMIN' || userEmail.includes('admin')
+  // Strict admin check: exact role match or exact admin domain email only
+  const isAdmin = userRole === 'ADMIN' || userEmail === 'admin@fraudlens.internal'
   const isInvestigator = userRole === 'FRAUD_INVESTIGATOR' || isAdmin
 
   return (

@@ -40,8 +40,8 @@ def auth_tokens():
     res_u3 = client.post("/api/v1/auth/login", json={"email": "sowmiya@fraudlens.ai", "password": "Customer@1234"})
     u3_token = res_u3.json()["access_token"]
 
-    # 4. User 4 (Alexander Sterling - Premium)
-    res_u4 = client.post("/api/v1/auth/login", json={"email": "premium@fraudlens.ai", "password": "Customer@1234"})
+    # 4. User 4 (Ajay - Enterprise Security)
+    res_u4 = client.post("/api/v1/auth/login", json={"email": "ajay@fraudlens.ai", "password": "Customer@1234"})
     u4_token = res_u4.json()["access_token"]
 
     return {
@@ -87,7 +87,7 @@ def test_user4_premium_identity_and_dashboard(auth_tokens):
     res = client.get("/api/v1/premium/dashboard", headers=headers_u4)
     assert res.status_code == 200
     data = res.json()
-    assert data["customer_id"] == "CUST_PREMIUM_004"
+    assert data["customer_id"] == "CUST_AJAY_004"
     assert data["account_tier"] == "PREMIUM"
     assert data["security_health"]["status"] in ("Excellent", "Good", "Attention Required")
     assert data["security_health"]["score"] > 50
@@ -113,7 +113,7 @@ def test_strict_cross_user_isolation(auth_tokens):
     res_u1_prem = client.get("/api/v1/premium/dashboard", headers=headers_u1)
     assert res_u1_prem.status_code == 200
     assert res_u1_prem.json()["customer_id"] == "CUST_MONISHA_001"
-    assert res_u1_prem.json()["customer_id"] != "CUST_PREMIUM_004"
+    assert res_u1_prem.json()["customer_id"] != "CUST_AJAY_004"
 
 
 # =============================================================================

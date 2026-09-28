@@ -127,6 +127,40 @@ const BILL_CATEGORIES = [
   { id: 'water', label: 'Water Utility', icon: Droplets, sampleBiller: 'Chennai CMWSSB Water Board' },
 ]
 
+// Smooth animated balance transition hook
+function useAnimatedBalance(targetBalance) {
+  const [displayBalance, setDisplayBalance] = useState(targetBalance || 0)
+
+  useEffect(() => {
+    if (targetBalance === undefined || targetBalance === null) return
+    const startVal = displayBalance
+    const endVal = Number(targetBalance)
+    if (startVal === endVal) return
+
+    const duration = 650
+    const startTime = performance.now()
+
+    const step = (now) => {
+      const elapsed = now - startTime
+      const progress = Math.min(elapsed / duration, 1)
+      const ease = 1 - Math.pow(1 - progress, 3)
+      const current = startVal + (endVal - startVal) * ease
+      setDisplayBalance(current)
+
+      if (progress < 1) {
+        requestAnimationFrame(step)
+      } else {
+        setDisplayBalance(endVal)
+      }
+    }
+
+    const frameId = requestAnimationFrame(step)
+    return () => cancelAnimationFrame(frameId)
+  }, [targetBalance])
+
+  return displayBalance
+}
+
 export default function PaymentView({
   user,
   isAdmin,
@@ -141,8 +175,11 @@ export default function PaymentView({
   // Active top navigation tab: 'gateway' | 'history'
   const [activeTab, setActiveTab] = useState('gateway')
 
-  // Transfer Type Tab: 'merchant' | 'p2p' | 'bills' | 'self'
+  // Transfer Type Tab: 'merchant' | 'personal'
   const [transferType, setTransferType] = useState('merchant')
+
+  // Transaction progression timeline stage: 'idle' | 'initiated' | 'risk_analysis' | 'security_hold' | 'otp_verified' | 'approved' | 'completed' | 'rejected'
+  const [timelineStage, setTimelineStage] = useState('idle')
 
   // Payment Method Selector: 'upi' | 'credit_card' | 'debit_card' | 'net_banking' | 'wallet'
   const [paymentMethod, setPaymentMethod] = useState('upi')
@@ -374,6 +411,50 @@ export default function PaymentView({
       },
     },
 
+    // Priya (Dynamic Active Banking)
+    {
+      id: 'scenario_priya_retail',
+      title: 'Priya: Supermarket Shopping (₹3,250)',
+      badge: 'PRIYA → SAFE ALLOW',
+      badgeColor: 'bg-sky-950/80 text-sky-300 border-sky-700/60',
+      description: 'Regular weekend grocery shopping of ₹3,250 at Reliance Retail via UPI. Verified safe spending pattern -> Auto-Approved.',
+      data: {
+        customer_id: 'CUST_REAL_002',
+        amount: 3250.0,
+        currency: 'INR',
+        merchant_name: 'Reliance Smart Superstore',
+        merchant_category: 'grocery',
+        beneficiary_name: 'Reliance Retail Ltd',
+        payment_method: 'upi',
+        device_type: 'mobile_android',
+        location: 'Chennai',
+        transaction_country: 'IN',
+        transaction_type: 'online_payment',
+        failed_attempts: 0,
+      },
+    },
+    {
+      id: 'scenario_priya_stepup',
+      title: 'Priya: High-Ticket Electronics (₹48,000)',
+      badge: 'PRIYA → STEP-UP OTP',
+      badgeColor: 'bg-amber-950/80 text-amber-300 border-amber-700/60',
+      description: 'High-value consumer electronics purchase of ₹48,000 from new online vendor. Triggers Step-Up Phone OTP Verification.',
+      data: {
+        customer_id: 'CUST_REAL_002',
+        amount: 48000.0,
+        currency: 'INR',
+        merchant_name: 'Croma Digital Appliances',
+        merchant_category: 'electronics',
+        beneficiary_name: 'Croma Retail Infotech',
+        payment_method: 'upi',
+        device_type: 'mobile_android',
+        location: 'Bangalore',
+        transaction_country: 'IN',
+        transaction_type: 'online_payment',
+        failed_attempts: 1,
+      },
+    },
+
     // New User Cold Start
     {
       id: 'scenario_4_cold_start',
@@ -484,9 +565,9 @@ export default function PaymentView({
     }
   }, [])
 
-  // Load pending approvals (Monisha never has pending approvals or OTP)
+  // Load pending approvals (All 4 users follow the exact same security flow)
   const loadPendingApprovals = useCallback(async (customerId) => {
-    if (!customerId || customerId.toLowerCase().includes('monisha')) {
+    if (!customerId) {
       setPendingApprovals([])
       return
     }
@@ -703,6 +784,23 @@ export default function PaymentView({
     setDecisionResult(null)
     setActionSuccessMsg(null)
 
+    const availableBal = Number(wallet ? wallet.simulated_balance : selectedBank.balance || 0)
+    const enteredAmt = Number(formData.amount)
+
+    if (enteredAmt <= 0) {
+      setError('Please enter a valid transfer amount greater than ₹0.')
+      setEvaluating(false)
+      return
+    }
+
+    if (enteredAmt > availableBal) {
+      setError(`Insufficient Balance. Your available balance is ₹${availableBal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}, but transaction requires ₹${enteredAmt.toLocaleString('en-IN', { minimumFractionDigits: 2 })}. No money has been deducted.`)
+      setEvaluating(false)
+      return
+    }
+
+    setTimelineStage('initiated')
+
     // Normalize device_type for backend enum
     let normalizedDevice = formData.device_type
     if (normalizedDevice === 'web_browser') normalizedDevice = 'web'
@@ -711,21 +809,14 @@ export default function PaymentView({
     let finalMerchantName = formData.merchant_name || 'NovaMart Fresh'
     let finalCategory = formData.merchant_category || 'retail'
 
-    if (transferType === 'bills') {
-      finalMerchantName = billerName
-      finalCategory = 'utilities'
-    } else if (transferType === 'p2p') {
-      finalMerchantName = formData.beneficiary_name || 'Direct P2P Transfer'
-      finalCategory = 'retail'
-    } else if (transferType === 'self') {
-      const destBank = LINKED_BANK_ACCOUNTS.find((b) => b.id === selfDestBankId)
-      finalMerchantName = `Self Transfer -> ${destBank?.bankName || 'FraudLens Wallet'}`
+    if (transferType === 'personal' || transferType === 'p2p') {
+      finalMerchantName = formData.beneficiary_name || 'Personal Transfer'
       finalCategory = 'retail'
     }
 
     const payload = {
       customer_id: formData.customer_id,
-      amount: Number(formData.amount),
+      amount: enteredAmt,
       currency: formData.currency || 'INR',
       merchant_name: finalMerchantName,
       merchant_category: finalCategory,
@@ -735,28 +826,31 @@ export default function PaymentView({
       transaction_country: formData.transaction_country || 'IN',
       transaction_type: formData.transaction_type || 'online_payment',
       beneficiary_name: finalMerchantName,
-      beneficiary_account: transferType === 'p2p' ? beneficiaryAccount : undefined,
+      beneficiary_account: transferType === 'personal' ? beneficiaryAccount : undefined,
       failed_attempts: Number(formData.failed_attempts) || 0,
       notes: transferRemarks,
     }
 
     try {
+      setTimelineStage('risk_analysis')
       const result = await paymentApi.initiate(payload)
       setDecisionResult(result)
-      loadWallet(formData.customer_id)
-      loadPendingApprovals(formData.customer_id)
-      loadRecentTransactions(formData.customer_id)
+      await loadWallet(formData.customer_id)
+      await loadPendingApprovals(formData.customer_id)
+      await loadRecentTransactions(formData.customer_id)
 
-      // Monisha is a safe habitual consumer (3% baseline) with ZERO friction -> NEVER pop up OTP modal
-      const isMonisha = (formData.customer_id || '').toLowerCase().includes('monisha')
-
-      // When step-up review is detected for elevated cases (e.g. Mohana), pop up Mobile Phone Push Notification Modal
-      if (
-        !isMonisha &&
-        (result.decision === 'REVIEW' ||
-          result.verification_required ||
-          (result.decision === 'BLOCK' && result.approval_id))
+      // Unified Risk-Based Flow for all 4 users:
+      // Low Risk (ALLOW): Auto-Approved -> green status -> balance deducted
+      // Medium / High Risk (REVIEW): Pause/freeze -> generate OTP -> open phone-style OTP module
+      if (result.decision === 'ALLOW') {
+        setTimelineStage('completed')
+        setActionSuccessMsg(`Transaction of ₹${enteredAmt.toLocaleString('en-IN')} authorized successfully! Available balance updated.`)
+      } else if (
+        result.decision === 'REVIEW' ||
+        result.verification_required ||
+        (result.decision === 'BLOCK' && result.approval_id)
       ) {
+        setTimelineStage('security_hold')
         setPhoneModalTx({
           ...formData,
           merchant_name: finalMerchantName,
@@ -770,9 +864,12 @@ export default function PaymentView({
         })
         setPhoneModalApprovalId(result.approval_id || null)
         setShowPhoneModal(true)
+      } else {
+        setTimelineStage('rejected')
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Transaction evaluation failed')
+      setTimelineStage('idle')
     } finally {
       setEvaluating(false)
     }
@@ -786,7 +883,9 @@ export default function PaymentView({
           ? `Demo Transaction authorized successfully via SMS OTP (${challengeResponse || '921457'}).`
           : 'Demo Transaction blocked and card frozen.'
       )
-      loadWallet(formData.customer_id)
+      await loadWallet(formData.customer_id)
+      await loadRecentTransactions(formData.customer_id)
+      setTimelineStage(action === 'APPROVE' ? 'completed' : 'rejected')
       return
     }
     setActionLoading(true)
@@ -798,6 +897,12 @@ export default function PaymentView({
         notes: challengeResponse ? `Customer verified via real mobile OTP: ${challengeResponse}` : '',
       })
       setActionSuccessMsg(res.message || `Transaction ${action} successfully.`)
+
+      if (action === 'APPROVE') {
+        setTimelineStage('completed')
+      } else {
+        setTimelineStage('rejected')
+      }
 
       if (decisionResult && decisionResult.approval_id === approvalId) {
         setDecisionResult((prev) => ({
@@ -811,57 +916,101 @@ export default function PaymentView({
         }))
       }
 
-      loadWallet(formData.customer_id)
-      loadPendingApprovals(formData.customer_id)
-      loadRecentTransactions(formData.customer_id)
+      await loadWallet(formData.customer_id)
+      await loadPendingApprovals(formData.customer_id)
+      await loadRecentTransactions(formData.customer_id)
     } catch (err) {
       setError(err instanceof Error ? err.message : `Failed to ${action.toLowerCase()} transaction`)
+      throw err
     } finally {
       setActionLoading(false)
     }
   }
 
   const selectedBank = LINKED_BANK_ACCOUNTS.find((b) => b.id === selectedBankId) || LINKED_BANK_ACCOUNTS[0]
+  const availableBalance = Number(wallet ? wallet.simulated_balance : selectedBank.balance || 0)
+  const animatedBalance = useAnimatedBalance(availableBalance)
+  const isInsufficient = Number(formData.amount) > availableBalance
+
+  const todayMoneyOut = useMemo(() => {
+    return recentTransactions
+      .filter((tx) => tx.status === 'SUCCESS' || tx.decision === 'ALLOW')
+      .reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0)
+  }, [recentTransactions])
+
+  const pendingCount = useMemo(() => {
+    return (pendingApprovals || []).length
+  }, [pendingApprovals])
+
+  const completedCount = useMemo(() => {
+    return recentTransactions.filter((tx) => tx.status === 'SUCCESS' || tx.decision === 'ALLOW').length
+  }, [recentTransactions])
 
   return (
     <div className="space-y-6">
-      {/* Top Banner & Wallet Status Bar in INR */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-gradient-to-r from-slate-900 via-slate-900/95 to-cyan-950/50 p-6 rounded-2xl border border-slate-800 shadow-xl relative overflow-hidden">
-        <div className="absolute right-0 top-0 w-96 h-full bg-cyan-500/5 blur-3xl pointer-events-none" />
-        <div className="flex items-center gap-4 relative z-10">
-          <div className="p-3.5 bg-gradient-to-tr from-cyan-600 to-blue-600 rounded-2xl shadow-lg shadow-cyan-500/20 text-white">
-            <CreditCard className="w-7 h-7" />
+      {/* Module Title Header with Contextual Info Modal */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="p-3 bg-gradient-to-tr from-cyan-600 to-blue-600 rounded-2xl shadow-lg shadow-cyan-500/20 text-white">
+            <CreditCard className="w-6 h-6" />
           </div>
           <div>
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-2">
               <h1 className="text-xl font-bold text-white tracking-wide">
                 Real-Time Pre-Auth Payment Gateway
               </h1>
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-cyan-950 text-cyan-300 border border-cyan-700">
-                REAL-TIME PRE-AUTH AI
-              </span>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-950 text-emerald-300 border border-emerald-800">
-                INR (₹) LIVE
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-cyan-950 text-cyan-300 border border-cyan-700">
+                AI RISK ENGINE
               </span>
               <ContextualModuleHelp moduleKey="payment" />
             </div>
-            <p className="text-xs text-slate-300 mt-1 max-w-2xl">
-              {isCustomer ? (
-                <>
-                  Live multi-channel payment engine with instant pre-authorization fraud evaluation and pre-decision security protection for{' '}
-                  <strong className="text-emerald-300">{customerPersona.name}</strong>.
-                </>
-              ) : (
-                <>
-                  Live multi-channel payment engine with instant pre-authorization fraud evaluation and real-time defense. Pre-decision protection stops fraud before funds transfer.
-                </>
-              )}
+            <p className="text-xs text-slate-400 mt-0.5">
+              Unified transaction protection for {customerPersona.name} ({customerPersona.customerId}).
             </p>
           </div>
         </div>
 
-        {/* Live Balance Summary & Mobile Demo Push Button */}
-        <div className="flex flex-wrap items-center gap-3 relative z-10">
+        {/* Authenticated Persona Badge */}
+        <div className="flex items-center gap-2">
+          <span className="text-[10px] font-mono text-slate-400 uppercase">Authenticated As:</span>
+          <span className={`px-2.5 py-1 rounded-full text-xs font-mono font-bold border ${customerPersona.badgeColor}`}>
+            👤 {customerPersona.name} ({customerPersona.fraudRate})
+          </span>
+        </div>
+      </div>
+
+      {/* =========================================================================
+          BANK ACCOUNT MODULE — VISUAL CENTERPIECE
+          ========================================================================= */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 border border-slate-800 shadow-[0_15px_40px_rgba(0,0,0,0.6)] p-6 md:p-8">
+        {/* Ambient Backlight Glow */}
+        <div className="absolute top-0 right-1/4 w-80 h-36 bg-cyan-500/10 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-0 right-0 w-64 h-32 bg-emerald-500/10 blur-3xl pointer-events-none" />
+
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-slate-800/80">
+          <div>
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="p-1.5 rounded-lg bg-emerald-950/80 text-emerald-400 border border-emerald-700/60 shadow-sm">
+                <Wallet className="w-4 h-4" />
+              </span>
+              <span className="text-xs font-mono font-bold tracking-widest uppercase text-emerald-400">
+                Core Bank Account Overview
+              </span>
+              <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-cyan-950/80 text-cyan-300 border border-cyan-700">
+                LIVE LEDGER PERSISTENCE
+              </span>
+            </div>
+            <h2 className="text-sm md:text-base font-bold text-slate-200">
+              {customerPersona.name} • {selectedBank.bankName} ({selectedBank.accountNumberMasked})
+            </h2>
+            <div className="text-[11px] font-mono text-slate-400 mt-0.5 flex items-center gap-2">
+              <span>IFSC: {selectedBank.ifsc}</span>
+              <span>•</span>
+              <span>Branch: {selectedBank.branch}</span>
+            </div>
+          </div>
+
+          {/* Test Push Simulation Button */}
           <button
             type="button"
             onClick={() => {
@@ -879,24 +1028,162 @@ export default function PaymentView({
               setPhoneModalApprovalId(decisionResult?.approval_id || 'PEND_DEMO_01')
               setShowPhoneModal(true)
             }}
-            className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 text-white font-bold text-xs shadow-lg shadow-purple-950/60 border border-purple-400/40 flex items-center gap-2 transition active:scale-95"
+            className="self-start md:self-auto px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 text-white font-bold text-xs shadow-lg shadow-purple-950/60 border border-purple-400/40 flex items-center gap-2 transition active:scale-95 shrink-0"
             title="Demonstrate mobile lockscreen push notification & approval flow"
           >
             <Smartphone className="w-4 h-4 text-cyan-300 animate-pulse" />
-            <span>📱 Phone Push Alert (Demo)</span>
+            <span>📱 Test Phone Push Alert</span>
           </button>
+        </div>
 
-          <div className="flex items-center gap-3 bg-slate-950/90 px-4 py-2.5 rounded-xl border border-slate-800 text-xs font-mono">
-            <Wallet className="w-5 h-5 text-emerald-400 shrink-0" />
-            <div>
-              <div className="text-[10px] text-slate-400 uppercase font-semibold">
-                Available Balance
-              </div>
-              <div className="text-base font-extrabold text-white">
-                <span className="text-emerald-400">
-                  {formatINR(wallet ? wallet.simulated_balance : selectedBank.balance)}
-                </span>
-              </div>
+        {/* Centerpiece Big Balance Display */}
+        <div className="relative z-10 py-6 my-2 text-center md:text-left flex flex-col md:flex-row md:items-baseline justify-between gap-4">
+          <div>
+            <div className="text-[11px] font-mono uppercase tracking-widest text-slate-400 font-semibold mb-1">
+              Available Bank Balance
+            </div>
+            <div className="text-4xl md:text-5xl lg:text-6xl font-black font-mono tracking-tight text-white flex items-center gap-2">
+              <span className="text-emerald-400">₹</span>
+              <span className="bg-gradient-to-r from-white via-slate-100 to-slate-300 bg-clip-text text-transparent">
+                {animatedBalance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+            </div>
+            <div className="text-xs text-slate-400 mt-1.5 flex items-center gap-2 font-mono">
+              <span className="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span>Real-time backend synchronization active</span>
+            </div>
+          </div>
+
+          <div className="text-left md:text-right font-mono text-xs text-slate-400">
+            <div className="text-[10px] text-slate-500 uppercase">Primary Currency</div>
+            <div className="text-base font-bold text-slate-200">INR (₹) — Indian Rupee</div>
+          </div>
+        </div>
+
+        {/* Today's Activity Bar */}
+        <div className="relative z-10 pt-4 border-t border-slate-800/80 grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="p-3 rounded-2xl bg-slate-950/80 border border-slate-800/90">
+            <div className="text-[10px] font-mono uppercase text-slate-400">Today's Money In</div>
+            <div className="text-sm md:text-base font-extrabold text-emerald-400 font-mono mt-0.5">₹0.00</div>
+            <div className="text-[9px] text-slate-500 font-mono">Salary / Inward Credits</div>
+          </div>
+
+          <div className="p-3 rounded-2xl bg-slate-950/80 border border-slate-800/90">
+            <div className="text-[10px] font-mono uppercase text-slate-400">Today's Money Out</div>
+            <div className="text-sm md:text-base font-extrabold text-white font-mono mt-0.5">
+              ₹{todayMoneyOut.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+            </div>
+            <div className="text-[9px] text-slate-500 font-mono">Debited &amp; Authorized</div>
+          </div>
+
+          <div className="p-3 rounded-2xl bg-slate-950/80 border border-slate-800/90">
+            <div className="text-[10px] font-mono uppercase text-slate-400">Pending Holds</div>
+            <div className="text-sm md:text-base font-extrabold text-amber-300 font-mono mt-0.5">
+              {pendingCount} Transaction{pendingCount !== 1 ? 's' : ''}
+            </div>
+            <div className="text-[9px] text-amber-400/80 font-mono">Awaiting OTP / Approval</div>
+          </div>
+
+          <div className="p-3 rounded-2xl bg-slate-950/80 border border-slate-800/90">
+            <div className="text-[10px] font-mono uppercase text-slate-400">Completed Payments</div>
+            <div className="text-sm md:text-base font-extrabold text-cyan-300 font-mono mt-0.5">
+              {completedCount} Cleared
+            </div>
+            <div className="text-[9px] text-slate-500 font-mono">Stored in Backend DB</div>
+          </div>
+        </div>
+      </div>
+
+      {/* =========================================================================
+          TRANSACTION TIMELINE — STAGE PROGRESSION
+          ========================================================================= */}
+      <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80 shadow-md">
+        <div className="flex items-center justify-between mb-3 text-xs">
+          <span className="font-bold text-slate-300 uppercase tracking-wider font-mono flex items-center gap-1.5">
+            <Activity className="w-3.5 h-3.5 text-cyan-400" />
+            Security &amp; Processing Timeline
+          </span>
+          <span className="text-[10px] font-mono text-cyan-400">
+            Stage: {timelineStage.toUpperCase()}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-6 gap-2 text-center text-[10px] font-mono">
+          {/* Step 1: Initiated */}
+          <div className={`p-2 rounded-xl border transition ${
+            timelineStage !== 'idle'
+              ? 'bg-slate-950 border-emerald-500/70 text-emerald-300'
+              : 'bg-slate-950/50 border-slate-800 text-slate-500'
+          }`}>
+            <div className="font-bold">1. Initiated</div>
+            <div className="text-[9px]">{timelineStage !== 'idle' ? '✓ Ready' : 'Pending'}</div>
+          </div>
+
+          {/* Step 2: Risk Analysis */}
+          <div className={`p-2 rounded-xl border transition ${
+            timelineStage === 'risk_analysis'
+              ? 'bg-slate-950 border-cyan-500 text-cyan-300 animate-pulse'
+              : timelineStage === 'security_hold' || timelineStage === 'otp_verified' || timelineStage === 'approved' || timelineStage === 'completed'
+              ? 'bg-slate-950 border-emerald-500/70 text-emerald-300'
+              : 'bg-slate-950/50 border-slate-800 text-slate-500'
+          }`}>
+            <div className="font-bold">2. Risk Check</div>
+            <div className="text-[9px]">
+              {timelineStage === 'risk_analysis' ? 'Evaluating...' : timelineStage === 'idle' ? 'Waiting' : '✓ Done'}
+            </div>
+          </div>
+
+          {/* Step 3: Security Hold */}
+          <div className={`p-2 rounded-xl border transition ${
+            timelineStage === 'security_hold'
+              ? 'bg-slate-950 border-amber-500 text-amber-300 animate-pulse font-bold'
+              : timelineStage === 'otp_verified' || timelineStage === 'approved' || timelineStage === 'completed'
+              ? 'bg-slate-950 border-emerald-500/70 text-emerald-300'
+              : 'bg-slate-950/50 border-slate-800 text-slate-500'
+          }`}>
+            <div className="font-bold">3. Security Hold</div>
+            <div className="text-[9px]">
+              {timelineStage === 'security_hold' ? 'Locked (OTP)' : timelineStage === 'otp_verified' || timelineStage === 'completed' ? '✓ Passed' : 'Idle'}
+            </div>
+          </div>
+
+          {/* Step 4: OTP Verified */}
+          <div className={`p-2 rounded-xl border transition ${
+            timelineStage === 'otp_verified'
+              ? 'bg-slate-950 border-emerald-500 text-emerald-300 animate-pulse font-bold'
+              : timelineStage === 'approved' || timelineStage === 'completed'
+              ? 'bg-slate-950 border-emerald-500/70 text-emerald-300'
+              : 'bg-slate-950/50 border-slate-800 text-slate-500'
+          }`}>
+            <div className="font-bold">4. OTP Verified</div>
+            <div className="text-[9px]">
+              {timelineStage === 'otp_verified' || timelineStage === 'approved' || timelineStage === 'completed' ? '✓ Verified' : 'Waiting'}
+            </div>
+          </div>
+
+          {/* Step 5: User Approved */}
+          <div className={`p-2 rounded-xl border transition ${
+            timelineStage === 'approved' || timelineStage === 'completed'
+              ? 'bg-slate-950 border-emerald-500/70 text-emerald-300'
+              : 'bg-slate-950/50 border-slate-800 text-slate-500'
+          }`}>
+            <div className="font-bold">5. User Approved</div>
+            <div className="text-[9px]">
+              {timelineStage === 'completed' || timelineStage === 'approved' ? '✓ Approved' : 'Waiting'}
+            </div>
+          </div>
+
+          {/* Step 6: Completed */}
+          <div className={`p-2 rounded-xl border transition ${
+            timelineStage === 'completed'
+              ? 'bg-emerald-950/80 border-emerald-500 text-emerald-300 font-bold'
+              : timelineStage === 'rejected'
+              ? 'bg-rose-950/80 border-rose-500 text-rose-300 font-bold'
+              : 'bg-slate-950/50 border-slate-800 text-slate-500'
+          }`}>
+            <div className="font-bold">6. Outcome</div>
+            <div className="text-[9px]">
+              {timelineStage === 'completed' ? '✓ Completed' : timelineStage === 'rejected' ? '✗ Blocked' : 'Waiting'}
             </div>
           </div>
         </div>
@@ -931,16 +1218,12 @@ export default function PaymentView({
             }`}
           >
             <History className="w-4 h-4" />
-            <span>Recent Payments &amp; Receipts ({recentTransactions.length})</span>
+            <span>My Transactions ({recentTransactions.length})</span>
           </button>
         </div>
 
-        {/* Active Authenticated Persona Badge */}
-        <div className="flex items-center gap-2">
-          <span className="text-[10px] font-mono text-slate-400 uppercase">Authenticated As:</span>
-          <span className={`px-2.5 py-0.5 rounded-full text-xs font-mono font-bold border ${customerPersona.badgeColor}`}>
-            👤 {customerPersona.name} ({customerPersona.fraudRate})
-          </span>
+        <div className="text-xs font-mono text-slate-400">
+          Account Tier: <span className="text-cyan-300 font-bold">{customerPersona.tier || 'STANDARD'}</span>
         </div>
       </div>
 
@@ -956,7 +1239,7 @@ export default function PaymentView({
                 <span>
                   {isCustomer
                     ? `1-Click Payment Scenarios for ${customerPersona.name}:`
-                    : 'Select a 1-Click Test Scenario (All 3 Personas Available):'}
+                    : 'Select a 1-Click Test Scenario (All 4 Personas Available):'}
                 </span>
               </div>
               {isCustomer && (
@@ -1006,154 +1289,40 @@ export default function PaymentView({
             </div>
           </div>
 
-          {/* MAIN CHECKOUT GRID: Left (Form + Instruments) | Right (Debit Account + Virtual Card + Live Risk Meter) */}
+          {/* MAIN CHECKOUT GRID: Left (Form + Simplified Instruments) | Right (Debit Account + Virtual Card + Live Risk Meter) */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* LEFT COLUMN: Payment Formulation & Methods (7 cols) */}
+            {/* LEFT COLUMN: Payment Formulation (7 cols) */}
             <div className="lg:col-span-7 bg-slate-900/70 border border-slate-800/80 backdrop-blur-md rounded-2xl p-6 shadow-xl space-y-5">
-              {/* Transfer Mode Tabs */}
+              {/* Transfer Mode Tabs — SIMPLIFIED: ONLY 1. Merchant and 2. Personal */}
               <div>
                 <label className="block text-[11px] font-mono uppercase font-bold text-slate-400 mb-2">
                   Select Transfer Category:
                 </label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 gap-2.5">
                   <button
                     type="button"
                     onClick={() => setTransferType('merchant')}
-                    className={`p-2.5 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 transition ${
+                    className={`p-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition ${
                       transferType === 'merchant'
                         ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/60 shadow-[0_0_12px_rgba(6,182,212,0.25)]'
                         : 'bg-slate-950/60 text-slate-400 border-slate-800 hover:text-white'
                     }`}
                   >
-                    <Store className="w-4 h-4" />
-                    <span>Merchant Pay</span>
+                    <Store className="w-4 h-4 text-cyan-400" />
+                    <span>1. Merchant Pay</span>
                   </button>
 
                   <button
                     type="button"
-                    onClick={() => setTransferType('p2p')}
-                    className={`p-2.5 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 transition ${
-                      transferType === 'p2p'
+                    onClick={() => setTransferType('personal')}
+                    className={`p-3 rounded-xl border text-xs font-bold flex items-center justify-center gap-2 transition ${
+                      transferType === 'personal'
                         ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/60 shadow-[0_0_12px_rgba(6,182,212,0.25)]'
                         : 'bg-slate-950/60 text-slate-400 border-slate-800 hover:text-white'
                     }`}
                   >
-                    <Send className="w-4 h-4" />
-                    <span>Person-to-Person</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setTransferType('bills')}
-                    className={`p-2.5 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 transition ${
-                      transferType === 'bills'
-                        ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/60 shadow-[0_0_12px_rgba(6,182,212,0.25)]'
-                        : 'bg-slate-950/60 text-slate-400 border-slate-800 hover:text-white'
-                    }`}
-                  >
-                    <Zap className="w-4 h-4" />
-                    <span>Bill Payment</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setTransferType('self')}
-                    className={`p-2.5 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 transition ${
-                      transferType === 'self'
-                        ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/60 shadow-[0_0_12px_rgba(6,182,212,0.25)]'
-                        : 'bg-slate-950/60 text-slate-400 border-slate-800 hover:text-white'
-                    }`}
-                  >
-                    <Building2 className="w-4 h-4" />
-                    <span>Self / Topup</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Payment Method Selector Tabs */}
-              <div>
-                <label className="block text-[11px] font-mono uppercase font-bold text-slate-400 mb-2">
-                  Payment Instrument (Select Method):
-                </label>
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPaymentMethod('upi')
-                      handleInputChange('payment_method', 'upi')
-                    }}
-                    className={`p-2 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 transition ${
-                      paymentMethod === 'upi'
-                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/60 shadow-[0_0_12px_rgba(16,185,129,0.25)]'
-                        : 'bg-slate-950/60 text-slate-400 border-slate-800 hover:text-white'
-                    }`}
-                  >
-                    <Smartphone className="w-4 h-4 text-emerald-400" />
-                    <span>UPI / QR</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPaymentMethod('credit_card')
-                      handleInputChange('payment_method', 'credit_card')
-                    }}
-                    className={`p-2 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 transition ${
-                      paymentMethod === 'credit_card'
-                        ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/60 shadow-[0_0_12px_rgba(99,102,241,0.25)]'
-                        : 'bg-slate-950/60 text-slate-400 border-slate-800 hover:text-white'
-                    }`}
-                  >
-                    <CreditCard className="w-4 h-4 text-indigo-400" />
-                    <span>Credit Card</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPaymentMethod('debit_card')
-                      handleInputChange('payment_method', 'debit_card')
-                    }}
-                    className={`p-2 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 transition ${
-                      paymentMethod === 'debit_card'
-                        ? 'bg-blue-500/20 text-blue-300 border-blue-500/60 shadow-[0_0_12px_rgba(59,130,246,0.25)]'
-                        : 'bg-slate-950/60 text-slate-400 border-slate-800 hover:text-white'
-                    }`}
-                  >
-                    <CreditCard className="w-4 h-4 text-blue-400" />
-                    <span>Debit Card</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPaymentMethod('net_banking')
-                      handleInputChange('payment_method', 'net_banking')
-                    }}
-                    className={`p-2 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 transition ${
-                      paymentMethod === 'net_banking'
-                        ? 'bg-purple-500/20 text-purple-300 border-purple-500/60 shadow-[0_0_12px_rgba(168,85,247,0.25)]'
-                        : 'bg-slate-950/60 text-slate-400 border-slate-800 hover:text-white'
-                    }`}
-                  >
-                    <Building2 className="w-4 h-4 text-purple-400" />
-                    <span>Net Banking</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setPaymentMethod('wallet')
-                      handleInputChange('payment_method', 'wallet')
-                    }}
-                    className={`p-2 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 transition ${
-                      paymentMethod === 'wallet'
-                        ? 'bg-amber-500/20 text-amber-300 border-amber-500/60 shadow-[0_0_12px_rgba(245,158,11,0.25)]'
-                        : 'bg-slate-950/60 text-slate-400 border-slate-800 hover:text-white'
-                    }`}
-                  >
-                    <Wallet className="w-4 h-4 text-amber-400" />
-                    <span>Wallet</span>
+                    <Users className="w-4 h-4 text-emerald-400" />
+                    <span>2. Personal Transfer</span>
                   </button>
                 </div>
               </div>
@@ -1161,18 +1330,18 @@ export default function PaymentView({
               {/* Main Checkout Form */}
               <form onSubmit={handleInitiatePayment} className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Amount (₹ INR) */}
+                  {/* Dynamic Amount (₹ INR) */}
                   <div className="sm:col-span-2">
                     <div className="flex items-center justify-between mb-1">
                       <label className="text-xs font-bold text-slate-200">
                         Transfer Amount (₹ INR)
                       </label>
                       <span className="text-[10px] font-mono text-emerald-400 font-bold">
-                        Avail in {selectedBank.bankName}: {formatINR(selectedBank.balance)}
+                        Available in Account: {formatINR(availableBalance)}
                       </span>
                     </div>
                     <div className="relative">
-                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-cyan-400 text-sm font-bold">
+                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-cyan-400 text-base font-bold">
                         ₹
                       </div>
                       <input
@@ -1182,24 +1351,74 @@ export default function PaymentView({
                         required
                         value={formData.amount}
                         onChange={(e) => handleInputChange('amount', e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-cyan-500 transition font-mono font-extrabold"
-                        placeholder="0.00"
+                        className={`w-full bg-slate-950 border rounded-xl pl-9 pr-4 py-3 text-base text-white focus:outline-none transition font-mono font-black ${
+                          isInsufficient
+                            ? 'border-rose-500 focus:border-rose-400 ring-1 ring-rose-500/50'
+                            : 'border-slate-800 focus:border-cyan-500'
+                        }`}
+                        placeholder="Enter amount (e.g. 500000)"
                       />
                     </div>
 
-                    {/* Quick Preset Amount Buttons */}
-                    <div className="flex items-center gap-1.5 mt-2 overflow-x-auto pb-1">
-                      <span className="text-[10px] text-slate-500 font-mono">Quick:</span>
-                      {[250, 650, 1250, 8500, 14500, 75000].map((amt) => (
+                    {/* Insufficient Balance Inline Alert */}
+                    {isInsufficient && (
+                      <div className="mt-2 p-2.5 rounded-xl bg-rose-950/80 border border-rose-600 text-rose-200 text-xs flex items-center gap-2 animate-shake">
+                        <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+                        <span>
+                          <strong>Insufficient Balance:</strong> You requested {formatINR(formData.amount)}, but available balance is only {formatINR(availableBalance)}.
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Dynamic Amount Add / Preset Chips */}
+                    <div className="space-y-1.5 mt-2.5">
+                      <div className="text-[10px] font-mono text-slate-400 flex items-center justify-between">
+                        <span>+ QUICK ADD / PRESET AMOUNT:</span>
                         <button
-                          key={amt}
                           type="button"
-                          onClick={() => setPresetAmount(amt)}
-                          className="px-2 py-0.5 bg-slate-950 hover:bg-cyan-950/80 border border-slate-800 hover:border-cyan-600 text-[10px] text-slate-300 hover:text-cyan-300 rounded-lg font-mono transition shrink-0"
+                          onClick={() => handleInputChange('amount', 0)}
+                          className="text-[9px] text-slate-500 hover:text-slate-300 underline font-mono"
                         >
-                          ₹{amt.toLocaleString('en-IN')}
+                          Clear
                         </button>
-                      ))}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {[
+                          { label: '+₹10,000', add: 10000 },
+                          { label: '+₹50,000', add: 50000 },
+                          { label: '+₹1,00,000', add: 100000 },
+                          { label: '+₹5,00,000', add: 500000 },
+                          { label: '+₹10,00,000', add: 1000000 },
+                          { label: '+₹15,00,000', add: 1500000 },
+                        ].map((chip) => (
+                          <button
+                            key={chip.label}
+                            type="button"
+                            onClick={() => {
+                              const curr = Number(formData.amount) || 0
+                              handleInputChange('amount', curr + chip.add)
+                            }}
+                            className="px-2.5 py-1 bg-slate-950 hover:bg-cyan-950/80 border border-slate-800 hover:border-cyan-500 text-xs font-mono font-bold text-slate-300 hover:text-cyan-300 rounded-lg transition active:scale-95"
+                          >
+                            {chip.label}
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* Explicit Presets */}
+                      <div className="flex items-center gap-2 pt-1 text-[10px] font-mono text-slate-400">
+                        <span className="text-slate-500">Exact:</span>
+                        {[500000, 1000000, 1500000].map((val) => (
+                          <button
+                            key={val}
+                            type="button"
+                            onClick={() => handleInputChange('amount', val)}
+                            className="px-2 py-0.5 rounded bg-slate-900 hover:bg-slate-800 border border-slate-700 text-cyan-300 hover:text-cyan-200"
+                          >
+                            ₹{(val / 100000).toFixed(0)} Lakh
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   </div>
 
@@ -1208,7 +1427,8 @@ export default function PaymentView({
                     <div className="sm:col-span-2 relative" ref={merchantBoxRef}>
                       <div className="flex items-center justify-between mb-1">
                         <label className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
-                          <span>Merchant / Recipient Name</span>
+                          <Store className="w-3.5 h-3.5 text-cyan-400" />
+                          <span>Merchant / Business Recipient</span>
                         </label>
                         <div className="flex items-center gap-2">
                           {isBeneficiaryNew(formData.merchant_name) ? (
@@ -1223,7 +1443,7 @@ export default function PaymentView({
                         </div>
                       </div>
 
-                      {/* Dropdown with All 29 Registered Merchants */}
+                      {/* Dropdown with Registered Merchants */}
                       <div className="mb-2">
                         <select
                           id="recipient-dropdown-all-names"
@@ -1247,7 +1467,7 @@ export default function PaymentView({
                           className="w-full bg-slate-950/90 border border-cyan-800/60 hover:border-cyan-500 rounded-xl px-3 py-2 text-xs text-cyan-200 font-mono focus:outline-none focus:ring-1 focus:ring-cyan-500 transition shadow-inner cursor-pointer"
                         >
                           <option value="">
-                            ▼ Select merchant ({merchantsList.length} available)...
+                            ▼ Select verified merchant ({merchantsList.length} available)...
                           </option>
                           <optgroup label="🏢 Registered Canonical Merchants">
                             {merchantsList.map((m) => (
@@ -1277,12 +1497,12 @@ export default function PaymentView({
                     </div>
                   )}
 
-                  {/* MODE 2: PERSON-TO-PERSON (P2P) */}
-                  {transferType === 'p2p' && (
+                  {/* MODE 2: PERSONAL TRANSFER */}
+                  {transferType === 'personal' && (
                     <div className="sm:col-span-2 space-y-3 p-3 bg-slate-950/80 rounded-xl border border-cyan-800/40">
                       <div className="text-xs font-bold text-cyan-300 flex items-center gap-1.5">
-                        <Users className="w-3.5 h-3.5" />
-                        <span>Direct Person-to-Person Beneficiary Details</span>
+                        <Users className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>Personal Recipient Details</span>
                       </div>
                       <div>
                         <label className="block text-[10px] text-slate-400 mb-0.5">Beneficiary Full Name</label>
@@ -1301,14 +1521,14 @@ export default function PaymentView({
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <div>
                           <label className="block text-[10px] text-slate-400 mb-0.5">
-                            Bank Account Number
+                            Bank Account / UPI VPA
                           </label>
                           <input
                             type="text"
                             value={beneficiaryAccount}
                             onChange={(e) => setBeneficiaryAccount(e.target.value)}
                             className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white font-mono"
-                            placeholder="50100482910482"
+                            placeholder="50100482910482 or name@upi"
                           />
                         </div>
                         <div>
@@ -1323,221 +1543,6 @@ export default function PaymentView({
                             placeholder="HDFC0000240"
                           />
                         </div>
-                      </div>
-                      <div className="text-[10px] font-mono text-slate-400 bg-slate-900/60 p-1.5 rounded border border-slate-800">
-                        📍 Auto-Detected Branch: <span className="text-cyan-300">{beneficiaryBankInfo}</span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* MODE 3: BILL PAYMENT */}
-                  {transferType === 'bills' && (
-                    <div className="sm:col-span-2 space-y-3 p-3 bg-slate-950/80 rounded-xl border border-cyan-800/40">
-                      <div className="text-xs font-bold text-cyan-300 flex items-center gap-1.5">
-                        <Zap className="w-3.5 h-3.5" />
-                        <span>Select Utility Biller &amp; Account Number</span>
-                      </div>
-                      <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
-                        {BILL_CATEGORIES.map((cat) => {
-                          const IconComp = cat.icon
-                          return (
-                            <button
-                              key={cat.id}
-                              type="button"
-                              onClick={() => {
-                                setSelectedBillCategory(cat.id)
-                                setBillerName(cat.sampleBiller)
-                                handleInputChange('merchant_name', cat.sampleBiller)
-                                handleInputChange('merchant_category', 'utilities')
-                              }}
-                              className={`p-2 rounded-lg border text-center transition flex flex-col items-center gap-1 ${
-                                selectedBillCategory === cat.id
-                                  ? 'bg-cyan-500/20 border-cyan-500 text-cyan-300'
-                                  : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
-                              }`}
-                            >
-                              <IconComp className="w-4 h-4" />
-                              <span className="text-[9px] font-mono leading-tight">{cat.label}</span>
-                            </button>
-                          )
-                        })}
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        <div>
-                          <label className="block text-[10px] text-slate-400 mb-0.5">Biller Provider</label>
-                          <input
-                            type="text"
-                            value={billerName}
-                            onChange={(e) => {
-                              setBillerName(e.target.value)
-                              handleInputChange('merchant_name', e.target.value)
-                            }}
-                            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white font-mono"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[10px] text-slate-400 mb-0.5">Consumer / Account ID</label>
-                          <input
-                            type="text"
-                            value={consumerNumber}
-                            onChange={(e) => setConsumerNumber(e.target.value)}
-                            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white font-mono"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* MODE 4: SELF TRANSFER / WALLET TOPUP */}
-                  {transferType === 'self' && (
-                    <div className="sm:col-span-2 space-y-3 p-3 bg-slate-950/80 rounded-xl border border-cyan-800/40">
-                      <div className="text-xs font-bold text-cyan-300 flex items-center gap-1.5">
-                        <Building2 className="w-3.5 h-3.5" />
-                        <span>Self Transfer Destination (Transfer To)</span>
-                      </div>
-                      <select
-                        value={selfDestBankId}
-                        onChange={(e) => setSelfDestBankId(e.target.value)}
-                        className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-emerald-300 font-mono"
-                      >
-                        {LINKED_BANK_ACCOUNTS.filter((b) => b.id !== selectedBankId).map((bank) => (
-                          <option key={bank.id} value={bank.id}>
-                            {bank.bankName} ({bank.accountNumberMasked}) • Avail: {formatINR(bank.balance)}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-
-                  {/* DYNAMIC PAYMENT INSTRUMENT INPUTS */}
-                  {/* UPI Inputs */}
-                  {paymentMethod === 'upi' && (
-                    <div className="sm:col-span-2 space-y-2 p-3 bg-slate-950/80 rounded-xl border border-slate-800">
-                      <div className="flex items-center justify-between">
-                        <label className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
-                          <Smartphone className="w-3.5 h-3.5" />
-                          <span>Customer VPA / UPI ID</span>
-                        </label>
-                        <span className="text-[10px] font-mono text-slate-400">NPCI Verified</span>
-                      </div>
-                      <input
-                        type="text"
-                        value={upiId}
-                        onChange={(e) => setUpiId(e.target.value)}
-                        className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-emerald-300 font-mono focus:outline-none focus:border-emerald-500"
-                        placeholder="username@okhdfcbank"
-                      />
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        {['@okhdfcbank', '@oksbi', '@icici', '@paytm', '@okaxis'].map((suffix) => (
-                          <button
-                            key={suffix}
-                            type="button"
-                            onClick={() => {
-                              const prefix = upiId.split('@')[0] || customerPersona.name.toLowerCase()
-                              setUpiId(`${prefix}${suffix}`)
-                            }}
-                            className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-900 text-slate-300 hover:text-emerald-400 border border-slate-700"
-                          >
-                            {suffix}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Card Inputs */}
-                  {(paymentMethod === 'credit_card' || paymentMethod === 'debit_card') && (
-                    <div className="sm:col-span-2 space-y-3 p-3 bg-slate-950/80 rounded-xl border border-slate-800">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-indigo-300 flex items-center gap-1.5">
-                          <CreditCard className="w-3.5 h-3.5" />
-                          <span>Card Credentials</span>
-                        </span>
-                        <div className="flex items-center gap-1.5">
-                          <button
-                            type="button"
-                            onClick={() => setCardNetwork('VISA')}
-                            className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
-                              cardNetwork === 'VISA'
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-slate-900 text-slate-400'
-                            }`}
-                          >
-                            VISA
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setCardNetwork('MASTERCARD')}
-                            className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
-                              cardNetwork === 'MASTERCARD'
-                                ? 'bg-red-600 text-white'
-                                : 'bg-slate-900 text-slate-400'
-                            }`}
-                          >
-                            MC
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setCardNetwork('RUPAY')}
-                            className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
-                              cardNetwork === 'RUPAY'
-                                ? 'bg-emerald-600 text-white'
-                                : 'bg-slate-900 text-slate-400'
-                            }`}
-                          >
-                            RuPay
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                        <div className="sm:col-span-2">
-                          <label className="block text-[10px] text-slate-400 mb-0.5">Card Number</label>
-                          <input
-                            type="text"
-                            value={cardNumber}
-                            onChange={(e) => setCardNumber(e.target.value)}
-                            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-indigo-500"
-                            placeholder="4532 •••• •••• 8819"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[10px] text-slate-400 mb-0.5">Expiry</label>
-                          <input
-                            type="text"
-                            maxLength={5}
-                            value={cardExpiry}
-                            onChange={(e) => setCardExpiry(e.target.value)}
-                            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white font-mono focus:outline-none focus:border-indigo-500 text-center"
-                            placeholder="08/29"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Net Banking Inputs */}
-                  {paymentMethod === 'net_banking' && (
-                    <div className="sm:col-span-2 space-y-2 p-3 bg-slate-950/80 rounded-xl border border-slate-800">
-                      <label className="block text-xs font-bold text-purple-300">
-                        Select NetBanking Portal:
-                      </label>
-                      <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5">
-                        {NETBANKING_BANKS.map((b) => (
-                          <button
-                            key={b.code}
-                            type="button"
-                            onClick={() => setSelectedNetBank(b.code)}
-                            className={`p-2 rounded-lg border text-center transition ${
-                              selectedNetBank === b.code
-                                ? 'bg-purple-900/60 border-purple-500 text-white'
-                                : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-white'
-                            }`}
-                          >
-                            <div className="text-sm">{b.icon}</div>
-                            <div className="text-[10px] font-bold font-mono mt-0.5">{b.code}</div>
-                          </button>
-                        ))}
                       </div>
                     </div>
                   )}
@@ -1635,22 +1640,31 @@ export default function PaymentView({
                   </div>
                 )}
 
-                {/* Submit Button */}
+                {/* Submit Button with Insufficient Balance Protection */}
                 <div className="pt-2">
                   <button
                     type="submit"
-                    disabled={evaluating || actionLoading}
-                    className="w-full py-3.5 px-6 bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold uppercase tracking-wider shadow-lg shadow-cyan-900/30 flex items-center justify-center gap-2 transition duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
+                    disabled={evaluating || actionLoading || isInsufficient || Number(formData.amount) <= 0}
+                    className={`w-full py-3.5 px-6 rounded-xl text-xs font-bold uppercase tracking-wider shadow-lg flex items-center justify-center gap-2 transition duration-200 disabled:opacity-60 disabled:cursor-not-allowed ${
+                      isInsufficient
+                        ? 'bg-rose-950/80 border border-rose-600 text-rose-300'
+                        : 'bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white shadow-cyan-900/30'
+                    }`}
                   >
                     {evaluating ? (
                       <>
                         <RefreshCw className="w-4 h-4 animate-spin" />
                         <span>Evaluating AI Risk &amp; Pre-Auth Rules...</span>
                       </>
+                    ) : isInsufficient ? (
+                      <>
+                        <AlertTriangle className="w-4 h-4 text-rose-400" />
+                        <span>INSUFFICIENT BALANCE ({formatINR(formData.amount || 0)})</span>
+                      </>
                     ) : (
                       <>
                         <ShieldCheck className="w-4 h-4" />
-                        <span>PAY &amp; AUTHORIZE (₹{Number(formData.amount || 0).toLocaleString('en-IN')})</span>
+                        <span>PAY &amp; AUTHORIZE ({formatINR(formData.amount || 0)})</span>
                       </>
                     )}
                   </button>

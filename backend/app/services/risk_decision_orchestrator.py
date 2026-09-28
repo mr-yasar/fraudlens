@@ -106,10 +106,10 @@ class RiskDecisionOrchestrator:
         customer = cls._ensure_customer(db, request.customer_id, request.account_age_days)
         balance_before = float(customer.simulated_balance or 0.0)
 
-        if balance_before < request.amount and (request.customer_id.startswith("CUST-SIM-") or balance_before <= 0):
+        if balance_before < request.amount:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Insufficient funds in simulated wallet: Available {customer.currency} {balance_before:.2f}, Requested {request.currency} {request.amount:.2f}",
+                detail=f"Insufficient Balance. Available balance: INR {balance_before:,.2f}, Requested: INR {request.amount:,.2f}. Transaction cannot be processed.",
             )
 
         # -----------------------------------------------------------------
@@ -327,60 +327,16 @@ class RiskDecisionOrchestrator:
         verification_required = False
         balance_after = balance_before
 
-        cust_id_lower = (request.customer_id or "").lower()
-        is_sowmiya = (
-            request.customer_id == "CUST_SOWMIYA_003"
-            or "sowmiya" in cust_id_lower
-            or request.device_type == "unknown_bot"
-            or request.location == "Lagos"
-            or request.transaction_country == "NG"
-        )
-        is_mohana = (
-            not is_sowmiya and (
-                request.customer_id == "CUST_MOHANA_002"
-                or "mohana" in cust_id_lower
-            )
-        )
-        is_monisha = (
-            not is_sowmiya and not is_mohana and (
-                request.customer_id == "CUST_MONISHA_001"
-                or "monisha" in cust_id_lower
-                or (current_user and "monisha" in (current_user.email or "").lower() and not is_mohana and not is_sowmiya)
-            )
-        )
-
-        if is_sowmiya:
-            decision = PaymentDecision.BLOCK
-            risk_level = RiskLevelEnum.HIGH
-            final_risk_score = max(final_risk_score, 88)
-            lifecycle_status = PaymentLifecycleStatus.BLOCKED
-            status_message = "Transaction prohibited and blocked. Sowmiya botnet ATO threat: 0 funds lost."
-            verification_required = False
-            approval_id = None
-            generated_otp = None
-            balance_after = balance_before  # No deduction on block
-        elif is_monisha:
-            decision = PaymentDecision.ALLOW
-            risk_level = RiskLevelEnum.LOW
-            final_risk_score = min(final_risk_score, 15)
-            lifecycle_status = PaymentLifecycleStatus.SUCCEEDED
-            status_message = "Payment pre-authorized successfully. Monisha habitual profile: zero-friction auto-approved without OTP."
-            verification_required = False
-            approval_id = None
-            generated_otp = None
-            customer.simulated_balance = max(0.0, balance_before - request.amount)
-            balance_after = customer.simulated_balance
-        elif is_mohana:
-            # Mohana's persona is the designated 12% fraud profile triggering Step-Up OTP Verification
+        # Unified Risk-Based Decision Classification for all users
+        if final_risk_score > 70 or rule_result.hard_block or dev_assessment.is_spoofed_environment:
+            # HIGH RISK: Pause/freeze transaction, generate OTP, require explicit verification + Allow/Approve
             decision = PaymentDecision.REVIEW
-            risk_level = RiskLevelEnum.MEDIUM
-            final_risk_score = min(62, max(base_score, 48))
+            risk_level = RiskLevelEnum.HIGH
             lifecycle_status = PaymentLifecycleStatus.REVIEW_REQUIRED
-            status_message = "Transaction held for step-up verification. SMS OTP sent to Mohana's registered mobile device."
+            status_message = "High-risk transaction paused/frozen for secure OTP verification and approval."
             verification_required = True
-            balance_after = balance_before  # No deduction until approved
+            balance_after = balance_before  # No deduction until user verifies OTP and explicitly approves
             
-            # Create Approval record with dynamic 6-digit numeric OTP
             approval_id = f"APP-{uuid.uuid4().hex[:10].upper()}"
             generated_otp = f"{random.randint(100000, 999999)}"
             approval_rec = TransactionApproval(
@@ -397,42 +353,7 @@ class RiskDecisionOrchestrator:
                 fraud_probability=round(ml_prob, 4),
                 challenge_type="SMS_OTP",
                 verification_token=generated_otp,
-                notes=f"Step-Up OTP Challenge for Mohana. Score: {final_risk_score}/100. Verification OTP: {generated_otp}",
-                expires_at=datetime.now(timezone.utc) + timedelta(minutes=15),
-            )
-            db.add(approval_rec)
-        elif rule_result.hard_block or dev_assessment.is_spoofed_environment or final_risk_score >= 85:
-            decision = PaymentDecision.BLOCK
-            risk_level = RiskLevelEnum.HIGH
-            lifecycle_status = PaymentLifecycleStatus.BLOCKED
-            status_message = "Transaction prohibited and blocked due to critical risk signals."
-            balance_after = balance_before  # No deduction on block
-        elif rule_result.recommended_action == RuleActionImpact.FLAG_REVIEW or final_risk_score >= 31:
-            decision = PaymentDecision.REVIEW
-            risk_level = RiskLevelEnum.MEDIUM if final_risk_score <= 70 else RiskLevelEnum.HIGH
-            lifecycle_status = PaymentLifecycleStatus.REVIEW_REQUIRED
-            status_message = "Transaction flagged for step-up verification / user confirmation."
-            verification_required = True
-            balance_after = balance_before  # No deduction until approved
-            
-            # Create Approval record with dynamic 6-digit numeric OTP
-            approval_id = f"APP-{uuid.uuid4().hex[:10].upper()}"
-            generated_otp = f"{random.randint(100000, 999999)}"
-            approval_rec = TransactionApproval(
-                approval_id=approval_id,
-                payment_id=tx_id,
-                transaction_id=tx_id,
-                customer_id=request.customer_id,
-                user_id=current_user.id if current_user else None,
-                status=ApprovalStatus.PENDING.value,
-                amount=request.amount,
-                currency=request.currency,
-                risk_score=final_risk_score,
-                risk_level=risk_level.value,
-                fraud_probability=round(ml_prob, 4),
-                challenge_type="SMS_OTP",
-                verification_token=generated_otp,
-                notes=f"Flagged for {risk_level.value} risk review. Score: {final_risk_score}/100. Generated OTP: {generated_otp}",
+                notes=f"High-Risk Security Hold. Score: {final_risk_score}/100. Verification OTP: {generated_otp}",
                 expires_at=datetime.now(timezone.utc) + timedelta(minutes=15),
             )
             db.add(approval_rec)
@@ -445,14 +366,67 @@ class RiskDecisionOrchestrator:
                 status="open",
                 decision=None,
                 notes=(
-                    f"Auto-flagged transaction review. Risk Score: {final_risk_score}/100, "
+                    f"Auto-flagged High-Risk transaction review. Risk Score: {final_risk_score}/100, "
                     f"ML Probability: {ml_prob:.4f}. Triggered: {', '.join(rule_result.rule_summary_reasons) or 'Elevated Risk Score'}."
                 ),
             )
             db.add(investigation)
+
+        elif final_risk_score >= 31 or rule_result.recommended_action == RuleActionImpact.FLAG_REVIEW:
+            # MEDIUM RISK: Pause/freeze transaction, generate OTP, require explicit verification + Allow/Approve
+            decision = PaymentDecision.REVIEW
+            risk_level = RiskLevelEnum.MEDIUM
+            lifecycle_status = PaymentLifecycleStatus.REVIEW_REQUIRED
+            status_message = "Medium-risk transaction paused/frozen for step-up OTP verification and approval."
+            verification_required = True
+            balance_after = balance_before  # No deduction until user verifies OTP and explicitly approves
+            
+            approval_id = f"APP-{uuid.uuid4().hex[:10].upper()}"
+            generated_otp = f"{random.randint(100000, 999999)}"
+            approval_rec = TransactionApproval(
+                approval_id=approval_id,
+                payment_id=tx_id,
+                transaction_id=tx_id,
+                customer_id=request.customer_id,
+                user_id=current_user.id if current_user else None,
+                status=ApprovalStatus.PENDING.value,
+                amount=request.amount,
+                currency=request.currency,
+                risk_score=final_risk_score,
+                risk_level=risk_level.value,
+                fraud_probability=round(ml_prob, 4),
+                challenge_type="SMS_OTP",
+                verification_token=generated_otp,
+                notes=f"Medium-Risk Step-Up OTP Challenge. Score: {final_risk_score}/100. Verification OTP: {generated_otp}",
+                expires_at=datetime.now(timezone.utc) + timedelta(minutes=15),
+            )
+            db.add(approval_rec)
+
+            case_id = f"CASE-{uuid.uuid4().hex[:8].upper()}"
+            investigation = Investigation(
+                case_id=case_id,
+                transaction_id=tx_id,
+                investigator_id=None,
+                status="open",
+                decision=None,
+                notes=(
+                    f"Auto-flagged Medium-Risk transaction review. Risk Score: {final_risk_score}/100, "
+                    f"ML Probability: {ml_prob:.4f}. Triggered: {', '.join(rule_result.rule_summary_reasons) or 'Elevated Velocity / Anomaly'}."
+                ),
+            )
+            db.add(investigation)
+
         else:
+            # LOW RISK: Frictionless Auto-Approval, deduct balance, save transaction
             decision = PaymentDecision.ALLOW
             risk_level = RiskLevelEnum.LOW
+            lifecycle_status = PaymentLifecycleStatus.SUCCEEDED
+            status_message = "Low-risk transaction authorized successfully with zero friction."
+            verification_required = False
+            approval_id = None
+            generated_otp = None
+            customer.simulated_balance = max(0.0, balance_before - request.amount)
+            balance_after = customer.simulated_balance
             lifecycle_status = PaymentLifecycleStatus.SUCCEEDED
             status_message = "Payment pre-authorized successfully. Transaction verified, authorized, and completed."
             
@@ -761,6 +735,8 @@ class RiskDecisionOrchestrator:
                     or ("mohana" in (current_user.email or "").lower() and "mohana" in (approval.customer_id or "").lower())
                     or ("monisha" in (current_user.email or "").lower() and "monisha" in (approval.customer_id or "").lower())
                     or ("sowmiya" in (current_user.email or "").lower() and "sowmiya" in (approval.customer_id or "").lower())
+                    or ("priya" in (current_user.email or "").lower() and "priya" in (approval.customer_id or "").lower())
+                    or ("ajay" in (current_user.email or "").lower() and "ajay" in (approval.customer_id or "").lower())
                 )
                 if not cust_match:
                     cust_obj = db.query(Customer).filter(Customer.customer_id == approval.customer_id).first()
@@ -814,13 +790,12 @@ class RiskDecisionOrchestrator:
                     token_val = approval.verification_token.strip()
                     is_valid = (
                         entered_val == token_val
-                        or (entered_val.isdigit() and len(entered_val) == 6)
                         or entered_val == "BIOMETRIC_TOUCH_ID"
                     )
                     if not is_valid:
                         raise HTTPException(
                             status_code=status.HTTP_400_BAD_REQUEST,
-                            detail=f"Invalid OTP code! The entered code '{challenge_response}' is not a valid 6-digit authorization passcode.",
+                            detail=f"Invalid OTP code! The entered code '{challenge_response}' does not match the 6-digit security token.",
                         )
                 elif current_user and current_user.role not in ("ADMIN", "FRAUD_INVESTIGATOR"):
                     raise HTTPException(
@@ -832,7 +807,7 @@ class RiskDecisionOrchestrator:
             if customer and float(customer.simulated_balance or 0.0) < approval.amount:
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Insufficient simulated wallet balance: Available ${customer.simulated_balance:.2f}, Required ${approval.amount:.2f}",
+                    detail=f"Insufficient Balance: Available ₹{customer.simulated_balance:,.2f}, Required ₹{approval.amount:,.2f}",
                 )
 
             # Enforce state transition

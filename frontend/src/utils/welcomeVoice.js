@@ -3,7 +3,7 @@
  *
  * Dedicated, rock-solid audio & speech synthesis engine for FraudLens AI.
  * Plays a soft, natural, pleasant voice greeting: "Welcome, [UserName]."
- * Guaranteed consistent behavior for Monisha, Mohana, Soumya, Ajay, and Administrator.
+ * Guaranteed consistent behavior for Monisha, Mohana, Sowmiya, Ajay, and Administrator.
  *
  * Features:
  * - One-time duplicate suppression lock (prevents React StrictMode/re-render replay).
@@ -20,7 +20,7 @@ const DEDUPLICATION_INTERVAL_MS = 12000 // 12 seconds cooldown per user
  * Normalizes any user object or string into canonical user name:
  * - Monisha
  * - Mohana
- * - Soumya
+ * - Sowmiya
  * - Ajay
  * - Administrator
  */
@@ -37,7 +37,7 @@ export function normalizeUserName(input) {
   if (raw.includes('admin')) return 'Administrator'
   if (raw.includes('monisha')) return 'Monisha'
   if (raw.includes('mohana')) return 'Mohana'
-  if (raw.includes('soumya') || raw.includes('sowmiya')) return 'Soumya'
+  if (raw.includes('soumya') || raw.includes('sowmiya')) return 'Sowmiya'
   if (raw.includes('ajay') || raw.includes('alexander') || raw.includes('premium')) return 'Ajay'
 
   // Fallback to title-cased name

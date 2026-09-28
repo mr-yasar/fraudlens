@@ -18,6 +18,7 @@ class Alert(Base):
     title = Column(String(200), nullable=True)
     message = Column(Text, nullable=False)
     details_json = Column(Text, nullable=True)
+    entity_id = Column(String(200), nullable=True, index=True)  # Reference ID (e.g. transaction_id) that triggered this alert
     status = Column(String(50), default="OPEN", index=True, nullable=True)  # OPEN, ACKNOWLEDGED, RESOLVED
     is_acknowledged = Column(Boolean, default=False, index=True, nullable=False)
     acknowledged_at = Column(DateTime(timezone=True), nullable=True)

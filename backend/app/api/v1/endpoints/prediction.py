@@ -29,7 +29,7 @@ router = APIRouter()
 )
 def predict_fraud(
     transaction_input: TransactionPredictionInput,
-    current_user: Optional[User] = Depends(get_optional_current_user),
+    current_user: User = Depends(get_current_active_user),
 ) -> PredictionResponse:
     """Evaluate fraud probability and classify transaction as FRAUD or GENUINE."""
     service = FraudPredictionService.get_instance()
@@ -83,7 +83,7 @@ def explain_transaction(
     description="Retrieves precomputed global mean absolute SHAP importance rankings across the active model.",
 )
 def get_global_model_explanation(
-    current_user: Optional[User] = Depends(get_optional_current_user),
+    current_user: User = Depends(get_current_active_user),
 ) -> GlobalExplanationResponse:
     """Retrieve global SHAP feature importance rankings."""
     service = FraudPredictionService.get_instance()
@@ -108,7 +108,7 @@ def get_global_model_explanation(
 )
 def generate_counterfactual_explanation(
     transaction_input: TransactionPredictionInput,
-    current_user: Optional[User] = Depends(get_optional_current_user),
+    current_user: User = Depends(get_current_active_user),
 ) -> Dict[str, Any]:
     """Compute minimal verified counterfactual feature perturbation."""
     service = FraudPredictionService.get_instance()
@@ -144,7 +144,7 @@ def generate_counterfactual_explanation(
 )
 def compare_model_predictions(
     transaction_input: TransactionPredictionInput,
-    current_user: Optional[User] = Depends(get_optional_current_user),
+    current_user: User = Depends(get_current_active_user),
 ) -> Dict[str, Any]:
     """Execute simultaneous multi-model inference benchmark."""
     service = FraudPredictionService.get_instance()

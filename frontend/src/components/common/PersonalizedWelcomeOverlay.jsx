@@ -37,8 +37,8 @@ const USER_THEMES = {
     badgeBg: 'bg-amber-950/90 text-amber-300 border-amber-700/60',
   },
   soumya: {
-    name: 'Soumya',
-    welcomeText: 'Welcome, Soumya',
+    name: 'Sowmiya',
+    welcomeText: 'Welcome, Sowmiya',
     subtitle: 'Identity Verified • Threat Defense Shield Active',
     primaryColor: '#ef4444', // Red / Rose
     secondaryColor: '#f87171',
@@ -48,8 +48,8 @@ const USER_THEMES = {
     badgeBg: 'bg-rose-950/90 text-rose-300 border-rose-700/60',
   },
   sowmiya: {
-    name: 'Soumya',
-    welcomeText: 'Welcome, Soumya',
+    name: 'Sowmiya',
+    welcomeText: 'Welcome, Sowmiya',
     subtitle: 'Identity Verified • Threat Defense Shield Active',
     primaryColor: '#ef4444',
     secondaryColor: '#f87171',

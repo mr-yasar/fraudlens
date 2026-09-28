@@ -193,6 +193,7 @@ class CustomerWalletResponse(BaseModel):
     """Customer wallet, balance, and behavioral baseline summary."""
     customer_id: str
     simulated_balance: float
+    available_balance: Optional[float] = None
     currency: str
     account_age_days: float
     known_beneficiaries: List[BeneficiaryResponse] = Field(default_factory=list)

@@ -130,7 +130,7 @@ def get_customer_id_for_user(user: Optional[User], db: Optional[Session] = None)
     name_l = (user.name or "").lower()
 
     if "ajay" in email_l or "ajay" in name_l or "premium" in email_l or "alexander" in name_l or "alexander" in email_l or "alex" in email_l:
-        return "CUST_PREMIUM_004"
+        return "CUST_AJAY_004"
     if "monisha" in email_l or "monisha" in name_l:
         return "CUST_MONISHA_001"
     if "mohana" in email_l or "mohana" in name_l:

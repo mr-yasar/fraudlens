@@ -13,6 +13,9 @@ from backend.app.models.investigation import Investigation
 from backend.app.models.audit_log import AuditLog
 from backend.app.models.beneficiary import Beneficiary
 from backend.app.models.device import CustomerDevice
+from backend.app.models.session import UserSession
+from backend.app.models.behavioral_profile import BehavioralProfile
+from backend.app.models.alert import Alert
 from backend.app.models.approval import TransactionApproval
 from backend.app.models.payment_intent import PaymentIntent
 from backend.app.schemas.user import UserRole
@@ -267,10 +270,81 @@ def init_db(db: Session) -> None:
         u_premium.account_status = "ACTIVE"
         db.commit()
 
-    c_premium = db.query(Customer).filter(Customer.customer_id.in_(["CUST_PREMIUM_004", "CUST_AJAY_004"])).first()
+    # 7. Seed Customer Priya
+    u_priya = db.query(User).filter(User.email == "priya@fraudlens.ai").first()
+    if not u_priya:
+        u_priya = User(
+            name="Priya",
+            email="priya@fraudlens.ai",
+            password_hash=get_password_hash("Customer@1234"),
+            role="customer",
+            account_tier="STANDARD",
+            account_status="ACTIVE",
+            is_active=True,
+        )
+        db.add(u_priya)
+        db.commit()
+        db.refresh(u_priya)
+    else:
+        u_priya.name = "Priya"
+        u_priya.email = "priya@fraudlens.ai"
+        u_priya.account_tier = "STANDARD"
+        u_priya.account_status = "ACTIVE"
+        db.commit()
+
+    c_priya = db.query(Customer).filter(Customer.customer_id == "CUST_REAL_002").first()
+    if not c_priya:
+        c_priya = Customer(
+            customer_id="CUST_REAL_002",
+            name="Priya",
+            email="priya@fraudlens.ai",
+            account_age_days=120,
+            simulated_balance=450000.0,
+            currency="INR",
+            risk_segment="Standard Active",
+        )
+        db.add(c_priya)
+        db.commit()
+    else:
+        c_priya.name = "Priya"
+        c_priya.email = "priya@fraudlens.ai"
+        db.commit()
+
+    # Database Migration: Cleanly migrate any existing CUST_PREMIUM_004 references to CUST_AJAY_004
+    try:
+        from backend.app.models.transaction import Transaction
+        old_bp = db.query(BehavioralProfile).filter(BehavioralProfile.customer_id == "CUST_PREMIUM_004").first()
+        new_bp = db.query(BehavioralProfile).filter(BehavioralProfile.customer_id == "CUST_AJAY_004").first()
+        if old_bp and new_bp:
+            db.delete(old_bp)
+            db.commit()
+        elif old_bp:
+            old_bp.customer_id = "CUST_AJAY_004"
+            db.commit()
+
+        db.query(CustomerDevice).filter(CustomerDevice.customer_id == "CUST_PREMIUM_004").update({CustomerDevice.customer_id: "CUST_AJAY_004"}, synchronize_session=False)
+        db.query(UserSession).filter(UserSession.customer_id == "CUST_PREMIUM_004").update({UserSession.customer_id: "CUST_AJAY_004"}, synchronize_session=False)
+        db.query(Beneficiary).filter(Beneficiary.customer_id == "CUST_PREMIUM_004").update({Beneficiary.customer_id: "CUST_AJAY_004"}, synchronize_session=False)
+        db.query(Alert).filter(Alert.customer_id == "CUST_PREMIUM_004").update({Alert.customer_id: "CUST_AJAY_004"}, synchronize_session=False)
+        db.query(Transaction).filter(Transaction.customer_id == "CUST_PREMIUM_004").update({Transaction.customer_id: "CUST_AJAY_004"}, synchronize_session=False)
+        db.commit()
+
+        old_cust = db.query(Customer).filter(Customer.customer_id == "CUST_PREMIUM_004").first()
+        new_cust = db.query(Customer).filter(Customer.customer_id == "CUST_AJAY_004").first()
+        if old_cust and new_cust:
+            db.delete(old_cust)
+            db.commit()
+        elif old_cust:
+            old_cust.customer_id = "CUST_AJAY_004"
+            db.commit()
+    except Exception as e:
+        logger.error(f"Migration error: {e}")
+        db.rollback()
+
+    c_premium = db.query(Customer).filter(Customer.customer_id == "CUST_AJAY_004").first()
     if not c_premium:
         c_premium = Customer(
-            customer_id="CUST_PREMIUM_004",
+            customer_id="CUST_AJAY_004",
             name="Ajay",
             email="ajay@fraudlens.ai",
             account_age_days=720,
@@ -288,12 +362,11 @@ def init_db(db: Session) -> None:
         db.commit()
 
     # Seed User 4 Devices
-    from backend.app.models.device import CustomerDevice
     dev1 = db.query(CustomerDevice).filter(CustomerDevice.device_identifier == "dev-mbp-m3").first()
     if not dev1:
         dev1 = CustomerDevice(
             user_id=u_premium.id,
-            customer_id="CUST_PREMIUM_004",
+            customer_id="CUST_AJAY_004",
             device_identifier="dev-mbp-m3",
             device_name="MacBook Pro M3 Max",
             device_type="desktop_macos",
@@ -312,7 +385,7 @@ def init_db(db: Session) -> None:
     if not dev2:
         dev2 = CustomerDevice(
             user_id=u_premium.id,
-            customer_id="CUST_PREMIUM_004",
+            customer_id="CUST_AJAY_004",
             device_identifier="dev-iphone-15pm",
             device_name="iPhone 15 Pro Max",
             device_type="mobile_ios",
@@ -329,12 +402,11 @@ def init_db(db: Session) -> None:
     db.commit()
 
     # Seed User 4 Sessions
-    from backend.app.models.session import UserSession
     s1 = db.query(UserSession).filter(UserSession.session_id == "sess-premium-mumbai-01").first()
     if not s1:
         s1 = UserSession(
             user_id=u_premium.id,
-            customer_id="CUST_PREMIUM_004",
+            customer_id="CUST_AJAY_004",
             session_id="sess-premium-mumbai-01",
             device_id="dev-mbp-m3",
             device_name="MacBook Pro M3 Max",
@@ -349,7 +421,7 @@ def init_db(db: Session) -> None:
     if not s2:
         s2 = UserSession(
             user_id=u_premium.id,
-            customer_id="CUST_PREMIUM_004",
+            customer_id="CUST_AJAY_004",
             session_id="sess-premium-blr-02",
             device_id="dev-iphone-15pm",
             device_name="iPhone 15 Pro Max",
@@ -362,11 +434,10 @@ def init_db(db: Session) -> None:
     db.commit()
 
     # Seed User 4 Beneficiaries
-    from backend.app.models.beneficiary import Beneficiary
-    b_cf = db.query(Beneficiary).filter(Beneficiary.customer_id == "CUST_PREMIUM_004", Beneficiary.beneficiary_name == "Cloudflare Global Services").first()
+    b_cf = db.query(Beneficiary).filter(Beneficiary.customer_id == "CUST_AJAY_004", Beneficiary.beneficiary_name == "Cloudflare Global Services").first()
     if not b_cf:
         b1 = Beneficiary(
-            customer_id="CUST_PREMIUM_004",
+            customer_id="CUST_AJAY_004",
             beneficiary_name="Cloudflare Global Services",
             beneficiary_account="ACCT-CF-883921",
             category="Infrastructure & Security",
@@ -375,7 +446,7 @@ def init_db(db: Session) -> None:
             total_transfers=18,
         )
         b2 = Beneficiary(
-            customer_id="CUST_PREMIUM_004",
+            customer_id="CUST_AJAY_004",
             beneficiary_name="AWS Enterprise Cloud",
             beneficiary_account="ACCT-AWS-991204",
             category="Cloud Computing",
@@ -384,7 +455,7 @@ def init_db(db: Session) -> None:
             total_transfers=24,
         )
         b3 = Beneficiary(
-            customer_id="CUST_PREMIUM_004",
+            customer_id="CUST_AJAY_004",
             beneficiary_name="Silicon Valley Tech Fund",
             beneficiary_account="ACCT-SVB-104928",
             category="Corporate Investments",
@@ -393,7 +464,7 @@ def init_db(db: Session) -> None:
             total_transfers=6,
         )
         b4 = Beneficiary(
-            customer_id="CUST_PREMIUM_004",
+            customer_id="CUST_AJAY_004",
             beneficiary_name="Stripe Global Settlement",
             beneficiary_account="ACCT-ST-442019",
             category="Payment Processing",
@@ -405,12 +476,11 @@ def init_db(db: Session) -> None:
         db.commit()
 
     # Seed User 4 Behavioral Profile
-    from backend.app.models.behavioral_profile import BehavioralProfile
-    bp = db.query(BehavioralProfile).filter(BehavioralProfile.customer_id == "CUST_PREMIUM_004").first()
+    bp = db.query(BehavioralProfile).filter(BehavioralProfile.customer_id == "CUST_AJAY_004").first()
     if not bp:
         bp = BehavioralProfile(
             user_id=u_premium.id,
-            customer_id="CUST_PREMIUM_004",
+            customer_id="CUST_AJAY_004",
             normal_transaction_range="₹5,000 - ₹150,000",
             normal_transaction_frequency="2-4 transactions/day",
             common_transaction_times="08:00 - 22:00 IST",
@@ -424,13 +494,12 @@ def init_db(db: Session) -> None:
         db.commit()
 
     # Seed initial security alert for User 4 if none exist
-    from backend.app.models.alert import Alert
-    p_alert = db.query(Alert).filter(Alert.customer_id == "CUST_PREMIUM_004").first()
+    p_alert = db.query(Alert).filter(Alert.customer_id == "CUST_AJAY_004").first()
     if not p_alert:
         p_alert = Alert(
             alert_id="ALT-PREM-INIT-001",
             user_id=u_premium.id,
-            customer_id="CUST_PREMIUM_004",
+            customer_id="CUST_AJAY_004",
             alert_type="NEW_ENVIRONMENT_INITIALIZED",
             severity="INFO",
             title="Premium Security Environment Activated",

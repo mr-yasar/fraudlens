@@ -121,6 +121,7 @@ def get_customer_wallet(
     return CustomerWalletResponse(
         customer_id=customer.customer_id,
         simulated_balance=float(customer.simulated_balance or 547855.0),
+        available_balance=float(customer.simulated_balance or 547855.0),
         currency=customer.currency or "INR",
         account_age_days=profile.account_age_days,
         known_beneficiaries=bene_dtos,
@@ -149,6 +150,7 @@ def process_approval_action(
         action=payload.action,
         current_user=current_user,
         notes=payload.notes,
+        challenge_response=payload.challenge_response,
     )
 
 

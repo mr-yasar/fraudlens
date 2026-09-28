@@ -68,7 +68,7 @@ export default function TransactionsView({ onViewExplanation, user, isAdmin }) {
         risk_level: riskFilter,
         prediction: predictionFilter,
         search: searchQuery,
-        customer_id: isCustomer ? (customerPersona.backendCustomerId || customerPersona.customerId) : undefined,
+        customer_id: isCustomer ? customerPersona.customerId : undefined,
       })
       setTransactions(data.items || [])
       setTotal(data.total || 0)
