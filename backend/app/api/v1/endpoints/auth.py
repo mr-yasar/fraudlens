@@ -90,6 +90,7 @@ def register(
         email=new_user.email,
         name=new_user.name,
         role=UserRole.CUSTOMER,
+        account_tier=new_user.account_tier or "STANDARD",
     )
 
 
@@ -147,6 +148,7 @@ def login(
         email=user.email,
         name=user.name,
         role=user_role,
+        account_tier=user.account_tier or "STANDARD",
     )
 
 

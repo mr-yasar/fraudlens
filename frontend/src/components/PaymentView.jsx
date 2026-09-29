@@ -301,8 +301,14 @@ export default function PaymentView({
   onSelectTransaction,
   initialPreset = 'scenario_monisha_safe',
 }) {
-  const isCustomer = user?.role?.toLowerCase() === 'customer' || user?.role?.toLowerCase() === 'user' || !!selectedPersona
-  const customerPersona = useMemo(() => getCustomerPersona(user, selectedPersona), [user, selectedPersona])
+  const isCustomer = user?.role?.toLowerCase() === 'customer' || user?.role?.toLowerCase() === 'user' || (!isAdmin && !!user)
+  const customerPersona = useMemo(() => {
+    // If the authenticated user is an actual customer, their profile is sacred and cannot be overridden by selectedPersona
+    if (isCustomer && !isAdmin) {
+      return getCustomerPersona(user, null)
+    }
+    return getCustomerPersona(user, selectedPersona)
+  }, [user, selectedPersona, isCustomer, isAdmin])
 
   // Auto-Detect Client Hardware Platform in proper working condition
   const detectedClientPlatform = useMemo(() => {

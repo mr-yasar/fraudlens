@@ -56,6 +56,7 @@ import {
   Copy,
 } from 'lucide-react'
 import AIOrb from './ai/AIOrb'
+import { getCustomerPersona } from '../utils/customerHelper'
 
 const BASE_URL = '/api/v1'
 
@@ -226,7 +227,8 @@ export default function AiAssistantPanel({
       : 'customer')
 
   const roleConfig = ROLE_PROFILES[detectedRoleKey] || ROLE_PROFILES.customer
-  const userName = user?.name || user?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'User'
+  const customerPersona = getCustomerPersona(user)
+  const userName = (user && !isAdmin ? customerPersona?.name : null) || user?.name || user?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'User'
 
   const [isOpen, setIsOpen] = useState(false)
   const [isMinimized, setIsMinimized] = useState(false)

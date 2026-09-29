@@ -23,6 +23,7 @@ class Token(BaseModel):
     email: str
     name: str
     role: UserRole
+    account_tier: Optional[str] = "STANDARD"
 
     @field_validator("role", mode="before")
     @classmethod

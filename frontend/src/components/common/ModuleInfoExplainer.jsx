@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import {
   X,
   Sparkles,
@@ -856,13 +857,13 @@ export default function ModuleInfoExplainer({
       )}
 
       {/* =========================================================================
-          2. COMPACT, VISUAL-FIRST CHARCOAL GREY POPUP
+          2. COMPACT, VISUAL-FIRST CHARCOAL GREY POPUP (Mounted at document.body via Portal)
           ========================================================================= */}
-      {isRendered && (
+      {isRendered && typeof document !== 'undefined' && createPortal(
         <div
           role="dialog"
           aria-modal="true"
-          className={`fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-950/80 backdrop-blur-md transition-opacity duration-300 ${
+          className={`fixed inset-0 z-[99999] flex items-center justify-center p-4 sm:p-6 bg-slate-950/80 backdrop-blur-md transition-opacity duration-300 ${
             isAnimatingIn ? 'opacity-100' : 'opacity-0'
           }`}
           onClick={handleClose}
@@ -949,7 +950,8 @@ export default function ModuleInfoExplainer({
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   )

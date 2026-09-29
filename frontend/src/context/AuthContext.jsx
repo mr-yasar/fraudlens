@@ -40,25 +40,19 @@ export function AuthProvider({ children }) {
       }
 
       const data = await response.json()
-      setToken(data.access_token)
-      setUser({
+      const userPayload = {
         id: data.user_id,
         email: data.email,
         name: data.name,
         role: data.role,
-      })
+        account_tier: data.account_tier || 'STANDARD',
+      }
+      setToken(data.access_token)
+      setUser(userPayload)
 
       localStorage.setItem('fraudlens_token', data.access_token)
       localStorage.setItem('access_token', data.access_token)
-      localStorage.setItem(
-        'fraudlens_user',
-        JSON.stringify({
-          id: data.user_id,
-          email: data.email,
-          name: data.name,
-          role: data.role,
-        })
-      )
+      localStorage.setItem('fraudlens_user', JSON.stringify(userPayload))
       return data
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Authentication failed'
@@ -88,25 +82,19 @@ export function AuthProvider({ children }) {
       }
 
       const data = await response.json()
-      setToken(data.access_token)
-      setUser({
+      const userPayload = {
         id: data.user_id,
         email: data.email,
         name: data.name,
         role: data.role,
-      })
+        account_tier: data.account_tier || 'STANDARD',
+      }
+      setToken(data.access_token)
+      setUser(userPayload)
 
       localStorage.setItem('fraudlens_token', data.access_token)
       localStorage.setItem('access_token', data.access_token)
-      localStorage.setItem(
-        'fraudlens_user',
-        JSON.stringify({
-          id: data.user_id,
-          email: data.email,
-          name: data.name,
-          role: data.role,
-        })
-      )
+      localStorage.setItem('fraudlens_user', JSON.stringify(userPayload))
       return data
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Registration failed'
@@ -130,7 +118,7 @@ export function AuthProvider({ children }) {
     try { window.history.replaceState(null, '', window.location.pathname) } catch {}
   }, [])
 
-  // Verify token on mount
+  // Verify token on mount and synchronize current user profile
   useEffect(() => {
     if (!token) return
 
@@ -143,6 +131,21 @@ export function AuthProvider({ children }) {
       .then((res) => {
         if (!res.ok) {
           logout()
+          return null
+        }
+        return res.json()
+      })
+      .then((userData) => {
+        if (userData) {
+          const syncedUser = {
+            id: userData.id,
+            email: userData.email,
+            name: userData.name,
+            role: userData.role,
+            account_tier: userData.account_tier || 'STANDARD',
+          }
+          setUser(syncedUser)
+          localStorage.setItem('fraudlens_user', JSON.stringify(syncedUser))
         }
       })
       .catch(() => {})

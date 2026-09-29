@@ -63,10 +63,15 @@ function CommandCenterApp() {
 
   // Navigation State
   const [activeView, setActiveView] = useState('dashboard')
-  const [selectedPersona, setSelectedPersona] = useState('scenario_monisha_safe')
+  const [selectedPersona, setSelectedPersona] = useState(null)
   const [navHistory, setNavHistory] = useState([]) // history stack for back navigation
   const [mobileOpen, setMobileOpen] = useState(false)
   const [showHowItWorks, setShowHowItWorks] = useState(false)
+
+  // Clear selected persona override whenever authenticated user changes
+  useEffect(() => {
+    setSelectedPersona(null)
+  }, [user?.id, user?.email])
 
   // Floating AI Assistant & Expand/Minimize Synchronization
   const [aiAssistantOpen, setAiAssistantOpen] = useState(false)

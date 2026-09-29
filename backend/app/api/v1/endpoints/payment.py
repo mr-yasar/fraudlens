@@ -52,6 +52,11 @@ def initiate_payment(
     current_user: User = Depends(get_current_user),
 ) -> PreAuthDecisionResult:
     """Evaluate submitted transaction fraud risk and compute multi-factor risk score."""
+    from backend.app.api.deps import get_customer_id_for_user
+    user_cust_id = get_customer_id_for_user(current_user, db)
+    if user_cust_id is not None:
+        payload.customer_id = user_cust_id
+
     try:
         effective_key = idempotency_key_header or payload.idempotency_key
         decision_result = RiskDecisionOrchestrator.evaluate_and_process_payment(
@@ -82,6 +87,11 @@ def get_customer_wallet(
     current_user: User = Depends(get_current_user),
 ) -> CustomerWalletResponse:
     """Retrieve simulated wallet balance and known recipients for payment screen."""
+    from backend.app.api.deps import get_customer_id_for_user
+    user_cust_id = get_customer_id_for_user(current_user, db)
+    if user_cust_id is not None:
+        customer_id = user_cust_id
+
     customer = db.query(Customer).filter(Customer.customer_id == customer_id).first()
     if not customer:
         customer = Customer(
@@ -202,6 +212,7 @@ def list_pending_approvals(
 ) -> List[ApprovalDetailResponse]:
     """List unresolved step-up verification challenges."""
     from backend.app.api.deps import get_customer_id_for_user
+    query = db.query(TransactionApproval).filter(TransactionApproval.status == ApprovalStatus.PENDING.value)
     user_cust_id = get_customer_id_for_user(current_user, db)
     if user_cust_id is not None:
         query = query.filter(TransactionApproval.customer_id == user_cust_id)

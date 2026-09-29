@@ -36,7 +36,11 @@ export default function ContextualModuleHelp({ moduleKey = 'analyzer', className
       {/* Contextual Trigger Button with Cyber Neon Glow */}
       <button
         type="button"
-        onClick={() => setIsOpen(true)}
+        onClick={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          setIsOpen(true)
+        }}
         className="p-1.5 rounded-xl bg-slate-900/90 hover:bg-cyan-950/60 text-slate-300 hover:text-cyan-300 border border-slate-700/80 hover:border-cyan-400/80 transition-all duration-300 shadow-md hover:shadow-[0_0_15px_rgba(6,182,212,0.35)] flex items-center gap-1.5 group cursor-pointer active:scale-95"
         title="View high-graphics interactive module guide"
         aria-label="Open high-graphics module information"
