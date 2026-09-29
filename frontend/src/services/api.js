@@ -322,6 +322,37 @@ export const auditLogsApi = {
   },
 }
 
+// 5b. Admin Database Management & Storage Integrity API
+export const adminDatabaseApi = {
+  getHealth: async () => {
+    const res = await fetch(`${BASE_URL}/admin/database/health`, {
+      headers: getAuthHeaders(),
+    })
+    return handleResponse(res)
+  },
+  runIntegrityCheck: async () => {
+    const res = await fetch(`${BASE_URL}/admin/database/integrity-check`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+    })
+    return handleResponse(res)
+  },
+  optimize: async () => {
+    const res = await fetch(`${BASE_URL}/admin/database/optimize`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+    })
+    return handleResponse(res)
+  },
+  createBackup: async () => {
+    const res = await fetch(`${BASE_URL}/admin/database/backup`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+    })
+    return handleResponse(res)
+  },
+}
+
 // 6. Admin ML & Dataset API (ADMIN Only)
 export const adminMlApi = {
   listModels: async () => {

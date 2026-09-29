@@ -229,13 +229,15 @@ export default function DashboardView({ onSelectTransaction, onOpenCase, onOpenP
                 <ContextualModuleHelp moduleKey="dashboard" />
               </div>
             </div>
-            <button
-              onClick={() => onOpenPayment && onOpenPayment('scenario_monisha_safe')}
-              className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-bold shadow-lg shadow-cyan-950/40 transition shrink-0"
-            >
-              <CreditCard className="w-3.5 h-3.5" />
-              <span>Open Pre-Auth Gateway</span>
-            </button>
+            {!isAdmin && (
+              <button
+                onClick={() => onOpenPayment && onOpenPayment('scenario_monisha_safe')}
+                className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-bold shadow-lg shadow-cyan-950/40 transition shrink-0"
+              >
+                <CreditCard className="w-3.5 h-3.5" />
+                <span>Open Pre-Auth Gateway</span>
+              </button>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -1321,16 +1323,18 @@ export default function DashboardView({ onSelectTransaction, onOpenCase, onOpenP
                 </div>
               </div>
 
-              <button
-                onClick={() => {
-                  setActiveModal(null)
-                  onOpenPayment && onOpenPayment(`scenario_${activeModal.data.name.toLowerCase()}_safe`)
-                }}
-                className="w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold transition flex items-center justify-center gap-2 shadow-lg"
-              >
-                <CreditCard className="w-4 h-4" />
-                <span>Open Pre-Auth Gateway for {activeModal.data.name}</span>
-              </button>
+              {!isAdmin && onOpenPayment && (
+                <button
+                  onClick={() => {
+                    setActiveModal(null)
+                    onOpenPayment(`scenario_${activeModal.data.name.toLowerCase()}_safe`)
+                  }}
+                  className="w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold transition flex items-center justify-center gap-2 shadow-lg"
+                >
+                  <CreditCard className="w-4 h-4" />
+                  <span>Open Pre-Auth Gateway for {activeModal.data.name}</span>
+                </button>
+              )}
             </div>
           )}
 

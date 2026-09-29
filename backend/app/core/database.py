@@ -40,7 +40,7 @@ def get_engine():
                 echo=settings.DB_ECHO,
             )
 
-    # Attach fast PRAGMAs for SQLite engines to boost concurrent read/write speed
+    # Attach fast & hardened PRAGMAs for SQLite engines to boost concurrent read/write speed and referential integrity
     @event.listens_for(eng, "connect")
     def set_sqlite_pragma(dbapi_connection, connection_record):
         if "sqlite" in str(eng.url):
@@ -48,8 +48,11 @@ def get_engine():
             try:
                 cursor.execute("PRAGMA journal_mode=WAL")
                 cursor.execute("PRAGMA synchronous=NORMAL")
+                cursor.execute("PRAGMA foreign_keys=ON")
+                cursor.execute("PRAGMA busy_timeout=10000")
                 cursor.execute("PRAGMA cache_size=10000")
                 cursor.execute("PRAGMA temp_store=MEMORY")
+                cursor.execute("PRAGMA mmap_size=268435456")
             finally:
                 cursor.close()
 

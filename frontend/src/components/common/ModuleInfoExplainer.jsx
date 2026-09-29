@@ -863,18 +863,18 @@ export default function ModuleInfoExplainer({
         <div
           role="dialog"
           aria-modal="true"
-          className={`fixed inset-0 z-[99999] flex items-center justify-center p-4 sm:p-6 bg-slate-950/80 backdrop-blur-md transition-opacity duration-300 ${
+          className={`fixed inset-0 z-[99999] overflow-y-auto flex items-start justify-center pt-3 sm:pt-6 md:pt-8 px-3 sm:px-4 pb-12 bg-slate-950/85 backdrop-blur-md transition-opacity duration-300 ${
             isAnimatingIn ? 'opacity-100' : 'opacity-0'
           }`}
           onClick={handleClose}
         >
-          {/* Small Compact Card */}
+          {/* Top-Aligned Modal Card */}
           <div
             onClick={(e) => e.stopPropagation()}
-            className={`relative w-full max-w-[440px] sm:max-w-[480px] rounded-3xl bg-[#0d121c]/95 border border-slate-700/70 shadow-[0_25px_60px_rgba(0,0,0,0.9),0_0_35px_rgba(6,182,212,0.25)] overflow-hidden transition-all duration-300 transform ${
+            className={`relative w-full max-w-[440px] sm:max-w-[490px] mt-0 rounded-3xl bg-[#0d121c]/95 border border-slate-700/80 shadow-[0_25px_60px_rgba(0,0,0,0.95),0_0_35px_rgba(6,182,212,0.3)] overflow-hidden transition-all duration-300 transform ${
               isAnimatingIn
                 ? 'scale-100 translate-y-0 opacity-100'
-                : 'scale-95 translate-y-4 opacity-0'
+                : 'scale-95 -translate-y-4 opacity-0'
             }`}
           >
             {/* HERO VISUAL CANVAS (The Main Visual Attraction) */}

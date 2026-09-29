@@ -105,11 +105,19 @@ function CommandCenterApp() {
     setAiAssistantOpen(true)
   }, [previousViewBeforeCopilot, navHistory, navigateTo])
 
+  // Guard payment gateway: Admin never accesses Payment Gateway
+  useEffect(() => {
+    if (isAdmin && activeView === 'payment') {
+      setActiveView('dashboard')
+    }
+  }, [isAdmin, activeView])
+
   const handleSelectPersona = useCallback((personaId) => {
+    if (isAdmin) return
     setSelectedPersona(personaId)
     setActiveView('payment')
     setMobileOpen(false)
-  }, [])
+  }, [isAdmin])
 
   // Go back to the previous view
   const navigateBack = useCallback(() => {
@@ -441,7 +449,7 @@ function CommandCenterApp() {
                     isAdmin={isAdmin}
                     onSelectTransaction={handleSelectTransaction}
                     onOpenCase={() => navigateTo('investigations')}
-                    onOpenPayment={handleSelectPersona}
+                    onOpenPayment={isAdmin ? null : handleSelectPersona}
                   />
                 )
               )}
@@ -486,7 +494,7 @@ function CommandCenterApp() {
                 />
               )}
 
-              {activeView === 'payment' && (
+              {activeView === 'payment' && !isAdmin && (
                 <PaymentView
                   user={user}
                   isAdmin={isAdmin}

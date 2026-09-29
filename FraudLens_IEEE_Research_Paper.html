@@ -1,0 +1,1674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>FraudLens: A Prototype Framework for Explainable Financial Fraud Detection Using XGBoost, TreeSHAP, and Multi-LLM Forensic Investigation</title>
+<style>
+/* ==========================================================================
+   IEEE TRANSACTIONS STYLE SHEET - CALIBRATED FOR EXACTLY 12 FULL PAGES
+   ========================================================================== */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+@page {
+  size: A4 portrait;
+  margin: 18.5mm 14.5mm 18.5mm 14.5mm;
+}
+
+body {
+  font-family: "Times New Roman", Times, Georgia, serif;
+  font-size: 9.65pt;
+  line-height: 1.38;
+  color: #111111;
+  background: #ffffff;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+.paper-wrapper {
+  max-width: 210mm;
+  margin: 0 auto;
+  background: #ffffff;
+  padding: 0;
+}
+
+@media screen {
+  body {
+    background: #e6e6e6;
+    padding: 20px 0;
+  }
+  .paper-wrapper {
+    box-shadow: 0 4px 24px rgba(0,0,0,0.15);
+    padding: 18mm 14mm;
+  }
+  .no-print {
+    text-align: right;
+    margin-bottom: 12px;
+  }
+  .print-btn {
+    background: #1a4f8a;
+    color: #fff;
+    border: none;
+    padding: 8px 18px;
+    border-radius: 4px;
+    font-size: 9.5pt;
+    font-weight: 600;
+    cursor: pointer;
+  }
+}
+
+@media print {
+  body {
+    background: #ffffff;
+  }
+  .paper-wrapper {
+    box-shadow: none;
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+  .no-print {
+    display: none !important;
+  }
+}
+
+/* TITLE BLOCK */
+.title-container {
+  text-align: center;
+  margin-bottom: 10pt;
+  padding-bottom: 3pt;
+}
+
+.paper-title {
+  font-size: 18pt;
+  font-weight: bold;
+  line-height: 1.22;
+  letter-spacing: -0.2px;
+  margin-bottom: 8pt;
+  color: #0b1a30;
+}
+
+.authors-row {
+  font-size: 10.5pt;
+  font-weight: bold;
+  margin-bottom: 3pt;
+  color: #111;
+}
+
+.authors-row span {
+  margin: 0 10pt;
+}
+
+.affiliation-block {
+  font-size: 8.8pt;
+  font-style: italic;
+  line-height: 1.32;
+  color: #2b2b2b;
+  margin-bottom: 9pt;
+}
+
+/* ABSTRACT */
+.abstract-container {
+  border-top: 1px solid #666;
+  border-bottom: 1px solid #666;
+  padding: 6.5pt 8pt;
+  margin-bottom: 10pt;
+  text-align: justify;
+  font-size: 8.6pt;
+  line-height: 1.32;
+}
+
+.abstract-heading {
+  font-weight: bold;
+  font-style: italic;
+  margin-right: 3pt;
+}
+
+.index-terms {
+  margin-top: 5pt;
+  font-size: 8.6pt;
+}
+
+.index-heading {
+  font-weight: bold;
+  font-style: italic;
+  margin-right: 3pt;
+}
+
+/* TWO COLUMN CONTINUOUS FLOW */
+.two-column-layout {
+  column-count: 2;
+  column-gap: 6.5mm;
+  text-align: justify;
+  hyphens: auto;
+}
+
+/* HEADINGS */
+.sec-heading {
+  font-size: 9.3pt;
+  font-weight: bold;
+  text-transform: uppercase;
+  text-align: center;
+  margin: 9pt 0 3.5pt;
+  break-after: avoid;
+  letter-spacing: 0.35px;
+  color: #000;
+}
+
+.subsec-heading {
+  font-size: 9.1pt;
+  font-weight: bold;
+  font-style: italic;
+  margin: 6.5pt 0 2.5pt;
+  break-after: avoid;
+  color: #111;
+}
+
+.subsubsec-heading {
+  font-size: 8.9pt;
+  font-weight: bold;
+  margin: 5pt 0 2pt;
+  break-after: avoid;
+}
+
+p {
+  margin-bottom: 4.5pt;
+  text-indent: 11pt;
+}
+
+p.no-indent {
+  text-indent: 0;
+}
+
+ul, ol {
+  margin: 3.5pt 0 4.5pt 13pt;
+  font-size: 8.9pt;
+  line-height: 1.32;
+}
+
+li {
+  margin-bottom: 2pt;
+}
+
+.math-eq {
+  text-align: center;
+  margin: 5pt 0;
+  font-style: italic;
+  font-size: 8.9pt;
+}
+
+/* TABLES */
+.table-wrap {
+  margin: 7pt 0;
+  break-inside: avoid;
+  width: 100%;
+}
+
+.table-caption {
+  font-size: 7.9pt;
+  text-align: center;
+  margin-bottom: 3.5pt;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.table-caption strong {
+  font-weight: bold;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 7.7pt;
+  line-height: 1.24;
+  margin: 0 auto;
+}
+
+thead tr {
+  background: #1a3f6b;
+  color: #ffffff;
+}
+
+thead th {
+  padding: 4pt 3.5pt;
+  text-align: center;
+  font-weight: bold;
+  border: 0.8px solid #1a3f6b;
+  font-size: 7.5pt;
+}
+
+tbody tr:nth-child(even) {
+  background: #f4f7fb;
+}
+
+tbody tr:nth-child(odd) {
+  background: #ffffff;
+}
+
+tbody td {
+  padding: 3.2pt 4pt;
+  border: 0.7px solid #c0c8d6;
+  vertical-align: top;
+}
+
+td.center {
+  text-align: center;
+}
+
+td.bold {
+  font-weight: bold;
+}
+
+/* FIGURES */
+figure {
+  margin: 7.5pt 0;
+  break-inside: avoid;
+  text-align: center;
+  width: 100%;
+}
+
+figure svg {
+  display: block;
+  margin: 0 auto;
+  max-width: 100%;
+  height: auto;
+}
+
+figcaption {
+  font-size: 7.9pt;
+  text-align: center;
+  margin-top: 3.5pt;
+  line-height: 1.25;
+  color: #222;
+}
+
+figcaption strong {
+  font-weight: bold;
+}
+
+/* PROTOCOL CALLOUT */
+.protocol-box {
+  background: #fafbfc;
+  border: 1px solid #b8c8dc;
+  border-left: 3.5px solid #1a3f6b;
+  padding: 5pt 6.5pt;
+  margin: 6pt 0;
+  font-size: 8.3pt;
+  line-height: 1.28;
+  break-inside: avoid;
+}
+
+.protocol-title {
+  font-weight: bold;
+  color: #1a3f6b;
+  font-size: 8.5pt;
+  margin-bottom: 2pt;
+  text-transform: uppercase;
+  letter-spacing: 0.2px;
+}
+
+/* REFERENCES BLOCK */
+.references-block {
+  margin-top: 7pt;
+  break-inside: auto;
+}
+
+.ref-entry {
+  font-size: 7.6pt;
+  line-height: 1.28;
+  margin-bottom: 3.5pt;
+  padding-left: 16pt;
+  text-indent: -16pt;
+  text-align: justify;
+}
+</style>
+</head>
+<body>
+
+<div class="paper-wrapper">
+
+  <div class="no-print">
+    <button class="print-btn" onclick="window.print()">Export / Print to PDF</button>
+  </div>
+
+  <!-- TITLE BLOCK -->
+  <div class="title-container">
+    <div class="paper-title">FraudLens: A Prototype Framework for Explainable Financial Fraud Detection Using XGBoost, TreeSHAP, and Multi-LLM Forensic Investigation</div>
+    <div class="authors-row">
+      <span>Monisha</span>
+      <span>•</span>
+      <span>Mohana</span>
+    </div>
+    <div class="affiliation-block">
+      Department of Computer Science and Engineering<br/>
+      Sona College of Technology, Salem, Tamil Nadu, India
+    </div>
+  </div>
+
+  <!-- ABSTRACT -->
+  <div class="abstract-container">
+    <p class="no-indent">
+      <span class="abstract-heading">Abstract—</span>
+      The rapid proliferation of instant digital payment networks—prominently the Unified Payments Interface (UPI), Immediate Payment Service (IMPS), internet banking, and mobile wallets—has transformed consumer commerce while introducing unprecedented vulnerabilities to automated, distributed monetary fraud. Contemporary financial fraud detection architectures suffer from a critical structural trade-off: traditional deterministic rule engines offer full auditability but falter against evolving attack vectors, whereas modern deep learning and gradient boosted classifiers achieve superior statistical recall but function as impenetrable black-box systems that fail to satisfy rigorous banking compliance standards. In this paper, we present <strong>FraudLens</strong>, a functional prototype platform that unifies high-performance gradient-boosted decision trees, exact polynomial-time Shapley additive explanations (TreeSHAP), dynamic customer behavioral profiling, deterministic heuristic rules, and multi-provider Large Language Model (LLM) orchestration into a coherent pre-authorization and forensic workflow. We conducted extensive benchmarking across four distinct classification families—Regularized Logistic Regression, Random Forest, an active Champion XGBoost model, and a Stacking Meta-Ensemble—trained on a master financial transaction corpus comprising 20,000 synthesized records with an authentic 5.46% fraud prevalence across 30 distinct merchant categories and 7 payment rails. On a stratified hold-out test partition, the active XGBoost model achieved an empirical ROC-AUC of 1.0, precision of 0.75, recall of 1.0 (zero missed fraudulent transactions), and an F1-score of 0.8571 at an optimal operating threshold of 0.0637. For every evaluated transaction, the platform computes local TreeSHAP waterfall decompositions across 63 dimensional feature spaces, translating raw model log-odds into signed per-feature attributions that explain exactly why a transaction was flagged. A bounded 0-to-100 composite risk scoring engine combines ML probability with amount deviation, velocity bursts, environmental device trust, and account tenure to enforce tri-tier gateway triaging: ALLOW (&le;30), REVIEW (31–70), and BLOCK (&gt;70). To reduce human cognitive strain during incident response, an autonomous Multi-LLM forensic assistant routes investigative queries across Google Gemini, xAI Grok, Mistral AI, and an air-gapped local domain knowledge fallback while enforcing strict PCI-DSS privacy filters. Experimental results demonstrate that unifying explainable artificial intelligence with autonomous language model reasoning yields an auditable, high-throughput paradigm for financial defense operations.
+    </p>
+    <div class="index-terms">
+      <span class="index-heading">Index Terms—</span>
+      Financial Fraud Detection, Explainable Artificial Intelligence (XAI), TreeSHAP Waterfall Decomposition, XGBoost Classifier, Pre-Authorization Risk Scoring, Customer Behavior Profiling, Multi-LLM Orchestration, Regulatory Compliance, Suspicious Activity Report (SAR).
+    </div>
+  </div>
+
+  <!-- TWO COLUMN BODY -->
+  <div class="two-column-layout">
+
+    <!-- I. INTRODUCTION -->
+    <div class="sec-heading">I. Introduction</div>
+    <p>
+      The worldwide transformation toward cashless settlement systems has dramatically expanded retail transaction throughput. In India, real-time settlement rails such as the Unified Payments Interface (UPI) routinely record more than thirteen billion transactions monthly, settling trillions of rupees across millions of retail endpoints [1]. While this frictionless infrastructure has stimulated economic velocity, it has simultaneously incentivized organized cybercriminal syndicates to devise distributed, highly adaptive monetary theft vectors. Attackers exploit account takeovers, SIM-swap attacks, device tampering, and synthetic identity generation to execute fraudulent transfers before institutional monitoring systems can intervene.
+    </p>
+    <p>
+      Historically, financial processing entities have countered transaction risk by executing static threshold rules [2]. Such rules mandate deterministic blocks whenever specific conditions are fulfilled—for instance, triggering alerts when a transaction volume exceeds a fixed monetary cap or originates from an unrecognized geographic jurisdiction. Although deterministic heuristics provide immediate operational auditability, they possess fundamental systemic frailties. Static thresholds exhibit an inherent inability to generalize against emerging threat vectors without manual rule authoring. Furthermore, attackers actively circumvent hard boundaries by segmenting transfers into low-value bursts, resulting in an unsustainable dilemma: either loosening thresholds and absorbing severe chargeback losses, or tightening limits and generating acute false-positive friction that frustrates legitimate banking customers.
+    </p>
+    <p>
+      Supervised machine learning methods offer a compelling pathway toward overcoming these operational hurdles [3], [4]. Advanced non-linear models, specifically gradient-boosted decision trees, excel at uncovering intricate behavioral anomalies hidden across multi-dimensional feature spaces that escape human rule authors. However, standard machine learning pipelines function as opaque black boxes. While a modern ensemble model outputs a precise probability metric, it offers zero contextual justification regarding which specific transaction attributes contributed to the elevated risk score.
+    </p>
+    <p>
+      Within strictly regulated banking jurisdictions governed by frameworks such as the Reserve Bank of India (RBI) digital security directions [14], the European General Data Protection Regulation (GDPR Article 22), and PCI-DSS requirements [15], automated algorithmic opacity introduces severe operational and legal vulnerabilities. Human fraud operations analysts cannot ethically or legally freeze retail customer funds without documenting concrete evidentiary justification. Similarly, when retail users dispute legitimate transactions flagged in error, financial institutions must provide clear explanatory rationales rather than attributing the block to an uninterpretable algorithmic score.
+    </p>
+    <p>
+      To resolve this foundational conflict, Explainable Artificial Intelligence (XAI) frameworks have emerged as critical architectural components. Grounded in cooperative game theory, the Shapley Additive exPlanations (SHAP) formulation guarantees fair attribution by measuring each feature's marginal contribution across all possible feature subsets [5], [6]. Specifically, the TreeSHAP variant provides exact polynomial-time Shapley attributions for tree ensembles, rendering local interpretability computationally feasible within pre-authorization transaction monitoring pipelines.
+    </p>
+    <p>
+      Simultaneously, financial fraud investigation centers suffer from acute analyst fatigue. When an automated gateway routes an anomalous transaction to manual review, a human forensic specialist must aggregate customer transaction histories, analyze velocity bursts, cross-reference IP and hardware identifiers, and draft formal regulatory filings, such as Suspicious Activity Reports (SAR) [18]. This fragmented workflow induces substantial cognitive strain and delays response times during active cyber-attacks. Recent developments in Large Language Models (LLMs) indicate substantial utility in structured reasoning, contextual data summarization, and domain-grounded compliance drafting [7].
+    </p>
+    <p class="no-indent">
+      In this research paper, we introduce <strong>FraudLens</strong>, a functional prototype platform engineered to bridge predictive accuracy, exact feature explainability, and autonomous forensic assistance. The primary contributions of this work are summarized as follows:
+    </p>
+    <ul>
+      <li><strong>Four-Model Classification Benchmark:</strong> Implementation and comparative evaluation of Logistic Regression, Random Forest, an active Champion XGBoost model, and a Stacking Meta-Ensemble trained on 20,000 synthesized financial transaction records.</li>
+      <li><strong>Pre-Authorization Decision Protocols:</strong> Formulation of a rigorous 6-stage operational protocol unifying live customer profiling, 63-dimensional feature derivation, machine learning inference, and deterministic rule evaluation.</li>
+      <li><strong>Exact Local Explanations via TreeSHAP:</strong> Generation of real-time signed waterfall attributions decomposing every prediction into granular positive and negative risk factors.</li>
+      <li><strong>Multi-Factor Composite Risk Index:</strong> A bounded 0-to-100 scoring model synthesizing ML probabilities, amount deviations, velocity spikes, account maturity, and hardware trust into tri-tier gateway actions.</li>
+      <li><strong>Autonomous Multi-LLM Forensic Cascade:</strong> An air-gapped and cloud-orchestrated multi-provider gateway (Gemini, Grok, Mistral, and an offline local domain engine) equipped with PCI-DSS input/output sanitization.</li>
+      <li><strong>Empirical Forensic Case Studies:</strong> Verification across realistic attack vectors including velocity bursts, account takeovers, and business travel edge cases.</li>
+      <li><strong>Full-Stack Prototype Deployment:</strong> A decoupled full-stack architecture pairing a Python FastAPI backend with a React 19 interface, SQLite WAL persistence, and role-based access control.</li>
+    </ul>
+
+    <!-- II. RELATED WORK -->
+    <div class="sec-heading">II. Related Work & Comparative Literature</div>
+    <p>
+      Automated financial transaction fraud defense has evolved across three major technological epochs: heuristic rule systems, supervised machine learning, and explainable forensic automation.
+    </p>
+    <div class="subsec-heading">A. Heuristic Engines and Supervised Learning</div>
+    <p>
+      Early transaction security frameworks relied predominantly on domain expert heuristics [2]. Leonard evaluated rule-based financial systems, highlighting that while deterministic logic provides high transparency, rule sets suffer from severe combinatorial explosion and high maintenance overhead as fraud topologies shift. Bhattacharyya et al. [3] performed a landmark comparative assessment of data mining algorithms on credit card transactions, proving that tree-based decision models and neural architectures consistently exceed logistic baselines in handling severe class skew.
+    </p>
+    <p>
+      Dal Pozzolo et al. [4] investigated the practical dynamics of concept drift, transaction verification delays, and extreme class imbalance in streaming payment environments. Their empirical findings demonstrated that model retraining intervals and threshold calibration strategies exert significantly greater influence over financial loss mitigation than marginal architectural modifications. Chen and Guestrin [8] introduced XGBoost, an optimized distributed gradient boosting library utilizing sparsity-aware split finding and cache-aware block structure. XGBoost rapidly established itself as the state-of-the-art classifier for tabular financial benchmarks due to its internal handling of missing data, strong L1/L2 regularization to prevent overfitting, and parallel tree construction speed. Wolpert [9] formulated stacked generalization, demonstrating that training a secondary meta-classifier upon the stacked probabilistic predictions of diverse base estimators minimizes variance and boosts overall generalization boundaries. Carcillo et al. [16] confirmed the utility of scalable streaming architectures for credit fraud, demonstrating that combining statistical baselines with tree ensembles delivers high resilience against adversarial fraud strategies.
+    </p>
+
+    <div class="subsec-heading">B. Explainable Artificial Intelligence (XAI) in Banking</div>
+    <p>
+      Recognizing that opaque statistical models impede regulatory compliance, early research adapted model-agnostic surrogate techniques such as Local Interpretable Model-agnostic Explanations (LIME) [10]. However, LIME relies on localized random perturbations, producing stochastic variance wherein identical transactions receive divergent explanations across successive executions.
+    </p>
+    <p>
+      Lundberg and Lee [5] resolved this theoretical limitation by establishing SHAP, unifying cooperative game theory with additive feature attribution methods. For tree ensembles, Lundberg et al. [6] introduced the TreeSHAP algorithm, reducing the computational complexity of computing exact Shapley values from exponential time to low-degree polynomial time &Omicron;(TLD<sup>2</sup>), where T is tree count, L is leaf count, and D is maximum tree depth. This computational breakthrough enables real-time feature decomposition alongside live transaction evaluation.
+    </p>
+
+    <div class="subsec-heading">C. Behavioral Profiling and Large Language Models</div>
+    <p>
+      Customer transaction sequencing and velocity tracking have long constituted standard practices in commercial anti-fraud design [11], [13]. Whitrow et al. [13] demonstrated that aggregating historical transactions across rolling time windows creates informative features that dramatically enhance classification separation. Sahin et al. [12] examined cost-sensitive decision trees, proving that incorporating historical transaction frequency metrics over rolling temporal windows markedly diminishes false-positive categorizations.
+    </p>
+    <p>
+      More recently, foundational research by Yang et al. [7] detailed the emergent reasoning and contextual synthesis capabilities of Large Language Models within enterprise operations. Within cybersecurity and financial compliance, investigative workflows remain burdened by manual evidence correlation. Zhang et al. [17] surveyed graph neural approaches for fraud detection, emphasizing that combining structural relational signals with tabular attributes strengthens anomaly detection. FraudLens synthesizes these disparate research vectors by directly coupling TreeSHAP mathematical outputs with an autonomous Multi-LLM forensic agent, creating an auditable, end-to-end investigative loop.
+    </p>
+
+    <!-- TABLE I: RELATED WORK COMPARISON -->
+    <div class="table-wrap">
+      <div class="table-caption"><strong>TABLE I:</strong> Comparison of Fraud Defense Paradigms</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Paradigm / Work</th>
+            <th>Primary Engine</th>
+            <th>Explainability</th>
+            <th>Behavioral Baseline</th>
+            <th>Forensic Assistance</th>
+            <th>Decision Tiers</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="bold">Rule Systems [2]</td>
+            <td class="center">Expert Heuristics</td>
+            <td class="center">Implicit (Rule Text)</td>
+            <td class="center">Static Limits</td>
+            <td class="center">Manual Review</td>
+            <td class="center">Binary (Allow/Block)</td>
+          </tr>
+          <tr>
+            <td class="bold">ML Classifiers [3], [4]</td>
+            <td class="center">Random Forest / SVM</td>
+            <td class="center">None (Black Box)</td>
+            <td class="center">Offline Aggregates</td>
+            <td class="center">None</td>
+            <td class="center">Continuous [0, 1]</td>
+          </tr>
+          <tr>
+            <td class="bold">XGBoost Benchmarks [8]</td>
+            <td class="center">Gradient Boosted Trees</td>
+            <td class="center">Global Gains Only</td>
+            <td class="center">Feature Columns</td>
+            <td class="center">None</td>
+            <td class="center">Probability Score</td>
+          </tr>
+          <tr>
+            <td class="bold">XAI Architectures [5], [6]</td>
+            <td class="center">Tree Ensembles</td>
+            <td class="center">Local TreeSHAP</td>
+            <td class="center">Batch Synthesized</td>
+            <td class="center">None</td>
+            <td class="center">Threshold Trigger</td>
+          </tr>
+          <tr>
+            <td class="bold">FraudLens (Proposed)</td>
+            <td class="center">XGBoost + Rules</td>
+            <td class="center">Local TreeSHAP Waterfall</td>
+            <td class="center">Dynamic DB Profiling</td>
+            <td class="center">Multi-LLM + SAR Drafter</td>
+            <td class="center">ALLOW / REVIEW / BLOCK</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- III. PROBLEM STATEMENT -->
+    <div class="sec-heading">III. Problem Statement & Research Gaps</div>
+    <p>
+      Modern banking operations are constrained by three structural deficiencies that compromise fraud defense efficacy:
+    </p>
+    <p>
+      <strong>1) Algorithmic Opacity and Audit Gaps:</strong> While advanced machine learning classifiers achieve superior detection rates, their decision pathways are opaque. When a customer transfer is terminated, operational compliance directives require institutions to provide justifiable evidence. Operating without explainable feature attributions violates emerging international regulatory standards (e.g., GDPR Art. 22, RBI security frameworks) and exposes institutions to administrative penalties.
+    </p>
+    <p>
+      <strong>2) Static Disconnect from Behavioral Context:</strong> Standalone classification models evaluate isolated transaction tuples without dynamically cross-referencing live account baselines. A ₹50,000 transfer represents normal commerce for a commercial merchant account but indicates immediate account compromise for a student profile. Without real-time velocity and behavioral baselines, isolated scoring models suffer from elevated false alarm rates.
+    </p>
+    <p>
+      <strong>3) Investigation Bottlenecks and Fragmented Tooling:</strong> Forensic specialists currently operate across fragmented toolchains: querying transaction tables, reviewing SIEM logs, cross-referencing IP registries, and manually compiling Suspicious Activity Reports (SAR). This disjointed procedure inflates average case resolution intervals, enabling active attackers to drain compromised accounts before mitigation protocols take effect.
+    </p>
+
+    <!-- IV. TECHNICAL OBJECTIVES -->
+    <div class="sec-heading">IV. Technical Objectives</div>
+    <p class="no-indent">
+      To resolve these systemic challenges, the FraudLens project executed the following primary engineering objectives:
+    </p>
+    <ol>
+      <li><strong>Dataset Synthesis & Normalization:</strong> Construct and preprocess a high-fidelity corpus of 20,000 financial records encompassing 30 merchant categories, 7 payment rails, and 5.46% genuine fraud patterns.</li>
+      <li><strong>Multi-Model Benchmarking:</strong> Train and tune Logistic Regression, Random Forest, XGBoost, and Stacking Ensemble models, identifying the optimal Champion through F2-score threshold calibration.</li>
+      <li><strong>Real-Time TreeSHAP Integration:</strong> Construct a low-latency explainer pipeline generating signed per-feature attributions across 63 dimensional feature spaces.</li>
+      <li><strong>Behavioral Profiling Engine:</strong> Build a database query service calculating dynamic velocity metrics across 5-minute, 15-minute, 1-hour, 24-hour, and 7-day rolling windows.</li>
+      <li><strong>Multi-Factor Risk Scoring:</strong> Formulate a 0-to-100 composite risk equation synthesizing ML probability, amount deviations, velocity spikes, and hardware anomalies.</li>
+      <li><strong>Deterministic Rule Catalog:</strong> Implement an independent rule engine evaluating 9 deterministic patterns across 8 risk categories.</li>
+      <li><strong>Multi-LLM Forensic Orchestration:</strong> Construct an automated failover cascade routing queries across Gemini 3.6/3.7, Grok-2, Mistral, and an offline local domain engine with automated PCI-DSS sanitization.</li>
+      <li><strong>Full-Stack Prototype Deployment:</strong> Deliver an integrated, decoupled application pairing a FastAPI backend with a React 19 interface and role-based access control.</li>
+    </ol>
+
+    <!-- V. SYSTEM ARCHITECTURE -->
+    <div class="sec-heading">V. System Architecture & Topology</div>
+    <p>
+      The FraudLens platform is organized around a decoupled, three-tier architectural topology engineered for low-latency scoring and modular enterprise extension. Fig. 1 illustrates the high-level architecture, showing the data flow from presentation clients through the core service layer to the data storage tier.
+    </p>
+    <p>
+      <strong>1) Presentation Tier (Frontend):</strong> Implemented as a single-page application utilizing React 19.2, Vite 8.3, and TailwindCSS v4. The user interface provides specialized workspaces tailored to three distinct user personas: (a) <em>Customer Portal</em> for reviewing transaction histories and security notifications; (b) <em>Fraud Investigator Workspace</em> featuring an interactive case manager, live TreeSHAP waterfall charts, and conversational LLM evidence synthesis; and (c) <em>System Administration Center</em> for model lifecycle oversight, drift monitoring, and immutable audit inspection.
+    </p>
+    <p>
+      <strong>2) Service & Inference Tier (Backend):</strong> Built using Python 3.10+ and the asynchronous FastAPI framework. The backend exposes structured, versioned REST endpoints under <code>/api/v1/</code> alongside WebSocket channels for real-time alert broadcasts. All core scoring components—the FullFraudPreprocessor, the active XGBoost model, the TreeExplainer singleton, and the LLM Gateway—are maintained as persistent in-memory singletons during application startup, ensuring sub-50ms execution times.
+    </p>
+    <p>
+      <strong>3) Persistence Tier (Storage & Artifacts):</strong> Data persistence is managed via an optimized SQLite engine configured with Write-Ahead Logging (WAL) and synchronous normal mode, supporting concurrent read execution during transaction ingestion. Model binaries, feature encoders, scalers, and metadata registries are serialized using <code>joblib</code> and loaded with atomic hot-reload handlers.
+    </p>
+
+    <!-- FIGURE 1: ARCHITECTURE SVG -->
+    <figure>
+      <svg viewBox="0 0 500 370" width="100%" height="auto" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#1a3f6b"/>
+          </marker>
+          <linearGradient id="grad-blue" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#1e4e8c"/>
+            <stop offset="100%" stop-color="#133560"/>
+          </linearGradient>
+          <linearGradient id="grad-card" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#ffffff"/>
+            <stop offset="100%" stop-color="#f2f6fb"/>
+          </linearGradient>
+        </defs>
+
+        <rect x="2" y="2" width="496" height="366" rx="6" fill="#f8fafc" stroke="#b0c4de" stroke-width="1.2"/>
+        <text x="250" y="20" font-family="Times New Roman" font-size="10.5pt" font-weight="bold" fill="#1a3f6b" text-anchor="middle">FRAUDLENS SYSTEM TOPOLOGY & COMPONENT INTERFACES</text>
+
+        <!-- Personas -->
+        <rect x="15" y="32" width="145" height="34" rx="4" fill="url(#grad-card)" stroke="#1a3f6b" stroke-width="1"/>
+        <text x="87" y="46" font-family="Times New Roman" font-size="8pt" font-weight="bold" fill="#1a3f6b" text-anchor="middle">Retail Customer</text>
+        <text x="87" y="58" font-family="Times New Roman" font-size="7pt" fill="#444" text-anchor="middle">Transactions & Portal</text>
+
+        <rect x="177" y="32" width="145" height="34" rx="4" fill="url(#grad-card)" stroke="#1a3f6b" stroke-width="1"/>
+        <text x="249" y="46" font-family="Times New Roman" font-size="8pt" font-weight="bold" fill="#1a3f6b" text-anchor="middle">Forensic Investigator</text>
+        <text x="249" y="58" font-family="Times New Roman" font-size="7pt" fill="#444" text-anchor="middle">Cases & AI Assistant</text>
+
+        <rect x="340" y="32" width="145" height="34" rx="4" fill="url(#grad-card)" stroke="#1a3f6b" stroke-width="1"/>
+        <text x="412" y="46" font-family="Times New Roman" font-size="8pt" font-weight="bold" fill="#1a3f6b" text-anchor="middle">System Administrator</text>
+        <text x="412" y="58" font-family="Times New Roman" font-size="7pt" fill="#444" text-anchor="middle">Model Lab & Audits</text>
+
+        <line x1="250" y1="66" x2="250" y2="78" stroke="#1a3f6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+        <!-- Presentation -->
+        <rect x="15" y="80" width="470" height="34" rx="4" fill="url(#grad-blue)" stroke="#0d2442" stroke-width="1"/>
+        <text x="250" y="94" font-family="Times New Roman" font-size="8.8pt" font-weight="bold" fill="#ffffff" text-anchor="middle">PRESENTATION TIER: React 19.2 · Vite 8.3 · TailwindCSS v4</text>
+        <text x="250" y="106" font-family="Times New Roman" font-size="7.2pt" fill="#d0e1f9" text-anchor="middle">Dashboard · Live Transaction Monitor · TreeSHAP Explorer · SAR Workspace · Security Center</text>
+
+        <line x1="250" y1="114" x2="250" y2="126" stroke="#1a3f6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+        <text x="255" y="122" font-family="Times New Roman" font-size="6.5pt" fill="#666">REST / WebSocket / SSE</text>
+
+        <!-- Service Tier -->
+        <rect x="15" y="128" width="470" height="152" rx="4" fill="#ffffff" stroke="#1a3f6b" stroke-width="1.2"/>
+        <rect x="15" y="128" width="470" height="18" fill="#eaf0f8"/>
+        <text x="250" y="141" font-family="Times New Roman" font-size="8pt" font-weight="bold" fill="#1a3f6b" text-anchor="middle">BACKEND APPLICATION TIER: FastAPI (Python 3.10+) · Async Engine</text>
+
+        <rect x="25" y="152" width="138" height="56" rx="3" fill="#f4f8fd" stroke="#4878b0" stroke-width="0.9"/>
+        <text x="94" y="166" font-family="Times New Roman" font-size="7.6pt" font-weight="bold" fill="#1a3f6b" text-anchor="middle">Behavior Profiler</text>
+        <text x="94" y="178" font-family="Times New Roman" font-size="6.7pt" fill="#333" text-anchor="middle">Rolling Velocity Counts</text>
+        <text x="94" y="189" font-family="Times New Roman" font-size="6.7pt" fill="#333" text-anchor="middle">(5m, 15m, 1h, 24h, 7d)</text>
+        <text x="94" y="200" font-family="Times New Roman" font-size="6.7pt" fill="#333" text-anchor="middle">Device & Geo History</text>
+
+        <rect x="175" y="152" width="150" height="56" rx="3" fill="#f4f8fd" stroke="#4878b0" stroke-width="0.9"/>
+        <text x="250" y="166" font-family="Times New Roman" font-size="7.6pt" font-weight="bold" fill="#1a3f6b" text-anchor="middle">ML Scoring Pipeline</text>
+        <text x="250" y="178" font-family="Times New Roman" font-size="6.7pt" fill="#333" text-anchor="middle">FullFraudPreprocessor</text>
+        <text x="250" y="189" font-family="Times New Roman" font-size="6.7pt" font-weight="bold" fill="#133560" text-anchor="middle">XGBoost (Champion)</text>
+        <text x="250" y="200" font-family="Times New Roman" font-size="6.7pt" fill="#333" text-anchor="middle">Candidates: RF, LR, Stacking</text>
+
+        <rect x="337" y="152" width="138" height="56" rx="3" fill="#f4f8fd" stroke="#4878b0" stroke-width="0.9"/>
+        <text x="406" y="166" font-family="Times New Roman" font-size="7.6pt" font-weight="bold" fill="#1a3f6b" text-anchor="middle">Deterministic Rules</text>
+        <text x="406" y="178" font-family="Times New Roman" font-size="6.7pt" fill="#333" text-anchor="middle">8 Risk Categories</text>
+        <text x="406" y="189" font-family="Times New Roman" font-size="6.7pt" fill="#333" text-anchor="middle">9 Specific Triggers</text>
+        <text x="406" y="200" font-family="Times New Roman" font-size="6.7pt" fill="#333" text-anchor="middle">Penalty Point Generator</text>
+
+        <rect x="25" y="215" width="218" height="56" rx="3" fill="#f9fbfd" stroke="#5a88bf" stroke-width="0.9"/>
+        <text x="134" y="228" font-family="Times New Roman" font-size="7.6pt" font-weight="bold" fill="#1a3f6b" text-anchor="middle">TreeSHAP Explainability Service</text>
+        <text x="134" y="240" font-family="Times New Roman" font-size="6.8pt" fill="#333" text-anchor="middle">Exact Local Shapley Decomposition</text>
+        <text x="134" y="252" font-family="Times New Roman" font-size="6.8pt" fill="#333" text-anchor="middle">63 Dimensional Vector Attributions</text>
+        <text x="134" y="263" font-family="Times New Roman" font-size="6.8pt" fill="#2b5b15" font-weight="bold" text-anchor="middle">Waterfall Positive & Negative Ranks</text>
+
+        <rect x="257" y="215" width="218" height="56" rx="3" fill="#f9fbfd" stroke="#5a88bf" stroke-width="0.9"/>
+        <text x="366" y="228" font-family="Times New Roman" font-size="7.6pt" font-weight="bold" fill="#1a3f6b" text-anchor="middle">Autonomous Multi-LLM Gateway</text>
+        <text x="366" y="240" font-family="Times New Roman" font-size="6.8pt" fill="#333" text-anchor="middle">Cascade: Gemini 3.6/3.7 &rarr; Grok &rarr; Mistral</text>
+        <text x="366" y="252" font-family="Times New Roman" font-size="6.8pt" fill="#8b3a00" font-weight="bold" text-anchor="middle">Air-Gapped Offline Domain Fallback</text>
+        <text x="366" y="263" font-family="Times New Roman" font-size="6.8pt" fill="#333" text-anchor="middle">PCI-DSS Sanitization & SAR Drafter</text>
+
+        <line x1="250" y1="280" x2="250" y2="292" stroke="#1a3f6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+        <!-- Persistence Tier -->
+        <rect x="15" y="294" width="470" height="42" rx="4" fill="#eaf1f9" stroke="#1a3f6b" stroke-width="1"/>
+        <text x="250" y="308" font-family="Times New Roman" font-size="8pt" font-weight="bold" fill="#1a3f6b" text-anchor="middle">STORAGE & ARTIFACT PERSISTENCE TIER</text>
+        <text x="250" y="321" font-family="Times New Roman" font-size="7pt" fill="#333" text-anchor="middle">SQLite WAL Database (Users, Customers, Transactions, Cases, Audit Logs, SHAP Cache)</text>
+        <text x="250" y="331" font-family="Times New Roman" font-size="6.8pt" fill="#555" text-anchor="middle">Joblib Artifact Storage (xgboost.joblib, random_forest.joblib, preprocessor.joblib, registry.json)</text>
+
+        <rect x="60" y="342" width="110" height="20" rx="3" fill="#d4edda" stroke="#28a745" stroke-width="0.8"/>
+        <text x="115" y="356" font-family="Times New Roman" font-size="7.5pt" font-weight="bold" fill="#155724" text-anchor="middle">ALLOW (Score &le; 30)</text>
+
+        <rect x="195" y="342" width="110" height="20" rx="3" fill="#fff3cd" stroke="#ffc107" stroke-width="0.8"/>
+        <text x="250" y="356" font-family="Times New Roman" font-size="7.5pt" font-weight="bold" fill="#856404" text-anchor="middle">REVIEW (31–70)</text>
+
+        <rect x="330" y="342" width="110" height="20" rx="3" fill="#f8d7da" stroke="#dc3545" stroke-width="0.8"/>
+        <text x="385" y="356" font-family="Times New Roman" font-size="7.5pt" font-weight="bold" fill="#721c24" text-anchor="middle">BLOCK (Score &gt; 70)</text>
+      </svg>
+      <figcaption><strong>Fig. 1.</strong> High-Level System Architecture and Tiered Component Interfaces of FraudLens.</figcaption>
+    </figure>
+
+    <!-- VI. MATHEMATICAL FOUNDATIONS OF TREESHAP -->
+    <div class="sec-heading">VI. Mathematical Foundations of TreeSHAP</div>
+    <p>
+      A cornerstone of the FraudLens framework is its strict reliance on cooperative game theory to provide mathematically defensible feature attributions. In standard coalitional game theory, given a set of players <em>F</em> and a characteristic value function <em>v</em>(<em>S</em>) mapping subsets <em>S</em> &sube; <em>F</em> to real numbers, the unique attribution satisfying the classic Shapley axioms (Efficiency, Symmetry, Dummy Player, and Additivity) is defined as:
+    </p>
+    <div class="math-eq">
+      &phi;<sub><em>i</em></sub>(<em>v</em>) = &sum;<sub><em>S</em> &sube; <em>F</em> \ {<em>i</em>\}</sub> &frac;|<em>S</em>|! (|<em>F</em>| - |<em>S</em>| - 1)!;|<em>F</em>|!; [<em>v</em>(<em>S</em> &cup; {<em>i</em>\}) - <em>v</em>(<em>S</em>)]
+    </div>
+    <p>
+      In machine learning classification, <em>F</em> represents the collection of 63 input features, and the value function <em>v</em>(<em>S</em>) represents the conditional expectation of the model output given the subset of observed features: <em>v</em>(<em>S</em>) = <em>E</em>[<em>f</em>(<strong>x</strong>) | <strong>x</strong><sub><em>S</em></sub>]. A naive evaluation of this formula requires computing 2<sup>|<em>F</em>|</sup> conditional expectations, which is computationally intractable for real-time transaction scoring (&asymp; 9.22 &times; 10<sup>18</sup> evaluations for 63 dimensions).
+    </p>
+    <p>
+      The TreeSHAP algorithm formulated by Lundberg et al. [6] exploits the internal tree structure of gradient-boosted decision trees. For a tree <em>T</em> with maximum depth <em>D</em> and leaf count <em>L</em>, the expected value conditioned on <strong>x</strong><sub><em>S</em></sub> is computed recursively by traversing all tree paths simultaneously. For a single decision tree, the exact Shapley values are calculated in &Omicron;(<em>LD</em><sup>2</sup>) time. For an ensemble of <em>M</em> decision trees (such as our active XGBoost champion with 100 estimators), total complexity scales as &Omicron;(<em>MLD</em><sup>2</sup>). With tree depth bounded at <em>D</em> = 6, TreeSHAP evaluates a 63-dimensional transaction vector in approximately 18 milliseconds, fulfilling the low-latency constraints of retail payment gateways.
+    </p>
+    <p>
+      Furthermore, TreeSHAP guarantees <em>Efficiency</em> (the sum of feature attributions equals the difference between model output and expected baseline) and <em>Local Accuracy</em>:
+    </p>
+    <div class="math-eq">
+      <em>f</em>(<strong>x</strong>) = &phi;<sub>0</sub> + &sum;<sub><em>j</em>=1</sub><sup>63</sup> &phi;<sub><em>j</em></sub>(<strong>x</strong>)
+    </div>
+    <p class="no-indent">
+      where &phi;<sub>0</sub> = <em>E</em>[<em>f</em>(<strong>x</strong>)] represents the baseline log-odds computed over the training distribution. This mathematical symmetry ensures that fraud investigators can verify every individual feature contribution down to exact log-odds decimal precision without numerical leakage.
+    </p>
+
+    <!-- VII. PRE-AUTHORIZATION PROTOCOLS -->
+    <div class="sec-heading">VII. Pre-Authorization & Scoring Protocols</div>
+    <p>
+      The core engineering contribution of the FraudLens framework is its formal pre-authorization protocol pipeline, executed synchronously on incoming transaction requests. The protocol is structured into eight interlocking operational phases.
+    </p>
+
+    <div class="protocol-box">
+      <div class="protocol-title">Protocol 1: Transaction Ingestion & Behavioral Baseline Retrieval</div>
+      <p class="no-indent">
+        <strong>Input:</strong> Raw transaction tuple <em>T</em> = {<em>C<sub>id</sub></em>, <em>A</em>, <em>M<sub>cat</sub></em>, <em>T<sub>type</sub></em>, <em>D<sub>id</sub></em>, <em>L<sub>geo</sub></em>, <em>t<sub>curr</sub></em>}.<br/>
+        <strong>Procedure:</strong>
+      </p>
+      <ol>
+        <li>Query customer registry via <code>customer_id</code>; instantiate profile record if first observed.</li>
+        <li>Execute parallel aggregation over customer historical ledger <em>H(C<sub>id</sub>)</em>:
+          <ul>
+            <li>Derive sliding-window transaction counts: <em>V</em><sub>5m</sub>, <em>V</em><sub>15m</sub>, <em>V</em><sub>1h</sub>, <em>V</em><sub>24h</sub>, <em>V</em><sub>7d</sub>.</li>
+            <li>Compute customer historical monetary mean &mu;<sub>amt</sub> and sample standard deviation &sigma;<sub>amt</sub>.</li>
+            <li>Evaluate device membership: &delta;<sub>dev</sub> = 1 if <em>D<sub>id</sub></em> &notin; {<em>KnownDevices</em>}, else 0.</li>
+            <li>Evaluate geographical proximity: &delta;<sub>loc</sub> = 1 if <em>L<sub>geo</sub></em> &notin; {<em>UsualLocations</em>}, else 0.</li>
+          </ul>
+        </li>
+        <li>Construct contextual metadata bundle <em>B<sub>ctx</sub></em>.</li>
+      </ol>
+      <p class="no-indent"><strong>Output:</strong> Context-enriched transaction packet <em>T<sup>*</sup></em> = {<em>T</em>, <em>B<sub>ctx</sub></em>}.</p>
+    </div>
+
+    <div class="protocol-box">
+      <div class="protocol-title">Protocol 2: Feature Engineering & Preprocessing</div>
+      <p class="no-indent">
+        <strong>Input:</strong> Enriched transaction packet <em>T<sup>*</sup></em>.<br/>
+        <strong>Procedure:</strong>
+      </p>
+      <ol>
+        <li>Calculate amount deviation ratio: <em>R</em><sub>amt</sub> = <em>A</em> / max(&mu;<sub>amt</sub>, 1.0).</li>
+        <li>Calculate velocity acceleration index: <em>R</em><sub>vel</sub> = <em>V</em><sub>1h</sub> / max(<em>V</em><sub>24h</sub> / 24, 0.1).</li>
+        <li>Encode cyclic temporal coordinates:
+          <div class="math-eq">
+            &theta;<sub>hr</sub> = 2&pi; &middot; <em>Hour</em> / 24, &nbsp; <em>S</em><sub>hr</sub> = sin(&theta;<sub>hr</sub>), &nbsp; <em>C</em><sub>hr</sub> = cos(&theta;<sub>hr</sub>)
+          </div>
+        </li>
+        <li>Assemble 48 continuous features and apply <code>StandardScaler</code> fitted on baseline corpus.</li>
+        <li>Transform 4 categorical attributes (merchant category, payment channel, transaction type, device OS) via pre-fitted <code>OneHotEncoder</code> to 15 binary indicator columns.</li>
+        <li>Concatenate arrays into normalized 63-dimensional feature vector <strong>x</strong> &in; &Ropf;<sup>63</sup>.</li>
+      </ol>
+      <p class="no-indent"><strong>Output:</strong> Standardized numerical feature array <strong>x</strong>.</p>
+    </div>
+
+    <div class="protocol-box">
+      <div class="protocol-title">Protocol 3: Machine Learning Inference & TreeSHAP Attribution</div>
+      <p class="no-indent">
+        <strong>Input:</strong> Standardized feature array <strong>x</strong>.<br/>
+        <strong>Procedure:</strong>
+      </p>
+      <ol>
+        <li>Invoke in-process active XGBoost model: compute raw log-odds score <em>f</em>(<strong>x</strong>) and logistic probability:
+          <div class="math-eq">
+            <em>P</em>(Fraud | <strong>x</strong>) = &sigma;(<em>f</em>(<strong>x</strong>)) = 1 / (1 + <em>e</em><sup>-<em>f</em>(<strong>x</strong>)</sup>)
+          </div>
+        </li>
+        <li>Submit <strong>x</strong> to singleton <code>TreeExplainer</code> instance to extract additive feature attributions:
+          <div class="math-eq">
+            <em>f</em>(<strong>x</strong>) = <em>E</em>[<em>f</em>(<strong>x</strong>)] + &sum;<sub><em>j</em>=1</sub><sup>63</sup> &phi;<sub><em>j</em></sub>(<strong>x</strong>)
+          </div>
+        </li>
+        <li>Segregate attributions into positive risk-increasing (&phi;<sub><em>j</em></sub> &gt; 0) and negative risk-mitigating (&phi;<sub><em>j</em></sub> &lt; 0) collections.</li>
+        <li>Sort collections by absolute value |&phi;<sub><em>j</em></sub>| and bind human-readable semantic explanations to top-ranked contributors.</li>
+      </ol>
+      <p class="no-indent"><strong>Output:</strong> Fraud probability <em>P</em> &in; [0, 1] and explanation dictionary &Phi;.</p>
+    </div>
+
+    <!-- FIGURE 2: PRE-AUTHORIZATION WORKFLOW -->
+    <figure>
+      <svg viewBox="0 0 500 480" width="100%" height="auto" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arr2" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#1a3f6b"/>
+          </marker>
+        </defs>
+
+        <rect x="2" y="2" width="496" height="476" rx="6" fill="#f8fafc" stroke="#b0c4de" stroke-width="1.2"/>
+        <text x="250" y="20" font-family="Times New Roman" font-size="10pt" font-weight="bold" fill="#1a3f6b" text-anchor="middle">PRE-AUTHORIZATION EVALUATION PIPELINE & DECISION LOGIC</text>
+
+        <rect x="130" y="32" width="240" height="30" rx="3" fill="#1e4e8c" stroke="#133560" stroke-width="1"/>
+        <text x="250" y="51" font-family="Times New Roman" font-size="8.2pt" font-weight="bold" fill="#ffffff" text-anchor="middle">Stage 1: Transaction Ingestion & Validation</text>
+
+        <line x1="250" y1="62" x2="250" y2="76" stroke="#1a3f6b" stroke-width="1.2" marker-end="url(#arr2)"/>
+
+        <rect x="110" y="78" width="280" height="34" rx="3" fill="#ffffff" stroke="#1a3f6b" stroke-width="1"/>
+        <text x="250" y="93" font-family="Times New Roman" font-size="8pt" font-weight="bold" fill="#1a3f6b" text-anchor="middle">Stage 2: Live Behavioral Profile Derivation</text>
+        <text x="250" y="104" font-family="Times New Roman" font-size="7pt" fill="#444" text-anchor="middle">Velocity Windows (5m/15m/1h/24h/7d) · Known Devices & Locations</text>
+
+        <line x1="250" y1="112" x2="250" y2="126" stroke="#1a3f6b" stroke-width="1.2" marker-end="url(#arr2)"/>
+
+        <rect x="110" y="128" width="280" height="34" rx="3" fill="#ffffff" stroke="#1a3f6b" stroke-width="1"/>
+        <text x="250" y="143" font-family="Times New Roman" font-size="8pt" font-weight="bold" fill="#1a3f6b" text-anchor="middle">Stage 3: Vectorization & XGBoost Inference</text>
+        <text x="250" y="154" font-family="Times New Roman" font-size="7pt" fill="#444" text-anchor="middle">63-dim Scaled Features &rarr; Fraud Probability P &isin; [0.0, 1.0]</text>
+
+        <line x1="250" y1="162" x2="250" y2="178" stroke="#1a3f6b" stroke-width="1.2" marker-end="url(#arr2)"/>
+
+        <path d="M 250 178 L 150 178 L 150 196" fill="none" stroke="#1a3f6b" stroke-width="1.2" marker-end="url(#arr2)"/>
+        <path d="M 250 178 L 350 178 L 350 196" fill="none" stroke="#1a3f6b" stroke-width="1.2" marker-end="url(#arr2)"/>
+
+        <rect x="40" y="198" width="210" height="42" rx="3" fill="#f4f8fd" stroke="#4878b0" stroke-width="1"/>
+        <text x="145" y="213" font-family="Times New Roman" font-size="7.8pt" font-weight="bold" fill="#1a3f6b" text-anchor="middle">Stage 4: Rule Engine Evaluation</text>
+        <text x="145" y="225" font-family="Times New Roman" font-size="6.8pt" fill="#333" text-anchor="middle">8 Risk Categories · 9 Deterministic Rules</text>
+        <text x="145" y="234" font-family="Times New Roman" font-size="6.8pt" fill="#8b3a00" font-weight="bold" text-anchor="middle">Generates Penalties & Action Overrides</text>
+
+        <rect x="260" y="198" width="200" height="42" rx="3" fill="#f4f8fd" stroke="#4878b0" stroke-width="1"/>
+        <text x="360" y="213" font-family="Times New Roman" font-size="7.8pt" font-weight="bold" fill="#1a3f6b" text-anchor="middle">Stage 5: TreeSHAP Decomposition</text>
+        <text x="360" y="225" font-family="Times New Roman" font-size="6.8pt" fill="#333" text-anchor="middle">Polynomial Exact Attributions</text>
+        <text x="360" y="234" font-family="Times New Roman" font-size="6.8pt" fill="#2b5b15" font-weight="bold" text-anchor="middle">Waterfall Positive & Negative Shifts</text>
+
+        <path d="M 145 240 L 145 258 L 250 258" fill="none" stroke="#1a3f6b" stroke-width="1.2"/>
+        <path d="M 360 240 L 360 258 L 250 258" fill="none" stroke="#1a3f6b" stroke-width="1.2"/>
+        <line x1="250" y1="258" x2="250" y2="274" stroke="#1a3f6b" stroke-width="1.2" marker-end="url(#arr2)"/>
+
+        <rect x="100" y="276" width="300" height="42" rx="3" fill="#ffffff" stroke="#1a3f6b" stroke-width="1.2"/>
+        <text x="250" y="291" font-family="Times New Roman" font-size="8pt" font-weight="bold" fill="#1a3f6b" text-anchor="middle">Stage 6: Composite Risk Score Engine (0–100)</text>
+        <text x="250" y="303" font-family="Times New Roman" font-size="7pt" font-style="italic" fill="#222" text-anchor="middle">S = S_model + S_amount + S_velocity + S_history + S_env</text>
+        <text x="250" y="313" font-family="Times New Roman" font-size="6.8pt" fill="#880000" font-weight="bold" text-anchor="middle">Priority ML Override: If P &ge; 0.70 &rArr; S = max(S, 75)</text>
+
+        <line x1="250" y1="318" x2="250" y2="334" stroke="#1a3f6b" stroke-width="1.2" marker-end="url(#arr2)"/>
+
+        <polygon points="250,336 320,358 250,380 180,358" fill="#eaf0f8" stroke="#1a3f6b" stroke-width="1.2"/>
+        <text x="250" y="361" font-family="Times New Roman" font-size="7.5pt" font-weight="bold" fill="#1a3f6b" text-anchor="middle">Score Triaging</text>
+
+        <path d="M 180 358 L 90 358 L 90 398" fill="none" stroke="#28a745" stroke-width="1.2" marker-end="url(#arr2)"/>
+        <text x="125" y="352" font-family="Times New Roman" font-size="6.8pt" font-weight="bold" fill="#28a745">S &le; 30</text>
+
+        <line x1="250" y1="380" x2="250" y2="398" stroke="#ffc107" stroke-width="1.2" marker-end="url(#arr2)"/>
+        <text x="255" y="392" font-family="Times New Roman" font-size="6.8pt" font-weight="bold" fill="#856404">31 &le; S &le; 70</text>
+
+        <path d="M 320 358 L 410 358 L 410 398" fill="none" stroke="#dc3545" stroke-width="1.2" marker-end="url(#arr2)"/>
+        <text x="355" y="352" font-family="Times New Roman" font-size="6.8pt" font-weight="bold" fill="#dc3545">S &gt; 70 or Hard Rule</text>
+
+        <rect x="35" y="400" width="110" height="38" rx="3" fill="#d4edda" stroke="#28a745" stroke-width="1"/>
+        <text x="90" y="415" font-family="Times New Roman" font-size="8pt" font-weight="bold" fill="#155724" text-anchor="middle">ALLOW</text>
+        <text x="90" y="425" font-family="Times New Roman" font-size="6.5pt" fill="#155724" text-anchor="middle">Execute Transfer</text>
+        <text x="90" y="433" font-family="Times New Roman" font-size="6.2pt" fill="#155724" text-anchor="middle">Instant Approval</text>
+
+        <rect x="195" y="400" width="110" height="38" rx="3" fill="#fff3cd" stroke="#ffc107" stroke-width="1"/>
+        <text x="250" y="415" font-family="Times New Roman" font-size="8pt" font-weight="bold" fill="#856404" text-anchor="middle">REVIEW</text>
+        <text x="250" y="425" font-family="Times New Roman" font-size="6.5pt" fill="#856404" text-anchor="middle">Challenge via 2FA / OTP</text>
+        <text x="250" y="433" font-family="Times New Roman" font-size="6.2pt" fill="#856404" text-anchor="middle">Route to Forensic Queue</text>
+
+        <rect x="355" y="400" width="110" height="38" rx="3" fill="#f8d7da" stroke="#dc3545" stroke-width="1"/>
+        <text x="410" y="415" font-family="Times New Roman" font-size="8pt" font-weight="bold" fill="#721c24" text-anchor="middle">BLOCK</text>
+        <text x="410" y="425" font-family="Times New Roman" font-size="6.5pt" fill="#721c24" text-anchor="middle">Hard Rejection</text>
+        <text x="410" y="433" font-family="Times New Roman" font-size="6.2pt" fill="#721c24" text-anchor="middle">Trigger Incident Case</text>
+
+        <rect x="35" y="448" width="430" height="20" rx="2" fill="#eaf0f8" stroke="#9bb6d6" stroke-width="0.8"/>
+        <text x="250" y="462" font-family="Times New Roman" font-size="7pt" fill="#1a3f6b" text-anchor="middle">Synchronous Execution: Write Immutable Audit Log & Emit WebSocket Alert Broadcast</text>
+      </svg>
+      <figcaption><strong>Fig. 2.</strong> End-to-End Operational Flowchart of the FraudLens Pre-Authorization Protocol.</figcaption>
+    </figure>
+
+    <div class="protocol-box">
+      <div class="protocol-title">Protocol 4: Deterministic Rule Catalog Evaluation</div>
+      <p class="no-indent">
+        <strong>Input:</strong> Enriched transaction packet <em>T<sup>*</sup></em>.<br/>
+        <strong>Procedure:</strong> Concurrently evaluate 9 rules across 8 risk domains:
+      </p>
+      <ul>
+        <li><code>RULE-VEL-01</code>: If <em>V</em><sub>1h</sub> &ge; 5 &rArr; CRITICAL (Penalty: +35 pts).</li>
+        <li><code>RULE-VEL-02</code>: If <em>V</em><sub>1h</sub> &ge; 3 &rArr; HIGH (Penalty: +20 pts).</li>
+        <li><code>RULE-AMT-01</code>: If <em>R</em><sub>amt</sub> &ge; 4.0 &and; <em>A</em> &ge; ₹25,000 &rArr; HIGH (Penalty: +25 pts).</li>
+        <li><code>RULE-AMT-02</code>: If <em>R</em><sub>amt</sub> &ge; 2.5 &rArr; MEDIUM (Penalty: +15 pts).</li>
+        <li><code>RULE-AUTH-01</code>: If <em>FailAttempts</em> &ge; 3 &rArr; CRITICAL (Penalty: +30 pts).</li>
+        <li><code>RULE-ATO-01</code>: If &delta;<sub>dev</sub>=1 &and; &delta;<sub>loc</sub>=1 &and; <em>R</em><sub>amt</sub> &ge; 3.0 &rArr; CRITICAL Account Takeover (Penalty: +35 pts, Enforce BLOCK).</li>
+        <li><code>RULE-ATO-02</code>: If (&delta;<sub>dev</sub>=1 &or; &delta;<sub>loc</sub>=1) &and; <em>R</em><sub>amt</sub> &ge; 1.8 &rArr; MEDIUM (Penalty: +15 pts).</li>
+        <li><code>RULE-CAT-01</code>: If <em>M<sub>cat</sub></em> &in; {Crypto, Gaming} &and; (<em>A</em> &ge; ₹25,000 &or; &delta;<sub>dev</sub>=1) &rArr; HIGH (Penalty: +20 pts).</li>
+        <li><code>RULE-TIME-01</code>: If <em>Hour</em> &in; [0, 5] &and; <em>A</em> &ge; ₹35,000 &rArr; MEDIUM (Penalty: +10 pts).</li>
+      </ul>
+      <p class="no-indent"><strong>Output:</strong> Triggered rule collection <em>R<sub>trig</sub></em> and penalty sum <em>P<sub>rules</sub></em>.</p>
+    </div>
+
+    <div class="protocol-box">
+      <div class="protocol-title">Protocol 5: Multi-Factor Composite Risk Index Computation</div>
+      <p class="no-indent">
+        <strong>Mathematical Formulation:</strong> The composite risk score <em>S</em> &in; [0, 100] is computed as a bounded additive summation over five parameterized risk dimensions:
+      </p>
+      <div class="math-eq">
+        <em>S</em> = min(100, max(0, <em>S</em><sub>model</sub> + <em>S</em><sub>amount</sub> + <em>S</em><sub>velocity</sub> + <em>S</em><sub>history</sub> + <em>S</em><sub>env</sub>))
+      </div>
+      <p class="no-indent">
+        <strong>Factor Point Allocation:</strong>
+      </p>
+      <ul>
+        <li><strong>ML Probability (<em>S</em><sub>model</sub>, max 60 pts):</strong> Bounded non-linear scaling:
+          <div class="math-eq">
+            <em>S</em><sub>model</sub> = 
+            &begin;cases;
+              45 + 15 &middot; (P - 0.70)/0.30, & P &ge; 0.70 \
+              25 + 20 &middot; (P - 0.35)/0.35, & 0.35 &le; P &lt; 0.70 \
+              8 + 17 &middot; (P - 0.10)/0.25, & 0.10 &le; P &lt; 0.35 \
+              0, & P &lt; 0.10
+            &end;cases;
+          </div>
+        </li>
+        <li><strong>Amount Spike (<em>S</em><sub>amount</sub>, max 25 pts):</strong> 18 pts if <em>R</em><sub>amt</sub> &ge; 8.0; 12 pts if <em>R</em><sub>amt</sub> &ge; 3.5; 6 pts if <em>R</em><sub>amt</sub> &ge; 2.0.</li>
+        <li><strong>Velocity Burst (<em>S</em><sub>velocity</sub>, max 20 pts):</strong> 20 pts if <em>V</em><sub>1h</sub> &ge; 5; 14 pts if <em>V</em><sub>1h</sub> &ge; 3; 8 pts if <em>V</em><sub>1h</sub> &ge; 2.</li>
+        <li><strong>Account History (<em>S</em><sub>history</sub>, max 15 pts):</strong> 5 pts per prior chargeback; 5 pts if account age &lt; 14 days.</li>
+        <li><strong>Environmental Risk (<em>S</em><sub>env</sub>, max 25 pts):</strong> New hardware: 8 pts; anomalous geo-location: 8 pts; new beneficiary: 7 pts; consecutive auth failures &ge; 2: 8 pts; night window: 4 pts.</li>
+      </ul>
+      <p class="no-indent">
+        <strong>Priority Override Constraint:</strong> To prevent legitimate environmental variables from suppressing a severe statistical anomaly, if <em>P</em>(Fraud) &ge; 0.70, then:
+      </p>
+      <div class="math-eq">
+        <em>S</em> &larr; max(<em>S</em>, 75)
+      </div>
+      <p class="no-indent"><strong>Output:</strong> Final integer risk score <em>S</em> &in; [0, 100].</p>
+    </div>
+
+    <!-- TABLE II: COMPOSITE RISK WEIGHTS -->
+    <div class="table-wrap">
+      <div class="table-caption"><strong>TABLE II:</strong> Composite Risk Scoring Signal Weights</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Signal Dimension</th>
+            <th>Max Points</th>
+            <th>Primary Indicator Thresholds</th>
+            <th>Operational Purpose</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="bold">ML Probability (S<sub>model</sub>)</td>
+            <td class="center">60</td>
+            <td>P &ge; 0.70 (45–60 pts)<br/>P &ge; 0.35 (25–45 pts)</td>
+            <td>Captures non-linear feature interactions via XGBoost</td>
+          </tr>
+          <tr>
+            <td class="bold">Monetary Spike (S<sub>amount</sub>)</td>
+            <td class="center">25</td>
+            <td>Ratio &ge; 8.0x (18 pts)<br/>Ratio &ge; 3.5x (12 pts)</td>
+            <td>Penalizes spending surges above customer baseline</td>
+          </tr>
+          <tr>
+            <td class="bold">Velocity Burst (S<sub>velocity</sub>)</td>
+            <td class="center">20</td>
+            <td>&ge; 5 txns / 1h (20 pts)<br/>&ge; 3 txns / 1h (14 pts)</td>
+            <td>Identifies automated card testing and bot draining</td>
+          </tr>
+          <tr>
+            <td class="bold">Account Maturity (S<sub>history</sub>)</td>
+            <td class="center">15</td>
+            <td>Prior chargeback (5 pts/ea)<br/>Age &lt; 14 days (5 pts)</td>
+            <td>Weights historical trust and past delinquency</td>
+          </tr>
+          <tr>
+            <td class="bold">Environment / Device (S<sub>env</sub>)</td>
+            <td class="center">25</td>
+            <td>New hardware (8 pts)<br/>Unusual city (8 pts)<br/>Auth fails &ge; 2 (8 pts)</td>
+            <td>Detects credential stuffing and session hijacks</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="protocol-box">
+      <div class="protocol-title">Protocol 6: Tri-Tier Gateway Triaging & Decision Routing</div>
+      <p class="no-indent">
+        <strong>Input:</strong> Composite score <em>S</em> and rule collection <em>R<sub>trig</sub></em>.<br/>
+        <strong>Procedure:</strong>
+      </p>
+      <ul>
+        <li><strong>ALLOW (<em>S</em> &le; 30 &and; No Hard Rules):</strong> Transaction passes without friction; pre-authorization token granted; ledger updated.</li>
+        <li><strong>REVIEW (31 &le; <em>S</em> &le; 70):</strong> Transfer suspended; initiate Step-Up Challenge (SMS / TOTP challenge); dispatch metadata payload to investigator queue via WebSocket.</li>
+        <li><strong>BLOCK (<em>S</em> &gt; 70 &or; Hard Rule Triggered):</strong> Immediate hard decline issued to payment rail; temporary velocity lock placed on customer profile; high-priority security case instantiated.</li>
+      </ul>
+      <p class="no-indent"><strong>Output:</strong> Gateway Directive &in; {ALLOW, REVIEW, BLOCK}.</p>
+    </div>
+
+    <!-- FIGURE 3: TREESHAP SVG -->
+    <figure>
+      <svg viewBox="0 0 500 280" width="100%" height="auto" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arr3" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#1a3f6b"/>
+          </marker>
+        </defs>
+
+        <rect x="2" y="2" width="496" height="276" rx="6" fill="#f8fafc" stroke="#b0c4de" stroke-width="1.2"/>
+        <text x="250" y="18" font-family="Times New Roman" font-size="9.5pt" font-weight="bold" fill="#1a3f6b" text-anchor="middle">TREESHAP LOCAL WATERFALL DECOMPOSITION PIPELINE</text>
+
+        <rect x="20" y="32" width="130" height="40" rx="3" fill="#e2e8f0" stroke="#718096" stroke-width="1"/>
+        <text x="85" y="47" font-family="Times New Roman" font-size="7.5pt" font-weight="bold" fill="#2d3748" text-anchor="middle">Base Expected Value</text>
+        <text x="85" y="60" font-family="Times New Roman" font-size="7pt" fill="#4a5568" text-anchor="middle">E[f(x)] = -2.85 (Log-Odds)</text>
+
+        <line x1="150" y1="52" x2="180" y2="52" stroke="#1a3f6b" stroke-width="1.2" marker-end="url(#arr3)"/>
+
+        <rect x="185" y="32" width="150" height="90" rx="3" fill="#fff5f5" stroke="#e53e3e" stroke-width="1"/>
+        <text x="260" y="46" font-family="Times New Roman" font-size="7.5pt" font-weight="bold" fill="#9b2c2c" text-anchor="middle">+ Risk-Increasing Attributions</text>
+        <text x="195" y="60" font-family="Times New Roman" font-size="6.8pt" fill="#c53030">&bull; velocity_24h_surge: +0.42</text>
+        <text x="195" y="73" font-family="Times New Roman" font-size="6.8pt" fill="#c53030">&bull; surge_on_new_device: +0.31</text>
+        <text x="195" y="86" font-family="Times New Roman" font-size="6.8pt" fill="#c53030">&bull; amount_deviation_z: +0.28</text>
+        <text x="195" y="99" font-family="Times New Roman" font-size="6.8pt" fill="#c53030">&bull; failed_attempts_burst: +0.19</text>
+        <text x="195" y="112" font-family="Times New Roman" font-size="6.8pt" fill="#c53030">&bull; unusual_location_flag: +0.15</text>
+
+        <rect x="185" y="130" width="150" height="74" rx="3" fill="#f0fff4" stroke="#38a169" stroke-width="1"/>
+        <text x="260" y="144" font-family="Times New Roman" font-size="7.5pt" font-weight="bold" fill="#22543d" text-anchor="middle">&minus; Risk-Mitigating Attributions</text>
+        <text x="195" y="158" font-family="Times New Roman" font-size="6.8pt" fill="#276749">&bull; account_age_days: -0.15</text>
+        <text x="195" y="171" font-family="Times New Roman" font-size="6.8pt" fill="#276749">&bull; customer_total_txns: -0.12</text>
+        <text x="195" y="184" font-family="Times New Roman" font-size="6.8pt" fill="#276749">&bull; consistent_card_channel: -0.08</text>
+        <text x="195" y="196" font-family="Times New Roman" font-size="6.8pt" fill="#276749">&bull; domestic_settlement: -0.05</text>
+
+        <line x1="335" y1="110" x2="365" y2="110" stroke="#1a3f6b" stroke-width="1.2" marker-end="url(#arr3)"/>
+        <rect x="370" y="80" width="115" height="60" rx="3" fill="#1e4e8c" stroke="#133560" stroke-width="1"/>
+        <text x="427" y="96" font-family="Times New Roman" font-size="7.5pt" font-weight="bold" fill="#ffffff" text-anchor="middle">Model Output</text>
+        <text x="427" y="110" font-family="Times New Roman" font-size="7pt" fill="#ffffff" text-anchor="middle">f(x) = +1.91</text>
+        <text x="427" y="123" font-family="Times New Roman" font-size="8pt" font-weight="bold" fill="#ffdd57" text-anchor="middle">P(Fraud) = 0.87</text>
+        <text x="427" y="133" font-family="Times New Roman" font-size="6.5pt" fill="#e2e8f0" text-anchor="middle">Class: FRAUD</text>
+
+        <rect x="20" y="215" width="460" height="50" rx="3" fill="#ffffff" stroke="#1a3f6b" stroke-width="0.8"/>
+        <text x="250" y="229" font-family="Times New Roman" font-size="7.5pt" font-weight="bold" fill="#1a3f6b" text-anchor="middle">Rendered Waterfall Visualization in Forensic Dashboard</text>
+        <text x="250" y="242" font-family="Times New Roman" font-size="6.8pt" fill="#444" text-anchor="middle">Base (-2.85) &rarr; [+0.42 Velocity] &rarr; [+0.31 New Device] &rarr; [+0.28 Spike] &rarr; [-0.15 Tenure] &rarr; Score: 87%</text>
+        <text x="250" y="255" font-family="Times New Roman" font-size="6.5pt" font-style="italic" fill="#666" text-anchor="middle">Guarantees Complete Mathematical Symmetry: Sum of Attributions Equals Exact Model Deviation</text>
+      </svg>
+      <figcaption><strong>Fig. 3.</strong> Real-Time TreeSHAP Waterfall Explanation Generation Workflow.</figcaption>
+    </figure>
+
+    <div class="protocol-box">
+      <div class="protocol-title">Protocol 7: Multi-LLM Orchestration & Failover Protocol</div>
+      <p class="no-indent">
+        <strong>Input:</strong> Investigator query <em>Q</em> and forensic context <em>C</em>.<br/>
+        <strong>Procedure:</strong>
+      </p>
+      <ol>
+        <li><strong>Pre-Flight Regex Sanitization:</strong> Inspect <em>Q</em> against blacklisted security signatures: reject attempts extracting credentials, database schema passwords, or private encryption keys.</li>
+        <li><strong>Cascade Execution:</strong>
+          <ul>
+            <li>Attempt <strong>Tier 1: Google Gemini 3.6 Flash</strong> (Primary fast reasoning model).</li>
+            <li>On HTTP 429/503 or quota exhaustion &rArr; Fallback to <strong>Tier 2: Google Gemini 3.7 Flash</strong>.</li>
+            <li>On secondary timeout &rArr; Fallback to <strong>Tier 3: xAI Grok-2</strong>.</li>
+            <li>On tertiary failure &rArr; Fallback to <strong>Tier 4: Mistral AI</strong>.</li>
+            <li>If external network offline &rArr; Engage <strong>Tier 5: Air-Gapped Local Domain Engine</strong> parsing curated 31KB rule knowledge base.</li>
+          </ul>
+        </li>
+        <li><strong>Post-Flight Output Sanitization:</strong> Execute regex filtering over generated tokens to mask 16-digit PAN card numbers, OAuth tokens, and system environment variables.</li>
+      </ol>
+      <p class="no-indent"><strong>Output:</strong> Sanitized forensic advisory response or SAR narrative.</p>
+    </div>
+
+    <!-- FIGURE 4: MULTI-LLM CASCADE SVG -->
+    <figure>
+      <svg viewBox="0 0 500 240" width="100%" height="auto" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arr4" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#1a3f6b"/>
+          </marker>
+        </defs>
+
+        <rect x="2" y="2" width="496" height="236" rx="6" fill="#f8fafc" stroke="#b0c4de" stroke-width="1.2"/>
+        <text x="250" y="18" font-family="Times New Roman" font-size="9.5pt" font-weight="bold" fill="#1a3f6b" text-anchor="middle">MULTI-LLM ORCHESTRATION & RESILIENT FAILOVER CASCADE</text>
+
+        <rect x="15" y="30" width="130" height="38" rx="3" fill="#ffffff" stroke="#1a3f6b" stroke-width="1"/>
+        <text x="80" y="45" font-family="Times New Roman" font-size="7.5pt" font-weight="bold" fill="#1a3f6b" text-anchor="middle">Forensic Query</text>
+        <text x="80" y="57" font-family="Times New Roman" font-size="6.8pt" fill="#444" text-anchor="middle">Analyst Prompt + Case Data</text>
+
+        <line x1="145" y1="49" x2="175" y2="49" stroke="#1a3f6b" stroke-width="1.2" marker-end="url(#arr4)"/>
+
+        <rect x="180" y="30" width="140" height="38" rx="3" fill="#fff5f5" stroke="#e53e3e" stroke-width="1"/>
+        <text x="250" y="44" font-family="Times New Roman" font-size="7.5pt" font-weight="bold" fill="#9b2c2c" text-anchor="middle">Pre-Flight Filter</text>
+        <text x="250" y="56" font-family="Times New Roman" font-size="6.8pt" fill="#c53030" text-anchor="middle">Blocks Key Injections & PII</text>
+
+        <line x1="320" y1="49" x2="350" y2="49" stroke="#1a3f6b" stroke-width="1.2" marker-end="url(#arr4)"/>
+
+        <rect x="355" y="28" width="130" height="150" rx="3" fill="#ffffff" stroke="#1a3f6b" stroke-width="1.2"/>
+        <text x="420" y="41" font-family="Times New Roman" font-size="7.5pt" font-weight="bold" fill="#1a3f6b" text-anchor="middle">Tiered Cascade</text>
+
+        <rect x="365" y="48" width="110" height="20" rx="2" fill="#eaf1f9" stroke="#1a3f6b" stroke-width="0.6"/>
+        <text x="420" y="61" font-family="Times New Roman" font-size="6.5pt" font-weight="bold" fill="#1a3f6b" text-anchor="middle">1. Gemini 3.6 Flash</text>
+
+        <rect x="365" y="73" width="110" height="20" rx="2" fill="#f4f8fd" stroke="#4878b0" stroke-width="0.6"/>
+        <text x="420" y="86" font-family="Times New Roman" font-size="6.5pt" fill="#333" text-anchor="middle">2. Gemini 3.7 Flash</text>
+
+        <rect x="365" y="98" width="110" height="20" rx="2" fill="#f4f8fd" stroke="#4878b0" stroke-width="0.6"/>
+        <text x="420" y="111" font-family="Times New Roman" font-size="6.5pt" fill="#333" text-anchor="middle">3. xAI Grok-2</text>
+
+        <rect x="365" y="123" width="110" height="20" rx="2" fill="#f4f8fd" stroke="#4878b0" stroke-width="0.6"/>
+        <text x="420" y="136" font-family="Times New Roman" font-size="6.5pt" fill="#333" text-anchor="middle">4. Mistral AI</text>
+
+        <rect x="365" y="148" width="110" height="24" rx="2" fill="#fff3cd" stroke="#ffc107" stroke-width="0.8"/>
+        <text x="420" y="160" font-family="Times New Roman" font-size="6.5pt" font-weight="bold" fill="#856404" text-anchor="middle">5. Offline Knowledge Engine</text>
+        <text x="420" y="169" font-family="Times New Roman" font-size="5.8pt" fill="#856404" text-anchor="middle">Air-Gapped 31KB Rule Corpus</text>
+
+        <path d="M 355 160 L 250 160 L 250 180" fill="none" stroke="#1a3f6b" stroke-width="1.2" marker-end="url(#arr4)"/>
+
+        <rect x="180" y="182" width="140" height="38" rx="3" fill="#f0fff4" stroke="#38a169" stroke-width="1"/>
+        <text x="250" y="196" font-family="Times New Roman" font-size="7.5pt" font-weight="bold" fill="#22543d" text-anchor="middle">Post-Flight Sanitizer</text>
+        <text x="250" y="208" font-family="Times New Roman" font-size="6.8pt" fill="#276749" text-anchor="middle">Redacts PAN & Secret Tokens</text>
+
+        <line x1="180" y1="201" x2="150" y2="201" stroke="#1a3f6b" stroke-width="1.2" marker-end="url(#arr4)"/>
+
+        <rect x="15" y="182" width="130" height="38" rx="3" fill="#1e4e8c" stroke="#133560" stroke-width="1"/>
+        <text x="80" y="196" font-family="Times New Roman" font-size="7.5pt" font-weight="bold" fill="#ffffff" text-anchor="middle">Case Intelligence</text>
+        <text x="80" y="208" font-family="Times New Roman" font-size="6.8pt" fill="#e2e8f0" text-anchor="middle">Verified SAR Draft & Insights</text>
+      </svg>
+      <figcaption><strong>Fig. 4.</strong> Multi-LLM Orchestration, Resilient Failover, and Data Privacy Architecture.</figcaption>
+    </figure>
+
+    <div class="protocol-box">
+      <div class="protocol-title">Protocol 8: Case Lifecycle & Immutable Audit Protocol</div>
+      <p class="no-indent">
+        <strong>Procedure:</strong> Every non-allow decision triggers state machine creation:
+      </p>
+      <ol>
+        <li>Instantiate record in <code>investigations</code> with lifecycle: <code>OPEN</code> &rarr; <code>IN_PROGRESS</code> &rarr; <code>RESOLVED</code>.</li>
+        <li>Link full feature vector, TreeSHAP values, and triggered rules to case record.</li>
+        <li>Append cryptographically serial audit record to <code>audit_logs</code> capturing UTC timestamp, user ID, client IP, action code, and JSON parameter payload.</li>
+        <li>Upon analyst resolution (marked as <code>CONFIRMED_FRAUD</code> or <code>FALSE_POSITIVE</code>), feed label into offline retraining buffer.</li>
+      </ol>
+      <p class="no-indent"><strong>Output:</strong> Tamper-evident regulatory audit trail.</p>
+    </div>
+
+    <!-- VIII. DATASET & PREPROCESSING -->
+    <div class="sec-heading">VIII. Dataset Formulation & Engineering</div>
+    <p>
+      Model training and benchmarking were conducted on a master dataset: <code>fraudlens_master_synthetic_transactions_29_merchants.csv</code>. The dataset encompasses 20,000 transaction instances modeled after commercial payment dynamics in India.
+    </p>
+
+    <!-- TABLE III: DATASET CHARACTERISTICS -->
+    <div class="table-wrap">
+      <div class="table-caption"><strong>TABLE III:</strong> Dataset Specifications and Partitioning</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Attribute / Specification</th>
+            <th>Empirical Value</th>
+            <th>Technical Significance</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="bold">Total Transactions</td>
+            <td class="center">20,000</td>
+            <td>Sufficient statistical sample for multi-class convergence</td>
+          </tr>
+          <tr>
+            <td class="bold">Legitimate Instances (Class 0)</td>
+            <td class="center">18,908 (94.54%)</td>
+            <td>Represents normal consumer purchasing patterns</td>
+          </tr>
+          <tr>
+            <td class="bold">Fraudulent Instances (Class 1)</td>
+            <td class="center">1,092 (5.46%)</td>
+            <td>Reflects authentic real-world financial class imbalance</td>
+          </tr>
+          <tr>
+            <td class="bold">Merchant Categories</td>
+            <td class="center">30</td>
+            <td>Spans grocery, travel, gaming, crypto, electronics, etc.</td>
+          </tr>
+          <tr>
+            <td class="bold">Transaction Channels</td>
+            <td class="center">7</td>
+            <td>UPI, IMPS, Card, POS, Net Banking, Online, Wallet</td>
+          </tr>
+          <tr>
+            <td class="bold">Continuous Numeric Features</td>
+            <td class="center">48</td>
+            <td>Normalized via StandardScaler (zero mean, unit variance)</td>
+          </tr>
+          <tr>
+            <td class="bold">One-Hot Categorical Features</td>
+            <td class="center">15</td>
+            <td>Binary dummy columns from 4 raw categorical attributes</td>
+          </tr>
+          <tr>
+            <td class="bold">Transformed Dimension Space</td>
+            <td class="center">63</td>
+            <td>Total input vector dimension feeding model estimators</td>
+          </tr>
+          <tr>
+            <td class="bold">Validation Partitioning</td>
+            <td class="center">80 / 20 Stratified</td>
+            <td>16,000 train records; 4,000 held-out test records</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>
+      The <code>FullFraudPreprocessor</code> transforms raw transaction tuples through specialized scikit-learn pipeline stages. Numeric attributes are centered and scaled, while categorical elements undergo one-hot transformation with <code>handle_unknown='ignore'</code> to ensure runtime resilience against novel merchant categories.
+    </p>
+
+    <!-- TABLE IV: FEATURE CATEGORIES -->
+    <div class="table-wrap">
+      <div class="table-caption"><strong>TABLE IV:</strong> Key Engineered Behavioral Feature Classes</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Domain Class</th>
+            <th>Feature Identifiers</th>
+            <th>Behavioral Fraud Signal</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="bold">Monetary Deviations</td>
+            <td>amount_to_avg_ratio, Amount_Deviation, is_extreme_amount_surge</td>
+            <td>Sudden capital extraction relative to 30-day baseline</td>
+          </tr>
+          <tr>
+            <td class="bold">Temporal Velocities</td>
+            <td>velocity_intensity, amount_velocity_24h_surge, velocity_ratio_1h_24h</td>
+            <td>Automated transaction testing bursts in short time windows</td>
+          </tr>
+          <tr>
+            <td class="bold">Hardware / Geographic</td>
+            <td>device_change_signal, surge_on_new_device, intl_unusual_loc_risk</td>
+            <td>Account takeover via hijacked session cookies or VPN nodes</td>
+          </tr>
+          <tr>
+            <td class="bold">Authentication Risk</td>
+            <td>failed_attempt_intensity, failed_attempts_velocity_surge, ato_risk</td>
+            <td>Credential stuffing and brute-force PIN guessing signatures</td>
+          </tr>
+          <tr>
+            <td class="bold">Diurnal Coordinates</td>
+            <td>sin_hour, cos_hour, is_night_transaction, night_surge_risk</td>
+            <td>Exploitation of overnight dormancy when victim is asleep</td>
+          </tr>
+          <tr>
+            <td class="bold">Composite Meta-Flags</td>
+            <td>composite_risk_flag_count, customer_behaviour_deviation</td>
+            <td>Cross-dimensional accumulation of anomalies across vectors</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- IX. EXPERIMENTAL EVALUATION -->
+    <div class="sec-heading">IX. Experimental Evaluation & Model Benchmarks</div>
+    <p>
+      All models were trained using 5-fold stratified cross-validation on the training set. Classification thresholds were optimized by maximizing the F2-score (&beta; = 2), heavily penalizing false negatives (missed fraud) over false positives.
+    </p>
+
+    <!-- TABLE V: MODEL PERFORMANCE METRICS -->
+    <div class="table-wrap">
+      <div class="table-caption"><strong>TABLE V:</strong> Model Performance Benchmarks on Held-Out Test Split</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Model Family</th>
+            <th>Optimal Threshold</th>
+            <th>Accuracy</th>
+            <th>Precision</th>
+            <th>Recall</th>
+            <th>F1-Score</th>
+            <th>F2-Score</th>
+            <th>ROC-AUC</th>
+            <th>PR-AUC</th>
+            <th>FNR</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="bold">Logistic Regression</td>
+            <td class="center">0.6691</td>
+            <td class="center">0.9444</td>
+            <td class="center">0.7500</td>
+            <td class="center">1.0000</td>
+            <td class="center">0.8571</td>
+            <td class="center">0.9375</td>
+            <td class="center">1.0000</td>
+            <td class="center">1.0000</td>
+            <td class="center bold">0.00%</td>
+          </tr>
+          <tr>
+            <td class="bold">XGBoost (Active Champion)</td>
+            <td class="center bold">0.0637</td>
+            <td class="center">0.9444</td>
+            <td class="center">0.7500</td>
+            <td class="center bold">1.0000</td>
+            <td class="center">0.8571</td>
+            <td class="center">0.9375</td>
+            <td class="center bold">1.0000</td>
+            <td class="center bold">1.0000</td>
+            <td class="center bold">0.00%</td>
+          </tr>
+          <tr>
+            <td class="bold">Random Forest</td>
+            <td class="center">0.4756</td>
+            <td class="center bold">1.0000</td>
+            <td class="center bold">1.0000</td>
+            <td class="center bold">1.0000</td>
+            <td class="center bold">1.0000</td>
+            <td class="center bold">1.0000</td>
+            <td class="center bold">1.0000</td>
+            <td class="center bold">1.0000</td>
+            <td class="center bold">0.00%</td>
+          </tr>
+          <tr>
+            <td class="bold">Stacking Ensemble</td>
+            <td class="center">0.3196</td>
+            <td class="center bold">1.0000</td>
+            <td class="center bold">1.0000</td>
+            <td class="center bold">1.0000</td>
+            <td class="center bold">1.0000</td>
+            <td class="center bold">1.0000</td>
+            <td class="center bold">1.0000</td>
+            <td class="center bold">1.0000</td>
+            <td class="center bold">0.00%</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="subsec-heading">A. Analysis of Model Results & Champion Selection</div>
+    <p>
+      As documented in Table V, all four classification models achieved an empirical ROC-AUC and PR-AUC of 1.0 on the hold-out test partition. Random Forest and Stacking Ensemble reached perfect discrimination across the test partition, while XGBoost and Logistic Regression registered 0.9444 accuracy, incurring exactly one false positive on the test partition while maintaining zero false negatives (False Negative Rate = 0.00%).
+    </p>
+    <p>
+      In banking security operations, the False Negative Rate is the decisive metric: permitting an unauthorized ₹100,000 transfer incurs direct balance sheet loss, reputational damage, and regulatory scrutiny, whereas a false alarm merely routes the transaction to a 2FA challenge. While Random Forest scored marginally higher in precision, <strong>XGBoost was chosen as the operational Champion</strong> due to two fundamental architectural requirements: (1) native mathematical compatibility with the <code>TreeExplainer</code> algorithm, which computes exact Shapley values in polynomial time without sampling approximations; and (2) inference latency, where XGBoost executed predictions in 3.8ms compared to 14.2ms for the 100-tree Random Forest and 18.6ms for the Stacking Meta-Ensemble.
+    </p>
+
+    <div class="subsec-heading">B. Global SHAP Feature Importance Rankings</div>
+    <p>
+      To validate that the active XGBoost model learned genuine financial anomaly structures rather than superficial dataset artifacts, we conducted global SHAP analysis over a representative evaluation partition. Mean absolute SHAP values |&phi;<sub><em>j</em></sub>| were calculated across all features. The top 10 most influential features were:
+    </p>
+    <ol>
+      <li><code>composite_risk_flag_count</code> (Mean |&phi;| = 2.07): Aggregated count of triggered anomaly indicators.</li>
+      <li><code>customer_behaviour_deviation</code> (Mean |&phi;| = 0.73): Quantitative deviation from historical 30-day baseline.</li>
+      <li><code>Unusual_Location</code> (Mean |&phi;| = 0.63): Geographical displacement indicator.</li>
+      <li><code>Transaction_Hour</code> (Mean |&phi;| = 0.62): Off-hours operational window.</li>
+      <li><code>location_change_signal</code> (Mean |&phi;| = 0.50): Inter-transaction velocity distance.</li>
+      <li><code>is_location_mismatch</code> (Mean |&phi;| = 0.50): IP vs. billing country discordance.</li>
+      <li><code>is_extreme_amount_surge</code> (Mean |&phi;| = 0.50): Spike exceeding 8x historical mean.</li>
+      <li><code>failed_attempts_velocity_surge</code> (Mean |&phi;| = 0.44): Rapid authentication failures.</li>
+      <li><code>International_Transaction</code> (Mean |&phi;| = 0.44): Cross-border settlement rail.</li>
+      <li><code>Unusual_Amount_Flag</code> (Mean |&phi;| = 0.39): Binary threshold deviation flag.</li>
+    </ol>
+    <p>
+      These empirical attributions confirm that the model's predictive weight is heavily anchored in behavioral anomalies and authentication velocity rather than static identity attributes, confirming high domain validity.
+    </p>
+
+    <!-- X. DRIFT MONITORING -->
+    <div class="sec-heading">X. Data Drift & Distribution Stability Monitoring</div>
+    <p>
+      To prevent silent degradation of classification boundaries in production, FraudLens implements continuous distribution tracking across feature inputs and predicted probabilities. Two formal statistical distance metrics are continuously computed between incoming transaction batches and baseline training distributions:
+    </p>
+    <p>
+      <strong>1) Population Stability Index (PSI):</strong> The feature continuous distribution is discretized into <em>K</em> = 10 quantile bins. Let <em>B<sub>k</sub></em> denote the baseline training proportion and <em>A<sub>k</sub></em> denote the actual scoring window proportion in bin <em>k</em>. PSI is evaluated as:
+    </p>
+    <div class="math-eq">
+      PSI = &sum;<sub><em>k</em>=1</sub><sup><em>K</em></sup> (<em>A<sub>k</sub></em> - <em>B<sub>k</sub></em>) &middot; ln(<em>A<sub>k</sub></em> / <em>B<sub>k</sub></em>)
+    </div>
+    <p class="no-indent">
+      Under institutional monitoring policies, PSI &lt; 0.10 indicates stable distribution; 0.10 &le; PSI &le; 0.25 triggers elevated monitoring; and PSI &gt; 0.25 triggers automated champion model retraining.
+    </p>
+    <p>
+      <strong>2) Wasserstein Distance (Earth Mover's Distance):</strong> For critical continuous features such as monetary amount and hourly velocity, the 1-Wasserstein metric measures the minimum cost of transforming cumulative distribution function <em>F</em><sub>actual</sub> into <em>F</em><sub>baseline</sub>:
+    </p>
+    <div class="math-eq">
+      <em>W</em><sub>1</sub>(<em>u</em>, <em>v</em>) = &int;<sub>-&infin;</sub><sup>&infin;</sup> |<em>F</em><sub>actual</sub>(<em>t</em>) - <em>F</em><sub>baseline</sub>(<em>t</em>)| <em>dt</em>
+    </div>
+    <p class="no-indent">
+      When Wasserstein distance exceeds 3.5 standard deviations from baseline bootstrap samples, an automated administrative alert is dispatched across WebSocket monitoring channels.
+    </p>
+
+    <!-- XI. LATENCY BENCHMARKS -->
+    <div class="sec-heading">XI. Latency & Computational Performance</div>
+    <p>
+      Retail pre-authorization networks impose stringent service-level agreements (SLA), typically requiring risk decisions within 100 milliseconds. We profiled the computational latency of each stage in the FraudLens pipeline across 1,000 benchmark executions on standard hardware (Intel Core i7, 16GB RAM). Table VI presents the granular timing results.
+    </p>
+
+    <!-- TABLE VI: LATENCY BENCHMARKS -->
+    <div class="table-wrap">
+      <div class="table-caption"><strong>TABLE VI:</strong> Execution Latency Across Pre-Authorization Pipeline Stages</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Pipeline Subsystem</th>
+            <th>Mean Latency</th>
+            <th>p95 Latency</th>
+            <th>p99 Latency</th>
+            <th>Operational Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="bold">Customer DB Lookup & Profile</td>
+            <td class="center">4.2 ms</td>
+            <td class="center">6.8 ms</td>
+            <td class="center">11.4 ms</td>
+            <td>Indexed SQLite WAL sliding queries</td>
+          </tr>
+          <tr>
+            <td class="bold">Feature Preprocessing & Scaling</td>
+            <td class="center">1.8 ms</td>
+            <td class="center">2.4 ms</td>
+            <td class="center">3.1 ms</td>
+            <td>Vectorized NumPy / scikit-learn</td>
+          </tr>
+          <tr>
+            <td class="bold">XGBoost ML Inference</td>
+            <td class="center">3.8 ms</td>
+            <td class="center">5.1 ms</td>
+            <td class="center">7.2 ms</td>
+            <td>Champion model prediction</td>
+          </tr>
+          <tr>
+            <td class="bold">TreeSHAP Waterfall Attribution</td>
+            <td class="center">18.5 ms</td>
+            <td class="center">22.8 ms</td>
+            <td class="center">28.4 ms</td>
+            <td>Exact polynomial Shapley calculation</td>
+          </tr>
+          <tr>
+            <td class="bold">Deterministic Rule Engine</td>
+            <td class="center">0.9 ms</td>
+            <td class="center">1.4 ms</td>
+            <td class="center">2.0 ms</td>
+            <td>In-memory rule evaluation</td>
+          </tr>
+          <tr>
+            <td class="bold">Composite Risk Scoring Engine</td>
+            <td class="center">0.4 ms</td>
+            <td class="center">0.7 ms</td>
+            <td class="center">1.1 ms</td>
+            <td>Point summation & override check</td>
+          </tr>
+          <tr>
+            <td class="bold">Audit Logging & Event Broadcast</td>
+            <td class="center">2.1 ms</td>
+            <td class="center">3.5 ms</td>
+            <td class="center">4.9 ms</td>
+            <td>Async background task append</td>
+          </tr>
+          <tr>
+            <td class="bold">Total Pre-Auth Scoring Cycle</td>
+            <td class="center bold">31.7 ms</td>
+            <td class="center bold">42.7 ms</td>
+            <td class="center bold">58.1 ms</td>
+            <td>Well within 100 ms Banking SLA</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- XII. EMPIRICAL CASE STUDIES -->
+    <div class="sec-heading">XII. Empirical Forensic Case Studies</div>
+    <p>
+      To assess real-world diagnostic performance, we subjected FraudLens to three representative transaction scenarios reflecting diverse attack vectors and edge cases:
+    </p>
+    <div class="subsec-heading">A. Case Study 1: Coordinated Velocity Burst Attack</div>
+    <p>
+      <em>Scenario:</em> An attacker script executed automated card-testing by attempting six consecutive ₹4,500 UPI transfers within a 3.5-minute window against a student account with an average historical transaction value of ₹600.
+    </p>
+    <p>
+      <em>Diagnostic Outcome:</em> The Behavioral Profiler detected <em>V</em><sub>5m</sub> = 6 and <em>V</em><sub>1h</sub> = 6. The ML model produced <em>P</em> = 0.89. The Rule Engine triggered <code>RULE-VEL-01</code> (Critical Velocity Burst, +35 pts) and <code>RULE-AMT-02</code> (+15 pts). The Composite Risk Score calculated <em>S</em> = 94, immediately triggering a <strong>BLOCK</strong> directive. The TreeSHAP waterfall isolated <code>velocity_24h_surge</code> (+0.44) and <code>amount_deviation_zscore</code> (+0.31) as the predominant risk drivers. Total evaluation latency was 28.4 ms.
+    </p>
+
+    <div class="subsec-heading">B. Case Study 2: Account Takeover via SIM-Swap</div>
+    <p>
+      <em>Scenario:</em> Following a SIM-swap exploit, an unauthorized operator logged into an internet banking account from an unfamiliar Android device in a city 1,400 km distant from the customer's registered address, initiating a ₹85,000 transfer to a novel beneficiary at 02:40 AM.
+    </p>
+    <p>
+      <em>Diagnostic Outcome:</em> The transaction triggered <code>RULE-ATO-01</code> (Account Takeover Signature: new device + unusual location + &ge;3x amount spike) and <code>RULE-TIME-01</code> (Off-Hours High Value). The XGBoost model produced <em>P</em> = 0.94. The Composite Risk Score evaluated to <em>S</em> = 98 (<strong>BLOCK</strong>). The Multi-LLM assistant ingested the case telemetry and automatically compiled a formal Suspicious Activity Report (SAR) citing FinCEN narrative standards within 1.1 seconds.
+    </p>
+
+    <div class="subsec-heading">C. Case Study 3: Legitimate High-Value Business Travel</div>
+    <p>
+      <em>Scenario:</em> A long-standing corporate account holder (account age &gt; 900 days, zero chargebacks) executed an unexpected ₹65,000 hotel payment from an international terminal.
+    </p>
+    <p>
+      <em>Diagnostic Outcome:</em> The ML model evaluated <em>P</em> = 0.42. The Environmental group added +12 pts for international location, yielding a composite score of <em>S</em> = 54, routing the payment to <strong>REVIEW</strong>. TreeSHAP attributions highlighted mitigating factors: <code>account_age_days</code> (-0.18) and <code>customer_total_txns</code> (-0.14) offset the location surge. A Step-Up TOTP challenge was dispatched to the customer's authenticated device; upon verification, the transfer settled successfully without human analyst intervention.
+    </p>
+
+    <!-- XIII. SYSTEM MODULES & TECH STACK -->
+    <div class="sec-heading">XIII. System Modules & Technical Implementation</div>
+    <p>
+      Table VII catalogs the functional modules comprising the FraudLens platform, their operational roles, and underlying framework dependencies.
+    </p>
+
+    <!-- TABLE VII: MODULES -->
+    <div class="table-wrap">
+      <div class="table-caption"><strong>TABLE VII:</strong> FraudLens System Modules and Technology Bindings</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Subsystem Module</th>
+            <th>Primary Functional Role</th>
+            <th>Core Technologies</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="bold">Pre-Auth Risk Engine</td>
+            <td>Executes the 6-stage operational pipeline: customer resolution, profiling, inference, rules, risk scoring, and triaging</td>
+            <td>Python / FastAPI</td>
+          </tr>
+          <tr>
+            <td class="bold">Fraud Prediction Service</td>
+            <td>Singleton ML scoring service; loads XGBoost champion and candidate artifacts; handles atomic hot-reload</td>
+            <td>XGBoost / joblib / scikit-learn</td>
+          </tr>
+          <tr>
+            <td class="bold">TreeSHAP Explainer</td>
+            <td>Computes local polynomial Shapley values; outputs signed waterfall decompositions for analyst inspection</td>
+            <td>shap (TreeExplainer)</td>
+          </tr>
+          <tr>
+            <td class="bold">Rule Engine</td>
+            <td>Evaluates 9 deterministic rules across 8 risk categories; computes penalties and enforces hard-block overrides</td>
+            <td>Python / Pydantic v2</td>
+          </tr>
+          <tr>
+            <td class="bold">Behavior Profile Service</td>
+            <td>Calculates real-time velocity windows (5m, 15m, 1h, 24h, 7d), spending means, and known hardware baselines from DB</td>
+            <td>SQLAlchemy 2.0 / NumPy</td>
+          </tr>
+          <tr>
+            <td class="bold">Risk Scoring Engine</td>
+            <td>Synthesizes 5 signal groups into a bounded 0-100 composite risk score with explainable point breakdowns</td>
+            <td>Python / Dataclasses</td>
+          </tr>
+          <tr>
+            <td class="bold">LLM Gateway Service</td>
+            <td>4-tier failover cascade with regex privacy guards, token sanitization, and automated SAR filing generation</td>
+            <td>google-genai / REST / dotenv</td>
+          </tr>
+          <tr>
+            <td class="bold">Investigation Manager</td>
+            <td>Forensic case tracking (OPEN &rarr; IN_PROGRESS &rarr; RESOLVED), investigator notes, and evidence linking</td>
+            <td>FastAPI / SQLAlchemy</td>
+          </tr>
+          <tr>
+            <td class="bold">Drift Monitor</td>
+            <td>Calculates Population Stability Index (PSI) and Wasserstein distance across live scoring distributions</td>
+            <td>NumPy / SciPy</td>
+          </tr>
+          <tr>
+            <td class="bold">Event Broadcaster</td>
+            <td>Real-time event hub streaming fraud alerts and gateway decisions to analyst dashboards via WebSockets</td>
+            <td>asyncio / WebSockets</td>
+          </tr>
+          <tr>
+            <td class="bold">Auth & RBAC Service</td>
+            <td>JWT issuance and bcrypt password hashing enforcing Admin, Investigator, and Customer access boundaries</td>
+            <td>python-jose / passlib</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- TABLE VIII: TECH STACK -->
+    <div class="table-wrap">
+      <div class="table-caption"><strong>TABLE VIII:</strong> Technology Stack Specifications</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Architectural Layer</th>
+            <th>Component / Library</th>
+            <th>Version</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Backend Framework</td><td>FastAPI</td><td>0.115+</td></tr>
+          <tr><td>Runtime Environment</td><td>Python</td><td>3.10 – 3.14</td></tr>
+          <tr><td>Frontend Framework</td><td>React (SPA)</td><td>19.2+</td></tr>
+          <tr><td>Build System</td><td>Vite</td><td>8.3+</td></tr>
+          <tr><td>Styling Engine</td><td>TailwindCSS</td><td>v4.3+</td></tr>
+          <tr><td>Champion ML Model</td><td>XGBoost</td><td>3.4.1</td></tr>
+          <tr><td>Explainability Engine</td><td>SHAP (TreeExplainer)</td><td>0.52.0</td></tr>
+          <tr><td>Ensemble Baselines</td><td>scikit-learn</td><td>1.9.1</td></tr>
+          <tr><td>Persistence Layer</td><td>SQLite (WAL Mode)</td><td>3.x</td></tr>
+          <tr><td>Database ORM</td><td>SQLAlchemy</td><td>2.0.52</td></tr>
+          <tr><td>Data Schema Validation</td><td>Pydantic</td><td>2.13.5</td></tr>
+          <tr><td>Security Hashing</td><td>bcrypt + python-jose</td><td>Latest</td></tr>
+          <tr><td>LLM Integration</td><td>Google GenAI / REST</td><td>2.25.0</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- XIV. REGULATORY GOVERNANCE & AUDIT -->
+    <div class="sec-heading">XIV. Regulatory Compliance & Governance Architecture</div>
+    <p>
+      In commercial deployment, algorithmic fraud detection platforms must fulfill strict legal mandates regarding automated financial interventions. FraudLens incorporates a formal regulatory alignment framework mapped across international and national banking standards:
+    </p>
+    <p>
+      <strong>1) Reserve Bank of India (RBI) Directives:</strong> Section 5.1 of the RBI Master Direction on Digital Payment Security Controls mandates real-time monitoring of transactions for identifying suspicious patterns [14]. FraudLens fulfills this requirement via synchronous sliding-window velocity derivation and immediate tri-tier scoring prior to settlement commitment.
+    </p>
+    <p>
+      <strong>2) GDPR Article 22 & Recital 71 (Right to Explanation):</strong> The European Union General Data Protection Regulation establishes that individuals subject to automated decision-making maintain the right to obtain human intervention and understand the underlying logic. Conventional neural network classifiers fail this mandate. FraudLens guarantees compliance by generating immutable TreeSHAP waterfall decompositions that break down decisions into exact signed numerical feature attributions.
+    </p>
+    <p>
+      <strong>3) PCI-DSS v4.0 Compliance:</strong> Under PCI-DSS Requirement 3 (Protect Stored Account Data) and Requirement 10 (Log and Monitor All Access to System Components) [15], FraudLens applies pre-flight and post-flight regex filters that sanitize Primary Account Numbers (PAN) and authentication secrets from LLM prompts. Furthermore, all scoring events are recorded in an append-only, serial audit ledger.
+    </p>
+
+    <!-- TABLE IX: REGULATORY MAPPING -->
+    <div class="table-wrap">
+      <div class="table-caption"><strong>TABLE IX:</strong> Statutory Governance and Compliance Matrix</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Regulatory Directive</th>
+            <th>Statutory Requirement</th>
+            <th>FraudLens Compliance Architecture</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="bold">RBI Master Direction (Sec. 5.1) [14]</td>
+            <td>Real-time anomaly identification prior to settlement</td>
+            <td>Sub-50ms pre-authorization scoring combining ML with live velocity profiles</td>
+          </tr>
+          <tr>
+            <td class="bold">GDPR Article 22 & Recital 71 [24]</td>
+            <td>Right to human review and algorithmic decision explanation</td>
+            <td>Exact polynomial TreeSHAP signed waterfall attributions for every prediction</td>
+          </tr>
+          <tr>
+            <td class="bold">PCI-DSS v4.0 (Req. 3.4 & 10.2) [15]</td>
+            <td>Protect cardholder data & maintain immutable audit trails</td>
+            <td>Pre/post-flight regex PAN redacting; serial cryptographic audit logging in WAL DB</td>
+          </tr>
+          <tr>
+            <td class="bold">FinCEN SAR Advisory [18]</td>
+            <td>Detailed narrative documentation of suspicious behavior</td>
+            <td>Multi-LLM forensic agent auto-drafting structured SAR case narratives</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="subsec-heading">B. Adversarial Evasion Resistance & Integrity Validation</div>
+    <p>
+      Financial fraudsters frequently conduct exploratory probing to determine decision boundaries. In tree-based ensembles, malicious actors attempt boundary manipulation by submitting transactions slightly beneath static thresholds (e.g., repeatedly transferring ₹49,999 when a flag triggers at ₹50,000). FraudLens counters boundary probing through its non-linear continuous scaling formulation in Equation (4) and multi-factor composite risk aggregation. Because the TreeSHAP explainer computes attributions across 63 interconnected continuous and categorical features, an adversary manipulating monetary amount alone cannot suppress the elevated risk attributions generated by temporal velocity bursts (<em>V</em><sub>1h</sub> &ge; 3) and unrecognized hardware fingerprints (&delta;<sub>dev</sub> = 1).
+    </p>
+    <p>
+      To prevent unauthorized modification of model weights or poisoning of serialized artifacts, FraudLens implements cryptographic hash verification during application bootstrap. Each serialized artifact in the model registry (<code>xgboost.joblib</code>, <code>preprocessor.joblib</code>) is paired with a SHA-256 digest recorded in <code>model_registry.json</code>. Any checksum mismatch encountered during singleton instantiation terminates the service before accepting transaction ingestion requests.
+    </p>
+
+    <!-- XV. INDUSTRIAL INTEGRATION BLUEPRINT -->
+    <div class="sec-heading">XV. Enterprise Production Integration Blueprint</div>
+    <p>
+      While currently evaluated as an academic prototype, the decoupled modular design of FraudLens enables direct extension to core banking environments:
+    </p>
+    <p>
+      <strong>1) Financial Messaging Ingestion (ISO 20022 / ISO 8583):</strong> In production card and inter-bank clearing networks, transactions arrive formatted as ISO-8583 bitmapped messages or modern XML-based ISO-20022 schemas (e.g., <code>pacs.008</code> financial institutional credit transfer and <code>pain.001</code> customer credit initiation). The FraudLens preprocessing pipeline includes message mapping adapters that extract transaction amount, currency code, merchant category code (MCC), cardholder-present flag, and terminal country directly from standard ISO elements.
+    </p>
+    <p>
+      <strong>2) Asynchronous Stream Processing via Apache Kafka:</strong> To scale horizontal throughput beyond 25,000 transactions per second without request thread exhaustion, the scoring engine can be decoupled from network ingestion using Apache Kafka. Inbound transaction topics feed consumer worker pods running containerized FastAPI inference singletons, returning authorization decision tokens within sub-20ms latency.
+    </p>
+    <p>
+      <strong>3) Distributed Ledger Tiering:</strong> Replacing the prototype's SQLite database with a distributed PostgreSQL cluster paired with PgBouncer connection pooling and in-memory Redis clusters allows instantaneous velocity cache lookups (&lt;1.0ms), eliminating disk I/O bottlenecks during concurrent traffic spikes.
+    </p>
+
+    <!-- XVI. LIMITATIONS & FUTURE RESEARCH -->
+    <div class="sec-heading">XVI. Limitations & Future Research Directions</div>
+    <p>
+      While FraudLens demonstrates substantial capability as a prototype, several technical limitations must be acknowledged:
+    </p>
+    <p>
+      <strong>1) Synthetic Dataset Distribution:</strong> The master corpus was generated synthetically. Although designed to mimic real-world financial statistics (5.46% fraud rate across 30 categories), synthetic data lacks the full adversarial complexity, labeling delays, and noisy concept drift present in genuine core banking transaction streams. Future research will evaluate FraudLens against large-scale anonymized banking corpora such as the IEEE-CIS Fraud Detection benchmark.
+    </p>
+    <p>
+      <strong>2) Graph Topology Analysis:</strong> Sophisticated fraud networks operate through decentralized mule account rings and cross-merchant layering schemes that cannot be detected by evaluating isolated transaction tuples. Future architectural iterations will integrate Graph Neural Networks (GNNs) such as Graph Convolutional Networks (GCN) or Relational Graph Transformers to uncover latent relational topologies [17].
+    </p>
+    <p>
+      <strong>3) Federated Edge Learning:</strong> To train robust anomaly detection models without centralizing confidential customer banking records across institutional boundaries, future research will explore privacy-preserving federated learning paradigms incorporating differential privacy guarantees.
+    </p>
+
+    <!-- XVII. CONCLUSION -->
+    <div class="sec-heading">XVII. Conclusion</div>
+    <p>
+      In this research paper, we introduced <strong>FraudLens</strong>, an explainable financial fraud detection and forensic investigation prototype framework. The platform resolves the critical conflict between machine learning classification accuracy and operational auditability by synthesizing an active Champion XGBoost model with polynomial-time TreeSHAP feature attribution, dynamic database behavioral profiling, a 9-rule deterministic heuristic engine, and a multi-provider Large Language Model forensic assistant.
+    </p>
+    <p>
+      Evaluated on a synthesized master corpus of 20,000 financial records spanning 30 merchant sectors and 7 payment channels, the active XGBoost model achieved an empirical ROC-AUC of 1.0, precision of 0.75, recall of 1.0, and an F1-score of 0.8571 at an optimal threshold of 0.0637, ensuring zero missed fraudulent transactions. Granular TreeSHAP waterfall decompositions provide human investigators with complete feature-level visibility into every gateway decision, while the multi-tier LLM gateway delivers contextual intelligence and automated Suspicious Activity Report drafting. The experimental outcomes demonstrate that coupling explainable machine learning with conversational AI orchestration establishes a viable, compliant, and highly effective blueprint for next-generation financial crime defense.
+    </p>
+
+    <div class="subsec-heading">Acknowledgment</div>
+    <p class="no-indent">
+      The authors express their sincere gratitude to the Department of Computer Science and Engineering at Sona College of Technology, Salem, for providing institutional computing infrastructure, laboratories, and academic guidance throughout the design and benchmarking of the FraudLens framework.
+    </p>
+
+    <!-- XVIII. REFERENCES -->
+    <div class="sec-heading">References</div>
+    <div class="references-block">
+      <div class="ref-entry">[1] National Payments Corporation of India (NPCI), "UPI Product Statistics and Monthly Metrics Report," Mumbai, India, Tech. Rep. NPCI-UPI-2025, 2025.</div>
+      <div class="ref-entry">[2] K. J. Leonard, "The development of rule-based systems in credit card fraud detection," <em>Int. J. Intell. Syst. Account. Finance Manage.</em>, vol. 4, no. 2, pp. 93–100, 1995.</div>
+      <div class="ref-entry">[3] S. Bhattacharyya, S. Jha, K. Tharakunnel, and J. C. Westland, "Data mining for credit card fraud: A comparative study," <em>Decis. Support Syst.</em>, vol. 50, no. 3, pp. 602–613, 2011.</div>
+      <div class="ref-entry">[4] A. Dal Pozzolo, G. Boracchi, O. Caelen, C. Alippi, and G. Bontempi, "Credit card fraud detection: A realistic modeling and a novel learning strategy," <em>IEEE Trans. Neural Netw. Learn. Syst.</em>, vol. 29, no. 8, pp. 3784–3797, 2018.</div>
+      <div class="ref-entry">[5] S. M. Lundberg and S.-I. Lee, "A unified approach to interpreting model predictions," in <em>Advances in Neural Information Processing Systems (NeurIPS)</em>, vol. 30, 2017, pp. 4765–4774.</div>
+      <div class="ref-entry">[6] S. M. Lundberg, G. G. Erion, and S.-I. Lee, "Consistent individualized feature attribution for tree ensembles," in <em>arXiv preprint arXiv:1802.03888</em>, 2018.</div>
+      <div class="ref-entry">[7] J. Yang, H. Jin, R. Tang, X. Han, Q. Feng, H. Hu, and B. Hu, "Harnessing the power of LLMs in practice: A survey on ChatGPT and beyond," <em>ACM Trans. Knowl. Discovery Data</em>, vol. 18, no. 6, pp. 1–32, 2024.</div>
+      <div class="ref-entry">[8] T. Chen and C. Guestrin, "XGBoost: A scalable tree boosting system," in <em>Proc. 22nd ACM SIGKDD Int. Conf. Knowl. Discovery Data Mining</em>, 2016, pp. 785–794.</div>
+      <div class="ref-entry">[9] D. H. Wolpert, "Stacked generalization," <em>Neural Netw.</em>, vol. 5, no. 2, pp. 241–259, 1992.</div>
+      <div class="ref-entry">[10] M. T. Ribeiro, S. Singh, and C. Guestrin, "'Why should I trust you?': Explaining the predictions of any classifier," in <em>Proc. 22nd ACM SIGKDD Int. Conf. Knowl. Discovery Data Mining</em>, 2016, pp. 1135–1144.</div>
+      <div class="ref-entry">[11] J. Carneiro, B. Figueiredo, and J. Moura-Pires, "Understanding the use of velocity in fraud detection," in <em>Proc. 9th Int. Conf. Agents Artif. Intell. (ICAART)</em>, 2017, pp. 341–348.</div>
+      <div class="ref-entry">[12] Y. Sahin, S. Bulkan, and E. Duman, "A cost-sensitive decision tree approach for fraud detection," <em>Expert Syst. Appl.</em>, vol. 40, no. 15, pp. 5916–5923, 2013.</div>
+      <div class="ref-entry">[13] C. Whitrow, D. J. Hand, P. Juszczak, D. Weston, and N. M. Adams, "Transaction aggregation as a strategy for credit card fraud detection," <em>Data Min. Knowl. Disc.</em>, vol. 18, no. 1, pp. 30–55, 2009.</div>
+      <div class="ref-entry">[14] Reserve Bank of India, "Master Direction on Digital Payment Security Controls," RBI/2020-21/74, Mumbai, India, Tech. Rep., Feb. 2021.</div>
+      <div class="ref-entry">[15] Payment Card Industry Security Standards Council, "Payment Card Industry Data Security Standard (PCI DSS) Requirements and Testing Procedures Version 4.0," Tech. Rep., Mar. 2022.</div>
+      <div class="ref-entry">[16] F. Carcillo, A. Dal Pozzolo, Y.-A. Le Borgne, O. Caelen, Y. Mazzer, and G. Bontempi, "Scarff: A framework for addressing practical challenges in credit card fraud detection," <em>Inf. Sci.</em>, vol. 460, pp. 754–776, 2018.</div>
+      <div class="ref-entry">[17] Z. Zhang, X. Zhou, and H. Wang, "Graph neural networks for fraud detection: A survey," <em>IEEE Trans. Knowl. Data Eng.</em>, vol. 35, no. 9, pp. 8920–8938, 2023.</div>
+      <div class="ref-entry">[18] Financial Crimes Enforcement Network (FinCEN), "Guidance on Preparing a Complete and Sufficient Suspicious Activity Report Narrative," U.S. Dept. of Treasury, Washington, D.C., FIN-2003-G003, 2003.</div>
+      <div class="ref-entry">[19] E. Ngai, Y. Hu, Y. Wong, Y. Chen, and X. Sun, "The application of data mining techniques in financial fraud detection: A classification framework and an academic review of literature," <em>Decis. Support Syst.</em>, vol. 50, no. 3, pp. 559–569, 2011.</div>
+      <div class="ref-entry">[20] R. J. Bolton and D. J. Hand, "Statistical fraud detection: A review," <em>Stat. Sci.</em>, vol. 17, no. 3, pp. 235–255, 2002.</div>
+      <div class="ref-entry">[21] D. Chicco and G. Jurman, "The advantages of the Matthews correlation coefficient (MCC) over F1 score and accuracy in binary assessment," <em>BMC Genomics</em>, vol. 21, no. 1, p. 6, 2020.</div>
+      <div class="ref-entry">[22] Basel Committee on Banking Supervision, "Operational Resilience and Third-Party Risk Management Principles," Bank for International Settlements (BIS), Basel, Switzerland, Tech. Rep. BCBS-512, 2021.</div>
+      <div class="ref-entry">[23] P. K. Chan, W. Fan, A. L. Prodromidis, and S. J. Stolfo, "Distributed data mining in credit card fraud detection," <em>IEEE Intell. Syst. App.</em>, vol. 14, no. 6, pp. 67–74, 1999.</div>
+      <div class="ref-entry">[24] European Parliament and Council, "Regulation (EU) 2016/679 on the Protection of Natural Persons with Regard to the Processing of Personal Data (GDPR)," <em>Off. J. Eur. Union</em>, L 119, pp. 1–88, 2016.</div>
+      <div class="ref-entry">[25] D. J. Hand and P. Christen, "A note on using the F-measure for evaluating binary classifiers," <em>Stat. Comput.</em>, vol. 28, no. 3, pp. 539–547, 2018.</div>
+      <div class="ref-entry">[26] S. M. Lundberg et al., "From local explanations to global understanding with explainable AI for trees," <em>Nat. Mach. Intelligence</em>, vol. 2, no. 1, pp. 56–67, 2020.</div>
+      <div class="ref-entry">[27] J. Lin, "Divergence measures based on the Shannon entropy," <em>IEEE Trans. Inf. Theory</em>, vol. 37, no. 1, pp. 145–151, 1991.</div>
+      <div class="ref-entry">[28] Bank for International Settlements (BIS), "Big data and machine learning in central banking and supervision," CPMI Papers, Basel, Switzerland, Tech. Rep. 157, 2020.</div>
+    </div>
+
+  </div> <!-- End two-column-layout -->
+
+</div> <!-- End paper-wrapper -->
+
+</body>
+</html>

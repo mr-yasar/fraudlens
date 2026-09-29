@@ -40,9 +40,9 @@ export default function Sidebar({
   onOpenVoiceHelp,
   onSelectPersona,
 }) {
-  const isCustomer = user?.role?.toLowerCase() === 'customer' || user?.role?.toLowerCase() === 'user'
+  const isCustomer = !isAdmin && (user?.role?.toLowerCase() === 'customer' || user?.role?.toLowerCase() === 'user')
   const customerPersona = getCustomerPersona(user)
-  const isPremium = user?.account_tier === 'PREMIUM' || customerPersona?.isPremium
+  const isPremium = !isAdmin && (user?.account_tier === 'PREMIUM' || customerPersona?.isPremium)
 
   // Role-scoped navigation
   const primaryNav = isPremium
@@ -78,8 +78,8 @@ export default function Sidebar({
         { id: 'transactions', label: 'All Transactions', icon: History },
         { id: 'explainable-ai', label: 'Explainable AI & SHAP', icon: Sparkles },
         { id: 'model-lab', label: 'Model Lab & Registry', icon: Cpu },
-        { id: 'dataset-health', label: 'Dataset Health & Audit', icon: Database },
-      ]
+        { id: 'dataset-health', label: 'Database & Storage Health', icon: Database },
+      ].filter((item) => !isAdmin || item.id !== 'payment')
 
   const systemNav = [
     { id: 'audit-logs', label: 'Audit Trail & Compliance', icon: FileSpreadsheet },

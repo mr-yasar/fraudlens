@@ -13,6 +13,7 @@ from backend.app.api.v1.endpoints.investigations import router as investigations
 from backend.app.api.v1.endpoints.admin_ml import router as admin_ml_router
 from backend.app.api.v1.endpoints.dashboard import router as dashboard_router
 from backend.app.api.v1.endpoints.audit_logs import router as audit_logs_router
+from backend.app.api.v1.endpoints.admin_database import router as admin_database_router
 from backend.app.api.v1.endpoints.payment import router as payment_router
 from backend.app.api.v1.endpoints.approvals import router as approvals_router
 from backend.app.api.v1.endpoints.events import router as events_router
@@ -52,6 +53,7 @@ api_router.include_router(customers_router, prefix="/customers", tags=["Customer
 api_router.include_router(transactions_router, prefix="/transactions", tags=["Transaction Management & Real-Time Evaluation"])
 api_router.include_router(investigations_router, prefix="/investigations", tags=["Investigation & Case Management"])
 api_router.include_router(admin_ml_router, prefix="/admin", tags=["Admin ML & Dataset Management"])
+api_router.include_router(admin_database_router, prefix="/admin/database", tags=["Admin Database Management"])
 api_router.include_router(dashboard_router, prefix="/dashboard", tags=["Dashboard & Analytics"])
 api_router.include_router(audit_logs_router, prefix="/audit-logs", tags=["Audit Logging"])
 api_router.include_router(ai_assistant_router, prefix="/ai", tags=["AI Assistant (Gemini + Grok)"])

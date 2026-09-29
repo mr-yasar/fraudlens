@@ -22,6 +22,14 @@ export const CONTEXTUAL_HELP_DATA = {
     title: 'Live Radar & Cases',
     badge: 'GEOSPATIAL RADAR',
   },
+  'audit-logs': {
+    title: 'Compliance Audit Trail',
+    badge: 'IMMUTABLE LOGS',
+  },
+  'dataset-health': {
+    title: 'Database & Storage Health',
+    badge: 'DATA INTEGRITY',
+  },
 }
 
 /**
