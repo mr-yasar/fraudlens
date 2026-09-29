@@ -3,10 +3,20 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 const AuthContext = createContext(null)
 
 export function AuthProvider({ children }) {
-  const [token, setToken] = useState(() => localStorage.getItem('fraudlens_token') || null)
+  const [token, setToken] = useState(() => {
+    try {
+      return localStorage.getItem('fraudlens_token') || null
+    } catch {
+      return null
+    }
+  })
   const [user, setUser] = useState(() => {
-    const saved = localStorage.getItem('fraudlens_user')
-    return saved ? JSON.parse(saved) : null
+    try {
+      const saved = localStorage.getItem('fraudlens_user')
+      return saved ? JSON.parse(saved) : null
+    } catch {
+      return null
+    }
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)

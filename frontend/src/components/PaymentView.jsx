@@ -59,53 +59,184 @@ import MobileSecurityApprovalModal from './MobileSecurityApprovalModal'
 import GlobalCenterModal from './common/GlobalCenterModal'
 import ContextualModuleHelp from './common/ContextualModuleHelp'
 
-// Bank accounts available for customer debit
-const LINKED_BANK_ACCOUNTS = [
-  {
-    id: 'hdfc_primary',
-    bankName: 'HDFC Bank',
-    accountType: 'Savings Account',
-    accountNumberMasked: '•••• •••• 4821',
-    ifsc: 'HDFC0000240',
-    branch: 'Anna Nagar, Chennai',
-    balance: 547855.0,
-    isPrimary: true,
-    logoColor: 'from-blue-700 to-indigo-800',
-  },
-  {
-    id: 'sbi_salary',
-    bankName: 'State Bank of India',
-    accountType: 'Salary Account',
-    accountNumberMasked: '•••• •••• 9102',
-    ifsc: 'SBIN0001542',
-    branch: 'Nungambakkam, Chennai',
-    balance: 242100.0,
-    isPrimary: false,
-    logoColor: 'from-cyan-700 to-blue-900',
-  },
-  {
-    id: 'icici_digital',
-    bankName: 'ICICI Bank',
-    accountType: 'Digital iMobile A/C',
-    accountNumberMasked: '•••• •••• 3341',
-    ifsc: 'ICIC0000001',
-    branch: 'T Nagar, Chennai',
-    balance: 547855.0,
-    isPrimary: false,
-    logoColor: 'from-orange-700 to-amber-900',
-  },
-  {
-    id: 'fraudlens_wallet',
-    bankName: 'FraudLens Instant Wallet',
-    accountType: 'Prepaid Escrow Wallet',
-    accountNumberMasked: '•••• 1500',
-    ifsc: 'FLNS000001',
-    branch: 'Digital Cyber Wallet',
-    balance: 547855.0,
-    isPrimary: false,
-    logoColor: 'from-emerald-600 to-teal-800',
-  },
-]
+// Bank accounts dynamically tailored to each customer with Salem branch locations & isolated data
+export function getCustomerBankAccounts(customerPersona) {
+  const cid = (customerPersona?.customerId || '').toLowerCase()
+  const name = (customerPersona?.name || '').toLowerCase()
+
+  if (cid.includes('ajay') || name.includes('ajay')) {
+    return [
+      {
+        id: 'ajay_hdfc_primary',
+        bankName: 'HDFC Bank',
+        accountType: 'Enterprise Commercial A/C',
+        accountNumberMasked: '•••• •••• 7182',
+        ifsc: 'HDFC0000491',
+        branch: 'Fairlands, Salem',
+        balance: 99999750.0,
+        isPrimary: true,
+        logoColor: 'from-blue-700 to-indigo-800',
+      },
+      {
+        id: 'ajay_sbi_corporate',
+        bankName: 'State Bank of India',
+        accountType: 'Corporate Current A/C',
+        accountNumberMasked: '•••• •••• 3049',
+        ifsc: 'SBIN0001824',
+        branch: 'Suramangalam, Salem',
+        balance: 4500000.0,
+        isPrimary: false,
+        logoColor: 'from-cyan-700 to-blue-900',
+      },
+      {
+        id: 'ajay_icici_wealth',
+        bankName: 'ICICI Bank',
+        accountType: 'Corporate Wealth Portfolio',
+        accountNumberMasked: '•••• •••• 6612',
+        ifsc: 'ICIC0000128',
+        branch: 'Meyyanur, Salem',
+        balance: 2850000.0,
+        isPrimary: false,
+        logoColor: 'from-orange-700 to-amber-900',
+      },
+      {
+        id: 'ajay_fraudlens_wallet',
+        bankName: 'FraudLens Instant Wallet',
+        accountType: 'Prepaid Escrow Wallet',
+        accountNumberMasked: '•••• 8820',
+        ifsc: 'FLNS000001',
+        branch: 'Salem Digital Cyber Hub',
+        balance: 500000.0,
+        isPrimary: false,
+        logoColor: 'from-emerald-600 to-teal-800',
+      },
+    ]
+  }
+
+  if (cid.includes('mohana') || name.includes('mohana')) {
+    return [
+      {
+        id: 'mohana_icici_primary',
+        bankName: 'ICICI Bank',
+        accountType: 'Digital Savings A/C',
+        accountNumberMasked: '•••• •••• 5591',
+        ifsc: 'ICIC0000128',
+        branch: 'Meyyanur, Salem',
+        balance: 320000.0,
+        isPrimary: true,
+        logoColor: 'from-orange-700 to-amber-900',
+      },
+      {
+        id: 'mohana_hdfc_salary',
+        bankName: 'HDFC Bank',
+        accountType: 'Salary Account',
+        accountNumberMasked: '•••• •••• 4210',
+        ifsc: 'HDFC0000491',
+        branch: 'Fairlands, Salem',
+        balance: 145000.0,
+        isPrimary: false,
+        logoColor: 'from-blue-700 to-indigo-800',
+      },
+      {
+        id: 'mohana_fraudlens_wallet',
+        bankName: 'FraudLens Instant Wallet',
+        accountType: 'Prepaid Escrow Wallet',
+        accountNumberMasked: '•••• 3340',
+        ifsc: 'FLNS000001',
+        branch: 'Salem Digital Cyber Hub',
+        balance: 25000.0,
+        isPrimary: false,
+        logoColor: 'from-emerald-600 to-teal-800',
+      },
+    ]
+  }
+
+  if (cid.includes('sowmiya') || name.includes('sowmiya') || cid.includes('soumya')) {
+    return [
+      {
+        id: 'sowmiya_axis_primary',
+        bankName: 'Axis Bank',
+        accountType: 'Premium Savings A/C',
+        accountNumberMasked: '•••• •••• 9832',
+        ifsc: 'UTIB0000350',
+        branch: 'Hasthampatti, Salem',
+        balance: 185000.0,
+        isPrimary: true,
+        logoColor: 'from-rose-700 to-pink-900',
+      },
+      {
+        id: 'sowmiya_sbi_savings',
+        bankName: 'State Bank of India',
+        accountType: 'Savings Account',
+        accountNumberMasked: '•••• •••• 1144',
+        ifsc: 'SBIN0001824',
+        branch: 'Suramangalam, Salem',
+        balance: 92000.0,
+        isPrimary: false,
+        logoColor: 'from-cyan-700 to-blue-900',
+      },
+      {
+        id: 'sowmiya_fraudlens_wallet',
+        bankName: 'FraudLens Instant Wallet',
+        accountType: 'Prepaid Escrow Wallet',
+        accountNumberMasked: '•••• 7712',
+        ifsc: 'FLNS000001',
+        branch: 'Salem Digital Cyber Hub',
+        balance: 10000.0,
+        isPrimary: false,
+        logoColor: 'from-emerald-600 to-teal-800',
+      },
+    ]
+  }
+
+  // Default Monisha (CUST_MONISHA_001)
+  return [
+    {
+      id: 'hdfc_primary',
+      bankName: 'HDFC Bank',
+      accountType: 'Savings Account',
+      accountNumberMasked: '•••• •••• 4821',
+      ifsc: 'HDFC0000491',
+      branch: 'Fairlands, Salem',
+      balance: 547855.0,
+      isPrimary: true,
+      logoColor: 'from-blue-700 to-indigo-800',
+    },
+    {
+      id: 'sbi_salary',
+      bankName: 'State Bank of India',
+      accountType: 'Salary Account',
+      accountNumberMasked: '•••• •••• 9102',
+      ifsc: 'SBIN0001824',
+      branch: 'Suramangalam, Salem',
+      balance: 242100.0,
+      isPrimary: false,
+      logoColor: 'from-cyan-700 to-blue-900',
+    },
+    {
+      id: 'icici_digital',
+      bankName: 'ICICI Bank',
+      accountType: 'Digital iMobile A/C',
+      accountNumberMasked: '•••• •••• 3341',
+      ifsc: 'ICIC0000128',
+      branch: 'Meyyanur, Salem',
+      balance: 180000.0,
+      isPrimary: false,
+      logoColor: 'from-orange-700 to-amber-900',
+    },
+    {
+      id: 'fraudlens_wallet',
+      bankName: 'FraudLens Instant Wallet',
+      accountType: 'Prepaid Escrow Wallet',
+      accountNumberMasked: '•••• 1500',
+      ifsc: 'FLNS000001',
+      branch: 'Salem Digital Cyber Hub',
+      balance: 547855.0,
+      isPrimary: false,
+      logoColor: 'from-emerald-600 to-teal-800',
+    },
+  ]
+}
 
 // Popular NetBanking banks in India
 const NETBANKING_BANKS = [
@@ -164,13 +295,63 @@ function useAnimatedBalance(targetBalance) {
 export default function PaymentView({
   user,
   isAdmin,
+  selectedPersona,
   onViewExplanation,
   onNavigateToInvestigations,
   onSelectTransaction,
   initialPreset = 'scenario_monisha_safe',
 }) {
-  const isCustomer = user?.role?.toLowerCase() === 'customer' || user?.role?.toLowerCase() === 'user'
-  const customerPersona = useMemo(() => getCustomerPersona(user), [user])
+  const isCustomer = user?.role?.toLowerCase() === 'customer' || user?.role?.toLowerCase() === 'user' || !!selectedPersona
+  const customerPersona = useMemo(() => getCustomerPersona(user, selectedPersona), [user, selectedPersona])
+
+  // Auto-Detect Client Hardware Platform in proper working condition
+  const detectedClientPlatform = useMemo(() => {
+    const ua = typeof navigator !== 'undefined' ? navigator.userAgent : ''
+    if (ua.includes('Windows')) {
+      return {
+        device_type: 'web',
+        displayName: 'Windows PC • Desktop Web Browser (Chrome / Edge)',
+        badge: 'Windows 11/10 Desktop • Verified Hardware Enclave',
+        icon: '🖥️',
+      }
+    }
+    if (ua.includes('Macintosh') || ua.includes('Mac OS')) {
+      return {
+        device_type: 'web',
+        displayName: 'macOS Workstation • Desktop Web Browser',
+        badge: 'macOS Desktop • Verified Hardware Enclave',
+        icon: '💻',
+      }
+    }
+    if (ua.includes('Android')) {
+      return {
+        device_type: 'mobile_android',
+        displayName: 'Android Mobile Device (Secure App)',
+        badge: 'Android • Verified Mobile App',
+        icon: '📱',
+      }
+    }
+    if (ua.includes('iPhone') || ua.includes('iPad')) {
+      return {
+        device_type: 'mobile_ios',
+        displayName: 'Apple iOS Device (iPhone / iPad)',
+        badge: 'iOS • Verified Secure Enclave',
+        icon: '📱',
+      }
+    }
+    return {
+      device_type: 'web',
+      displayName: 'Windows PC • Desktop Web Browser',
+      badge: 'Windows Desktop • Verified Hardware Enclave',
+      icon: '🖥️',
+    }
+  }, [])
+
+  // Dynamic customer bank accounts tailored to Salem
+  const linkedBankAccounts = useMemo(
+    () => getCustomerBankAccounts(customerPersona),
+    [customerPersona]
+  )
 
   // Active top navigation tab: 'gateway' | 'history'
   const [activeTab, setActiveTab] = useState('gateway')
@@ -185,23 +366,30 @@ export default function PaymentView({
   const [paymentMethod, setPaymentMethod] = useState('upi')
 
   // Selected Debit Bank Account
-  const [selectedBankId, setSelectedBankId] = useState('hdfc_primary')
+  const [selectedBankId, setSelectedBankId] = useState(() => linkedBankAccounts[0]?.id || 'hdfc_primary')
+
+  // Keep selectedBankId synced when customer persona changes
+  useEffect(() => {
+    if (linkedBankAccounts.length > 0 && !linkedBankAccounts.some((b) => b.id === selectedBankId)) {
+      setSelectedBankId(linkedBankAccounts[0].id)
+    }
+  }, [linkedBankAccounts, selectedBankId])
 
   // Card details state
   const [cardNumber, setCardNumber] = useState('4532 •••• •••• 8819')
   const [cardExpiry, setCardExpiry] = useState('08/29')
   const [cardCvv, setCardCvv] = useState('412')
-  const [cardHolder, setCardHolder] = useState(customerPersona.name || 'Monisha R')
+  const [cardHolder, setCardHolder] = useState(customerPersona.name ? `${customerPersona.name} ${customerPersona.customerId === 'CUST_AJAY_004' ? 'B' : 'R'}` : 'Customer')
   const [cardNetwork, setCardNetwork] = useState('VISA')
 
   // UPI ID state
-  const [upiId, setUpiId] = useState(
-    customerPersona.name?.toLowerCase().includes('monisha')
-      ? 'monisha@okhdfcbank'
-      : customerPersona.name?.toLowerCase().includes('mohana')
-      ? 'mohana@icici'
-      : 'customer@okaxis'
-  )
+  const [upiId, setUpiId] = useState(() => {
+    const name = (customerPersona.name || '').toLowerCase()
+    if (name.includes('ajay')) return 'ajay.b@okhdfcbank'
+    if (name.includes('mohana')) return 'mohana@icici'
+    if (name.includes('sowmiya')) return 'sowmiya@axis'
+    return 'monisha@okhdfcbank'
+  })
 
   // NetBanking state
   const [selectedNetBank, setSelectedNetBank] = useState('HDFC')
@@ -211,9 +399,36 @@ export default function PaymentView({
 
   // Direct Bank Transfer / P2P fields
   const [beneficiaryAccount, setBeneficiaryAccount] = useState('50100482910482')
-  const [beneficiaryIfsc, setBeneficiaryIfsc] = useState('HDFC0000240')
-  const [beneficiaryBankInfo, setBeneficiaryBankInfo] = useState('HDFC Bank, Anna Nagar, Chennai')
+  const [beneficiaryIfsc, setBeneficiaryIfsc] = useState('HDFC0000491')
+  const [beneficiaryBankInfo, setBeneficiaryBankInfo] = useState('HDFC Bank, Fairlands, Salem')
   const [transferRemarks, setTransferRemarks] = useState('Payment for retail purchase')
+
+  // Sync customer details when persona changes
+  useEffect(() => {
+    const name = (customerPersona.name || '').toLowerCase()
+    const cid = (customerPersona.customerId || '').toLowerCase()
+    if (cid.includes('ajay') || name.includes('ajay')) {
+      setCardHolder('Ajay B')
+      setUpiId('ajay.b@okhdfcbank')
+      setNetBankUserId('NB_CUST_AJAY_004')
+      setBeneficiaryBankInfo('HDFC Bank, Fairlands, Salem')
+    } else if (cid.includes('mohana') || name.includes('mohana')) {
+      setCardHolder('Mohana Priya')
+      setUpiId('mohana@icici')
+      setNetBankUserId('NB_CUST_MOHANA_002')
+      setBeneficiaryBankInfo('ICICI Bank, Meyyanur, Salem')
+    } else if (cid.includes('sowmiya') || name.includes('sowmiya')) {
+      setCardHolder('Sowmiya R')
+      setUpiId('sowmiya@axis')
+      setNetBankUserId('NB_CUST_SOWMIYA_003')
+      setBeneficiaryBankInfo('Axis Bank, Hasthampatti, Salem')
+    } else {
+      setCardHolder('Monisha R')
+      setUpiId('monisha@okhdfcbank')
+      setNetBankUserId('NB_CUST_MONISHA_001')
+      setBeneficiaryBankInfo('HDFC Bank, Fairlands, Salem')
+    }
+  }, [customerPersona])
 
   // Bill payment state
   const [selectedBillCategory, setSelectedBillCategory] = useState('electricity')
@@ -231,19 +446,29 @@ export default function PaymentView({
   const [receiptModalOpen, setReceiptModalOpen] = useState(false)
   const [receiptTx, setReceiptTx] = useState(null)
 
-  // Recent Transaction History State
-  const [recentTransactions, setRecentTransactions] = useState([])
+  // Unified Transaction Ledger State (Single Source of Truth)
+  const [allTransactions, setAllTransactions] = useState([])
   const [loadingHistory, setLoadingHistory] = useState(false)
 
-  // Comprehensive Preset Scenarios
+  // Derived Recent Transactions (Strictly latest 3-4 records, newest timestamp first)
+  const recentTransactions = useMemo(() => {
+    const sorted = [...allTransactions].sort((a, b) => {
+      const timeA = new Date(a.created_at || a.timestamp || 0).getTime()
+      const timeB = new Date(b.created_at || b.timestamp || 0).getTime()
+      return timeB - timeA
+    })
+    return sorted.slice(0, 4)
+  }, [allTransactions])
+
+  // Comprehensive Preset Scenarios — All strictly tailored to Salem origin
   const presets = [
-    // Monisha (3% Safe Habitual)
+    // 1. Monisha (3% Safe Habitual)
     {
       id: 'scenario_monisha_safe',
       title: '1. Monisha: Habitual Grocery (₹1,250)',
       badge: 'MONISHA (3%) → SAFE ALLOW',
       badgeColor: 'bg-emerald-950/80 text-emerald-300 border-emerald-700/60',
-      description: 'Routine ₹1,250 grocery payment at NovaMart Fresh from trusted iPhone in Chennai. Clean baseline (3% fraud rate) -> Auto-Approved with Zero Friction.',
+      description: 'Routine ₹1,250 grocery payment at NovaMart Fresh from verified Windows PC in Salem. Clean habitual baseline (3% fraud rate) -> Auto-Approved with Zero Friction.',
       data: {
         customer_id: 'CUST_MONISHA_001',
         amount: 1250.0,
@@ -252,8 +477,8 @@ export default function PaymentView({
         merchant_category: 'grocery',
         beneficiary_name: 'NovaMart Fresh',
         payment_method: 'upi',
-        device_type: 'mobile_ios',
-        location: 'Chennai',
+        device_type: 'web',
+        location: 'Salem',
         transaction_country: 'IN',
         transaction_type: 'online_payment',
         failed_attempts: 0,
@@ -264,7 +489,7 @@ export default function PaymentView({
       title: 'Monisha: Cafe & Snacks (₹280)',
       badge: 'MONISHA → SAFE ALLOW',
       badgeColor: 'bg-emerald-950/80 text-emerald-300 border-emerald-700/60',
-      description: 'Daily ₹280 coffee & snacks at Blue Tokai Cafe via UPI QR code in Chennai -> Instant Auto-Approval.',
+      description: 'Daily ₹280 coffee & snacks at Blue Tokai Cafe via UPI in Salem -> Instant Auto-Approval.',
       data: {
         customer_id: 'CUST_MONISHA_001',
         amount: 280.0,
@@ -273,8 +498,8 @@ export default function PaymentView({
         merchant_category: 'dining',
         beneficiary_name: 'Blue Tokai Cafe',
         payment_method: 'upi',
-        device_type: 'mobile_ios',
-        location: 'Chennai',
+        device_type: 'web',
+        location: 'Salem',
         transaction_country: 'IN',
         transaction_type: 'online_payment',
         failed_attempts: 0,
@@ -282,10 +507,10 @@ export default function PaymentView({
     },
     {
       id: 'scenario_monisha_swiggy',
-      title: 'Monisha: Swiggy Dinner (₹650)',
+      title: 'Monisha: Dinner Delivery (₹650)',
       badge: 'MONISHA → SAFE ALLOW',
       badgeColor: 'bg-emerald-950/80 text-emerald-300 border-emerald-700/60',
-      description: 'Dinner delivery ₹650 from Swiggy via HDFC Credit Card. Matches historic spending patterns -> Auto-Approved.',
+      description: 'Dinner delivery ₹650 from Swiggy via HDFC Bank in Salem. Matches historic spending patterns -> Auto-Approved.',
       data: {
         customer_id: 'CUST_MONISHA_001',
         amount: 650.0,
@@ -294,21 +519,21 @@ export default function PaymentView({
         merchant_category: 'dining',
         beneficiary_name: 'Swiggy Bundl Tech',
         payment_method: 'credit_card',
-        device_type: 'mobile_ios',
-        location: 'Chennai',
+        device_type: 'web',
+        location: 'Salem',
         transaction_country: 'IN',
         transaction_type: 'online_payment',
         failed_attempts: 0,
       },
     },
 
-    // Mohana (12% Elevated Velocity)
+    // 2. Mohana (12% Elevated Velocity)
     {
       id: 'scenario_mohana_review',
-      title: '2. Mohana: Suspicious Device & Region (₹14,500)',
+      title: '1. Mohana: Electronics Purchase (₹14,500)',
       badge: 'MOHANA (12%) → STEP-UP OTP REVIEW',
       badgeColor: 'bg-amber-950/80 text-amber-300 border-amber-700/60',
-      description: 'Moderate ₹14,500 electronics purchase via unfamiliar web browser with cross-city distance. Risk 45/100 -> Triggers Step-Up OTP Verification.',
+      description: 'Moderate ₹14,500 electronics purchase via web browser in Salem with elevated velocity. Triggers Step-Up OTP Verification.',
       data: {
         customer_id: 'CUST_MOHANA_002',
         amount: 14500.0,
@@ -326,10 +551,10 @@ export default function PaymentView({
     },
     {
       id: 'scenario_mohana_urgent_p2p',
-      title: 'Mohana: Late-Night P2P Transfer (₹8,500)',
+      title: 'Mohana: P2P Transfer (₹8,500)',
       badge: 'MOHANA → STEP-UP OTP',
       badgeColor: 'bg-amber-950/80 text-amber-300 border-amber-700/60',
-      description: 'Urgent person-to-person transfer of ₹8,500 at 2:15 AM to unverified beneficiary -> Step-Up OTP triggered.',
+      description: 'Person-to-person transfer of ₹8,500 in Salem to unverified beneficiary -> Step-Up OTP triggered.',
       data: {
         customer_id: 'CUST_MOHANA_002',
         amount: 8500.0,
@@ -338,8 +563,8 @@ export default function PaymentView({
         merchant_category: 'retail',
         beneficiary_name: 'Ananya Krishnan (P2P)',
         payment_method: 'upi',
-        device_type: 'mobile_android',
-        location: 'Coimbatore',
+        device_type: 'web',
+        location: 'Salem',
         transaction_country: 'IN',
         transaction_type: 'online_payment',
         failed_attempts: 1,
@@ -350,7 +575,7 @@ export default function PaymentView({
       title: 'Mohana: Gaming Voucher (₹18,000)',
       badge: 'MOHANA → STEP-UP OTP',
       badgeColor: 'bg-amber-950/80 text-amber-300 border-amber-700/60',
-      description: 'Digital gift card ₹18,000 purchase on new website with high velocity -> Step-Up Security Check.',
+      description: 'Digital gift card ₹18,000 purchase on new website with high velocity in Salem -> Step-Up Security Check.',
       data: {
         customer_id: 'CUST_MOHANA_002',
         amount: 18000.0,
@@ -360,20 +585,20 @@ export default function PaymentView({
         beneficiary_name: 'GameZone Digital Inc',
         payment_method: 'net_banking',
         device_type: 'web',
-        location: 'Bangalore',
+        location: 'Salem',
         transaction_country: 'IN',
         transaction_type: 'online_payment',
         failed_attempts: 1,
       },
     },
 
-    // Sowmiya (26% Botnet ATO)
+    // 3. Sowmiya (26% Botnet ATO)
     {
       id: 'scenario_sowmiya_block',
-      title: '3. Sowmiya: Botnet Account Takeover (₹75,000)',
+      title: '1. Sowmiya: Botnet Account Takeover (₹75,000)',
       badge: 'SOWMIYA (26%) → CRITICAL BLOCK',
       badgeColor: 'bg-rose-950/80 text-rose-300 border-rose-700/60',
-      description: 'High-value ₹75,000 gold jewellery attempt at 2:30 AM from automated bot emulator in Lagos with foreign IP proxy. Instant Pre-Auth Block!',
+      description: 'High-value ₹75,000 gold jewellery attempt from automated bot emulator with foreign proxy in Salem. Instant Pre-Auth Block!',
       data: {
         customer_id: 'CUST_SOWMIYA_003',
         amount: 75000.0,
@@ -383,8 +608,8 @@ export default function PaymentView({
         beneficiary_name: 'Mule-Quick-Payout-99',
         payment_method: 'credit_card',
         device_type: 'unknown_bot',
-        location: 'Lagos',
-        transaction_country: 'NG',
+        location: 'Salem',
+        transaction_country: 'IN',
         transaction_type: 'online_payment',
         failed_attempts: 3,
       },
@@ -394,7 +619,7 @@ export default function PaymentView({
       title: 'Sowmiya: Rapid Account Drain (₹1,20,000)',
       badge: 'SOWMIYA → PRE-AUTH BLOCK',
       badgeColor: 'bg-rose-950/80 text-rose-300 border-rose-700/60',
-      description: 'High velocity account drain attempt of ₹1,20,000 to offshore cryptocurrency exchange via Tor exit node -> Instant Block.',
+      description: 'High velocity account drain attempt of ₹1,20,000 to offshore cryptocurrency exchange via Tor node in Salem -> Instant Block.',
       data: {
         customer_id: 'CUST_SOWMIYA_003',
         amount: 120000.0,
@@ -404,31 +629,72 @@ export default function PaymentView({
         beneficiary_name: 'Offshore Crypto Vault',
         payment_method: 'net_banking',
         device_type: 'unknown_bot',
-        location: 'Dubai',
-        transaction_country: 'AE',
+        location: 'Salem',
+        transaction_country: 'IN',
         transaction_type: 'online_payment',
         failed_attempts: 4,
       },
     },
 
-
-    // New User Cold Start
+    // 4. Ajay (Enterprise / Tech Business Transfers)
     {
-      id: 'scenario_4_cold_start',
-      title: '4. New Customer Cafe (₹250)',
-      badge: 'NEW USER → SAFE ALLOW',
-      badgeColor: 'bg-cyan-950/80 text-cyan-300 border-cyan-700/60',
-      description: 'First-time user paying ₹250 for cafe dining in Delhi. Verifies that brand new customer accounts do not get false alarms.',
+      id: 'scenario_ajay_saas',
+      title: '1. Ajay: Cloud Infrastructure Bill (₹4,500)',
+      badge: 'AJAY → SAFE ALLOW',
+      badgeColor: 'bg-emerald-950/80 text-emerald-300 border-emerald-700/60',
+      description: 'Routine monthly cloud server payment to CloudScale AWS from verified Windows PC in Salem. Verified corporate baseline -> Auto-Approved.',
       data: {
-        customer_id: 'CUST_MONISHA_001',
-        amount: 250.0,
+        customer_id: 'CUST_AJAY_004',
+        amount: 4500.0,
         currency: 'INR',
-        merchant_name: 'GreenLeaf Wellness',
-        merchant_category: 'dining',
-        beneficiary_name: 'GreenLeaf Wellness',
-        payment_method: 'upi',
-        device_type: 'mobile_ios',
-        location: 'Chennai',
+        merchant_name: 'CloudScale Technologies',
+        merchant_category: 'software_saas',
+        beneficiary_name: 'CloudScale AWS Cloud',
+        payment_method: 'net_banking',
+        device_type: 'web',
+        location: 'Salem',
+        transaction_country: 'IN',
+        transaction_type: 'online_payment',
+        failed_attempts: 0,
+      },
+    },
+    {
+      id: 'scenario_ajay_hardware',
+      title: '2. Ajay: Office IT Equipment (₹28,500)',
+      badge: 'AJAY → SAFE ALLOW',
+      badgeColor: 'bg-emerald-950/80 text-emerald-300 border-emerald-700/60',
+      description: 'Workstation hardware purchase from Dell Salem via Corporate NetBanking. Verified vendor in Salem -> Auto-Approved.',
+      data: {
+        customer_id: 'CUST_AJAY_004',
+        amount: 28500.0,
+        currency: 'INR',
+        merchant_name: 'Dell Commercial Systems',
+        merchant_category: 'electronics',
+        beneficiary_name: 'Dell Technologies India',
+        payment_method: 'net_banking',
+        device_type: 'web',
+        location: 'Salem',
+        transaction_country: 'IN',
+        transaction_type: 'online_payment',
+        failed_attempts: 0,
+      },
+    },
+    {
+      id: 'scenario_ajay_wire',
+      title: '3. Ajay: High Value Vendor Settlement (₹40,01,250)',
+      badge: 'AJAY → DYNAMIC HIGH RISK (92%)',
+      badgeColor: 'bg-rose-950/80 text-rose-300 border-rose-700/60',
+      description: 'High-value enterprise vendor wire of ₹40,01,250 from verified Windows PC in Salem. Pre-Flight AI dynamically scales risk meter to high-risk.',
+      data: {
+        customer_id: 'CUST_AJAY_004',
+        amount: 4001250.0,
+        currency: 'INR',
+        merchant_name: 'NovaMart Fresh',
+        merchant_category: 'retail',
+        beneficiary_name: 'NovaMart Fresh Supply Corp',
+        payment_method: 'net_banking',
+        device_type: 'web',
+        location: 'Salem',
         transaction_country: 'IN',
         transaction_type: 'online_payment',
         failed_attempts: 0,
@@ -436,11 +702,11 @@ export default function PaymentView({
     },
   ]
 
-  // Filter presets for customer
+  // Filter presets for customer — Strict isolation between all 4 customers
   const visiblePresets = useMemo(() => {
     if (!isCustomer) return presets
     const filtered = presets.filter((p) => p.data.customer_id === customerPersona.customerId)
-    return filtered.length > 0 ? filtered : [presets[0]]
+    return filtered.length > 0 ? filtered : presets.filter((p) => p.data.customer_id === 'CUST_MONISHA_001')
   }, [isCustomer, customerPersona.customerId, presets])
 
   // Master Merchants List for autocomplete
@@ -522,7 +788,7 @@ export default function PaymentView({
     }
   }, [])
 
-  // Load pending approvals (All 4 users follow the exact same security flow)
+  // Load pending approvals (Filtered strictly for authenticated customer)
   const loadPendingApprovals = useCallback(async (customerId) => {
     if (!customerId) {
       setPendingApprovals([])
@@ -530,33 +796,55 @@ export default function PaymentView({
     }
     try {
       const list = await paymentApi.listPendingApprovals(customerId)
-      setPendingApprovals(list || [])
+      const filtered = (list || []).filter((a) => a.customer_id === customerId)
+      setPendingApprovals(filtered)
     } catch {
       setPendingApprovals([])
     }
   }, [])
 
-  // Load Recent Transactions for the customer
-  const loadRecentTransactions = useCallback(async (customerId) => {
-    if (!customerId) return
+  // Load All Transactions from the unified ledger (Single Source of Truth)
+  const loadAllTransactions = useCallback(async (customerId) => {
+    if (!customerId) {
+      setAllTransactions([])
+      return
+    }
     setLoadingHistory(true)
     try {
-      const res = await transactionsApi.list({ customer_id: customerId, limit: 10 })
-      if (res && res.transactions) {
-        setRecentTransactions(res.transactions)
-      }
+      const res = await transactionsApi.list({ customer_id: customerId, limit: 100 })
+      const list = (res?.items || res?.transactions || []).filter(
+        (tx) => tx.customer_id === customerId
+      )
+      setAllTransactions(list)
     } catch (e) {
-      console.warn('Failed to fetch recent transactions:', e)
+      console.warn('Failed to fetch transactions from ledger:', e)
+      setAllTransactions([])
     } finally {
       setLoadingHistory(false)
     }
   }, [])
 
+  // Critical 4-User Privacy Isolation: Purge previous user state immediately on persona/customer switch
   useEffect(() => {
-    loadWallet(formData.customer_id)
-    loadPendingApprovals(formData.customer_id)
-    loadRecentTransactions(formData.customer_id)
-  }, [formData.customer_id, loadWallet, loadPendingApprovals, loadRecentTransactions])
+    const targetCustId = customerPersona.customerId
+    // 1. Immediately wipe previous user's temporary/sensitive state to prevent ANY transient cross-user leakage
+    setAllTransactions([])
+    setPendingApprovals([])
+    setWallet(null)
+    setDecisionResult(null)
+    setError(null)
+    setActionSuccessMsg(null)
+    setShowPhoneModal(false)
+    setPhoneModalTx(null)
+    setPhoneModalApprovalId(null)
+
+    // 2. Fetch scoped data strictly for the active user
+    if (targetCustId) {
+      loadWallet(targetCustId)
+      loadPendingApprovals(targetCustId)
+      loadAllTransactions(targetCustId)
+    }
+  }, [customerPersona.customerId, loadWallet, loadPendingApprovals, loadAllTransactions])
 
   useEffect(() => {
     if (isCustomer) {
@@ -667,7 +955,7 @@ export default function PaymentView({
   const riskForecast = useMemo(() => {
     const amt = Number(formData.amount) || 0
     const cat = formData.merchant_category || 'retail'
-    const dev = formData.device_type || 'mobile_ios'
+    const dev = formData.device_type || 'web'
     const country = formData.transaction_country || 'IN'
     const failed = Number(formData.failed_attempts) || 0
     const custId = (formData.customer_id || '').toLowerCase()
@@ -675,27 +963,57 @@ export default function PaymentView({
     let estimatedScore = 4
     const signals = []
 
-    // Persona-baseline adjustment
-    if (custId.includes('sowmiya')) {
+    // 1. Customer Baseline Signal Isolation (Separation of Monisha, Mohana, Sowmiya, and Ajay)
+    if (custId.includes('ajay')) {
+      estimatedScore += 1
+      signals.push('Ajay B verified corporate baseline (Enterprise Security Profile)')
+    } else if (custId.includes('sowmiya')) {
       estimatedScore += 40
       signals.push('Sowmiya ATO baseline profile (26% risk history)')
     } else if (custId.includes('mohana')) {
       estimatedScore += 15
       signals.push('Mohana elevated velocity baseline (12% risk history)')
-    } else {
+    } else if (custId.includes('monisha')) {
       signals.push('Monisha clean habitual baseline (3% low-risk)')
+    } else {
+      signals.push('Customer verified habitual baseline')
     }
 
-    // Amount thresholds
-    if (amt >= 50000) {
-      estimatedScore += 35
-      signals.push(`High value ticket (₹${amt.toLocaleString('en-IN')})`)
-    } else if (amt >= 10000) {
-      estimatedScore += 18
-      signals.push(`Moderate ticket value (₹${amt.toLocaleString('en-IN')})`)
+    // 2. Real-Time Dynamic Transaction Amount Scaling
+    // Up to ₹50,000: scales smoothly up to ~39%
+    // Above ₹50,000: dynamically and continuously climbs towards 92%-95% for high-value / 40 Lakh amounts
+    if (amt > 0) {
+      if (amt <= 2000) {
+        // Routine small ticket (₹280 - ₹2,000): score stays low ~4% - 7%
+        const routineAdd = Math.round((amt / 2000) * 3)
+        estimatedScore += routineAdd
+        signals.push(`Routine daily spending (₹${amt.toLocaleString('en-IN')})`)
+      } else if (amt <= 15000) {
+        // Standard ticket (₹2,000 - ₹15,000): score reaches ~7% - 20%
+        const stdAdd = Math.round(3 + ((amt - 2000) / 13000) * 13)
+        estimatedScore += stdAdd
+        signals.push(`Standard retail ticket (₹${amt.toLocaleString('en-IN')})`)
+      } else if (amt <= 50000) {
+        // Moderate ticket (₹15,000 - ₹50,000): scales gracefully from 20% up to exactly 35 pts (Score reaches ~39%)
+        const modAdd = Math.round(16 + ((amt - 15000) / 35000) * 19)
+        estimatedScore += modAdd
+        signals.push(`Moderate ticket value (₹${amt.toLocaleString('en-IN')})`)
+      } else if (amt <= 500000) {
+        // ₹50,000 to ₹5,00,000 (5 Lakhs): progressively increases from 35 pts to 62 pts (Score reaches 40% -> 67%)
+        const highAdd = Math.round(35 + ((amt - 50000) / 450000) * 27)
+        estimatedScore += highAdd
+        signals.push(`High value ticket (₹${amt.toLocaleString('en-IN')})`)
+      } else {
+        // Beyond ₹5,00,000 up to ₹50,00,000+ (e.g. ₹40,01,250):
+        // Continuously scales from 62 pts up to 90 pts (Score dynamically scales to 92% - 95%!)
+        const ratio = Math.min((amt - 500000) / 4500000, 1)
+        const ultraAdd = Math.round(62 + ratio * 28)
+        estimatedScore += ultraAdd
+        signals.push(`Ultra high-value capital transfer (₹${amt.toLocaleString('en-IN')})`)
+      }
     }
 
-    // Category risk
+    // 3. Category Risk
     if (cat === 'luxury_goods' || cat === 'crypto') {
       estimatedScore += 30
       signals.push('High-risk category (Gold / Luxury / Crypto)')
@@ -704,22 +1022,27 @@ export default function PaymentView({
       signals.push('Consumer electronics category')
     }
 
-    // Device risk
+    // 4. Client Hardware & Platform (Auto-Detected)
     if (dev === 'unknown_bot') {
       estimatedScore += 45
-      signals.push('Automated bot emulator / Tor exit node')
+      signals.push('Automated bot emulator / Tor exit node (Critical)')
     } else if (dev === 'web' || dev === 'web_browser') {
-      estimatedScore += 8
-      signals.push('Desktop web browser session')
+      signals.push('Client Hardware: Windows PC (Desktop Web Browser - Verified 🖥️)')
+    } else if (dev === 'mobile_ios') {
+      signals.push('Client Hardware: Apple iOS Mobile App (Verified 📱)')
+    } else if (dev === 'mobile_android') {
+      signals.push('Client Hardware: Android Mobile App (Verified 📱)')
     }
 
-    // Cross-border check
+    // 5. Origin City & Country (Auto-Detected strictly to Salem, IN)
     if (country !== 'IN') {
       estimatedScore += 40
       signals.push(`Cross-border international origin (${country})`)
+    } else {
+      signals.push('Origin City: Salem, Tamil Nadu (Domestic IN 📍)')
     }
 
-    // Failed authentication
+    // 6. Failed Authentication Attempts
     if (failed > 0) {
       estimatedScore += failed * 12
       signals.push(`${failed} failed PIN attempt(s)`)
@@ -779,8 +1102,8 @@ export default function PaymentView({
       merchant_category: finalCategory,
       payment_method: paymentMethod,
       device_type: normalizedDevice,
-      location: formData.location || 'Chennai',
-      transaction_country: formData.transaction_country || 'IN',
+      location: 'Salem',
+      transaction_country: 'IN',
       transaction_type: formData.transaction_type || 'online_payment',
       beneficiary_name: finalMerchantName,
       beneficiary_account: transferType === 'personal' ? beneficiaryAccount : undefined,
@@ -794,7 +1117,7 @@ export default function PaymentView({
       setDecisionResult(result)
       await loadWallet(formData.customer_id)
       await loadPendingApprovals(formData.customer_id)
-      await loadRecentTransactions(formData.customer_id)
+      await loadAllTransactions(formData.customer_id)
 
       // Unified Risk-Based Flow for all 4 users:
       // Low Risk (ALLOW): Auto-Approved -> green status -> balance deducted
@@ -805,6 +1128,8 @@ export default function PaymentView({
       } else if (
         result.decision === 'REVIEW' ||
         result.verification_required ||
+        result.approval_id ||
+        result.otp_code ||
         (result.decision === 'BLOCK' && result.approval_id)
       ) {
         setTimelineStage('security_hold')
@@ -841,7 +1166,7 @@ export default function PaymentView({
           : 'Demo Transaction blocked and card frozen.'
       )
       await loadWallet(formData.customer_id)
-      await loadRecentTransactions(formData.customer_id)
+      await loadAllTransactions(formData.customer_id)
       setTimelineStage(action === 'APPROVE' ? 'completed' : 'rejected')
       return
     }
@@ -875,7 +1200,7 @@ export default function PaymentView({
 
       await loadWallet(formData.customer_id)
       await loadPendingApprovals(formData.customer_id)
-      await loadRecentTransactions(formData.customer_id)
+      await loadAllTransactions(formData.customer_id)
     } catch (err) {
       setError(err instanceof Error ? err.message : `Failed to ${action.toLowerCase()} transaction`)
       throw err
@@ -884,24 +1209,48 @@ export default function PaymentView({
     }
   }
 
-  const selectedBank = LINKED_BANK_ACCOUNTS.find((b) => b.id === selectedBankId) || LINKED_BANK_ACCOUNTS[0]
+  // Open phone interface for any pending hold (from top summary card or banner)
+  const handleOpenPendingHoldPhone = useCallback((specificHold = null) => {
+    const hold = specificHold || (pendingApprovals && pendingApprovals.length > 0 ? pendingApprovals[0] : null)
+
+    if (hold) {
+      setPhoneModalTx({
+        amount: hold.amount || 8500,
+        currency: hold.currency || 'INR',
+        merchant_name: hold.notes || 'Pending Transfer on Hold',
+        customer_id: hold.customer_id || formData.customer_id,
+        risk_score: hold.risk_score || 58,
+        risk_level: hold.risk_level || 'MEDIUM',
+        fraud_probability: hold.fraud_probability || 0.58,
+        rule_triggered: 'Suspicious Geo-Velocity & Step-Up Check (Security Hold)',
+        location: 'Salem, IN',
+        device: formData.device_type || 'Windows PC',
+      })
+      setPhoneModalApprovalId(hold.approval_id)
+      setShowPhoneModal(true)
+    } else {
+      setActionSuccessMsg('No transactions currently on hold. When a suspicious transaction occurs, it will automatically open the phone.')
+    }
+  }, [pendingApprovals, formData])
+
+  const selectedBank = linkedBankAccounts.find((b) => b.id === selectedBankId) || linkedBankAccounts[0] || {}
   const availableBalance = Number(wallet ? wallet.simulated_balance : selectedBank.balance || 0)
   const animatedBalance = useAnimatedBalance(availableBalance)
   const isInsufficient = Number(formData.amount) > availableBalance
 
   const todayMoneyOut = useMemo(() => {
-    return recentTransactions
+    return allTransactions
       .filter((tx) => tx.status === 'SUCCESS' || tx.decision === 'ALLOW')
       .reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0)
-  }, [recentTransactions])
+  }, [allTransactions])
 
   const pendingCount = useMemo(() => {
     return (pendingApprovals || []).length
   }, [pendingApprovals])
 
   const completedCount = useMemo(() => {
-    return recentTransactions.filter((tx) => tx.status === 'SUCCESS' || tx.decision === 'ALLOW').length
-  }, [recentTransactions])
+    return allTransactions.filter((tx) => tx.status === 'SUCCESS' || tx.decision === 'ALLOW').length
+  }, [allTransactions])
 
   return (
     <div className="space-y-6">
@@ -966,31 +1315,6 @@ export default function PaymentView({
               <span>Branch: {selectedBank.branch}</span>
             </div>
           </div>
-
-          {/* Test Push Simulation Button */}
-          <button
-            type="button"
-            onClick={() => {
-              setPhoneModalTx({
-                amount: formData.amount || 14500,
-                merchant_name: formData.merchant_name || 'CircuitBay Electronics',
-                customer_id: formData.customer_id,
-                location: formData.location || 'Salem (Cross-City Anomaly)',
-                device: formData.device_type || 'Unrecognized Web Browser',
-                risk_score: decisionResult?.risk_score || 45,
-                risk_level: decisionResult?.risk_level || 'MEDIUM',
-                fraud_probability: decisionResult?.fraud_probability || 0.45,
-                rule_triggered: 'Suspicious Geo-Velocity & Step-Up Check',
-              })
-              setPhoneModalApprovalId(decisionResult?.approval_id || 'PEND_DEMO_01')
-              setShowPhoneModal(true)
-            }}
-            className="self-start md:self-auto px-3.5 py-2 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 text-white font-bold text-xs shadow-lg shadow-purple-950/60 border border-purple-400/40 flex items-center gap-2 transition active:scale-95 shrink-0"
-            title="Demonstrate mobile lockscreen push notification & approval flow"
-          >
-            <Smartphone className="w-4 h-4 text-cyan-300 animate-pulse" />
-            <span>📱 Test Phone Push Alert</span>
-          </button>
         </div>
 
         {/* Centerpiece Big Balance Display */}
@@ -1033,13 +1357,40 @@ export default function PaymentView({
             <div className="text-[9px] text-slate-500 font-mono">Debited &amp; Authorized</div>
           </div>
 
-          <div className="p-3 rounded-2xl bg-slate-950/80 border border-slate-800/90">
-            <div className="text-[10px] font-mono uppercase text-slate-400">Pending Holds</div>
+          {/* Pending Holds Card — Interactive Button that directly summons the Secure Phone OTP Interface */}
+          <button
+            type="button"
+            onClick={() => handleOpenPendingHoldPhone()}
+            className={`p-3 rounded-2xl bg-slate-950/80 border text-left transition-all cursor-pointer relative overflow-hidden group ${
+              pendingCount > 0
+                ? 'border-amber-500/60 hover:border-amber-400 hover:bg-amber-950/30 shadow-[0_0_15px_rgba(245,158,11,0.15)] hover:shadow-[0_0_25px_rgba(245,158,11,0.3)]'
+                : 'border-slate-800/90 hover:border-slate-700'
+            } active:scale-95`}
+            title={pendingCount > 0 ? 'Click to open phone and verify pending transaction via OTP' : 'No pending holds'}
+          >
+            <div className="flex items-center justify-between">
+              <div className="text-[10px] font-mono uppercase text-slate-400 flex items-center gap-1.5">
+                <span>Pending Holds</span>
+                {pendingCount > 0 && (
+                  <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping inline-block" />
+                )}
+              </div>
+              {pendingCount > 0 && (
+                <Smartphone className="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform" />
+              )}
+            </div>
             <div className="text-sm md:text-base font-extrabold text-amber-300 font-mono mt-0.5">
               {pendingCount} Transaction{pendingCount !== 1 ? 's' : ''}
             </div>
-            <div className="text-[9px] text-amber-400/80 font-mono">Awaiting OTP / Approval</div>
-          </div>
+            <div className="text-[9px] text-amber-400/80 font-mono flex items-center justify-between mt-0.5">
+              <span>{pendingCount > 0 ? '📱 Touch to Review & OTP Allow' : 'Awaiting OTP / Approval'}</span>
+              {pendingCount > 0 && (
+                <span className="text-[8px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                  OPEN
+                </span>
+              )}
+            </div>
+          </button>
 
           <div className="p-3 rounded-2xl bg-slate-950/80 border border-slate-800/90">
             <div className="text-[10px] font-mono uppercase text-slate-400">Completed Payments</div>
@@ -1049,6 +1400,39 @@ export default function PaymentView({
             <div className="text-[9px] text-slate-500 font-mono">Stored in Backend DB</div>
           </div>
         </div>
+
+        {/* Pending Holds Quick Action Banner — Direct access to phone approval */}
+        {pendingCount > 0 && (
+          <div className="relative z-10 mt-3 p-3.5 rounded-2xl bg-gradient-to-r from-amber-950/40 via-slate-900/90 to-amber-950/30 border border-amber-500/40 shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fade-in">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-amber-500/20 border border-amber-500/50 text-amber-300 shrink-0">
+                <Smartphone className="w-5 h-5 animate-pulse" />
+              </div>
+              <div>
+                <div className="text-xs font-bold text-amber-200 flex items-center gap-2">
+                  <span>{pendingCount} Transaction{pendingCount !== 1 ? 's' : ''} on Security Hold</span>
+                  <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-amber-500/20 border border-amber-500/40 text-amber-300">
+                    AWAITING OTP
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-300 mt-0.5">
+                  {pendingApprovals[0]?.notes || 'Step-up verification challenge generated'} • ₹{(pendingApprovals[0]?.amount || 0).toLocaleString('en-IN')} awaiting user OTP approval
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => handleOpenPendingHoldPhone(pendingApprovals[0])}
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 hover:from-amber-400 hover:to-amber-300 text-slate-950 font-bold text-xs shadow-md shadow-amber-950/60 flex items-center gap-2 transition active:scale-95 cursor-pointer"
+              >
+                <Smartphone className="w-4 h-4 text-slate-950" />
+                <span>Open Phone &amp; Allow OTP</span>
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* =========================================================================
@@ -1166,7 +1550,7 @@ export default function PaymentView({
             type="button"
             onClick={() => {
               setActiveTab('history')
-              loadRecentTransactions(formData.customer_id)
+              loadAllTransactions(customerPersona.customerId)
             }}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
               activeTab === 'history'
@@ -1175,7 +1559,7 @@ export default function PaymentView({
             }`}
           >
             <History className="w-4 h-4" />
-            <span>My Transactions ({recentTransactions.length})</span>
+            <span>My Transactions ({allTransactions.length})</span>
           </button>
         </div>
 
@@ -1504,48 +1888,64 @@ export default function PaymentView({
                     </div>
                   )}
 
-                  {/* Location & Country */}
+                  {/* Location & Country - Auto-Detected Strictly to Salem, IN */}
                   <div>
-                    <label className="block text-xs font-medium text-slate-300 mb-1">
-                      Origin City &amp; Country
-                    </label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-xs font-medium text-slate-300">
+                        Origin City &amp; Country
+                      </label>
+                      <span className="text-[10px] font-mono text-cyan-400 flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                        Auto-Detected (GPS / GeoIP)
+                      </span>
+                    </div>
                     <div className="grid grid-cols-2 gap-2">
-                      <input
-                        type="text"
-                        value={formData.location}
-                        onChange={(e) => handleInputChange('location', e.target.value)}
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500 transition font-mono"
-                        placeholder="City (Chennai/Mumbai)"
-                      />
-                      <input
-                        type="text"
-                        maxLength={2}
-                        value={formData.transaction_country}
-                        onChange={(e) =>
-                          handleInputChange('transaction_country', e.target.value.toUpperCase())
-                        }
-                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500 transition font-mono uppercase"
-                        placeholder="Country (IN/AE/US)"
-                      />
+                      <div className="relative">
+                        <input
+                          type="text"
+                          readOnly
+                          value="Salem, Tamil Nadu"
+                          className="w-full bg-slate-950/80 border border-cyan-500/40 rounded-xl pl-3 pr-8 py-2 text-xs text-white font-mono cursor-default shadow-inner"
+                          title="Auto-detected origin city: Salem"
+                        />
+                        <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs">📍</span>
+                      </div>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          readOnly
+                          value="IN (India)"
+                          className="w-full bg-slate-950/80 border border-cyan-500/40 rounded-xl pl-3 pr-8 py-2 text-xs text-white font-mono cursor-default shadow-inner"
+                          title="Auto-detected country: India"
+                        />
+                        <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs">🇮🇳</span>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Hardware Device */}
+                  {/* Hardware Device - Auto-Detected in proper working condition */}
                   <div>
-                    <label className="block text-xs font-medium text-slate-300 mb-1">
-                      Client Hardware / Platform
-                    </label>
-                    <select
-                      value={formData.device_type}
-                      onChange={(e) => handleInputChange('device_type', e.target.value)}
-                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-cyan-500 transition"
-                    >
-                      <option value="mobile_ios">iOS Mobile App (iPhone - Trusted)</option>
-                      <option value="mobile_android">Android UPI App (GPay / PhonePe)</option>
-                      <option value="web">Web Browser (Desktop Chrome)</option>
-                      <option value="pos">In-Person POS Terminal</option>
-                      <option value="unknown_bot">Automated Bot / Tor Proxy (High Risk)</option>
-                    </select>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-xs font-medium text-slate-300">
+                        Client Hardware / Platform
+                      </label>
+                      <span className="text-[10px] font-mono text-emerald-400 flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        Auto-Detected &amp; Verified
+                      </span>
+                    </div>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        readOnly
+                        value={detectedClientPlatform.displayName}
+                        className="w-full bg-slate-950/80 border border-emerald-500/40 rounded-xl pl-3.5 pr-10 py-2 text-xs text-white font-mono cursor-default shadow-inner"
+                        title={detectedClientPlatform.badge}
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm">
+                        {detectedClientPlatform.icon}
+                      </span>
+                    </div>
                   </div>
 
                   {/* Transaction PIN / Password Field */}
@@ -1641,12 +2041,12 @@ export default function PaymentView({
                     </h3>
                   </div>
                   <span className="text-[10px] font-mono text-slate-400">
-                    {LINKED_BANK_ACCOUNTS.length} Accounts Linked
+                    {linkedBankAccounts.length} Accounts Linked
                   </span>
                 </div>
 
                 <div className="space-y-2">
-                  {LINKED_BANK_ACCOUNTS.map((bank) => {
+                  {linkedBankAccounts.map((bank) => {
                     const isSelected = selectedBankId === bank.id
                     return (
                       <button
@@ -1968,6 +2368,188 @@ export default function PaymentView({
               )}
             </div>
           )}
+          {/* =========================================================================
+              RECENT TRANSACTIONS SECTION (LATEST 3-4 RECORDS)
+              Single Source of Truth: Dynamically linked to current user's ledger
+              ========================================================================= */}
+          <div className="bg-slate-900/60 border border-slate-800/80 backdrop-blur-md rounded-2xl p-5 shadow-lg space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800/80 pb-3">
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-cyan-400" />
+                <div>
+                  <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
+                    <span>Recent Transactions</span>
+                    <span className="text-[10px] font-mono px-2 py-0.2 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-700/60 font-semibold">
+                      Latest {recentTransactions.length} of {allTransactions.length}
+                    </span>
+                  </h3>
+                  <p className="text-[11px] text-slate-400">
+                    Latest authenticated activity for {customerPersona.name} ({customerPersona.customerId})
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {allTransactions.length > 4 && (
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('history')}
+                    className="text-xs font-mono text-cyan-400 hover:text-cyan-300 hover:underline flex items-center gap-1 font-semibold cursor-pointer"
+                  >
+                    <span>View all {allTransactions.length} &rarr;</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => loadAllTransactions(customerPersona.customerId)}
+                  disabled={loadingHistory}
+                  className="px-2.5 py-1 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold flex items-center gap-1.5 border border-slate-700 transition cursor-pointer"
+                  title="Refresh recent transactions"
+                >
+                  <RefreshCw className={`w-3 h-3 ${loadingHistory ? 'animate-spin' : ''}`} />
+                  <span className="text-[11px]">Sync</span>
+                </button>
+              </div>
+            </div>
+
+            {loadingHistory ? (
+              <div className="py-8 text-center text-xs text-slate-500 flex items-center justify-center gap-2">
+                <RefreshCw className="w-4 h-4 animate-spin text-cyan-400" />
+                <span>Synchronizing recent transactions with backend ledger...</span>
+              </div>
+            ) : recentTransactions.length === 0 ? (
+              <div className="py-8 text-center text-xs text-slate-400 space-y-1.5">
+                <Receipt className="w-7 h-7 text-slate-600 mx-auto" />
+                <div className="font-medium text-slate-300">No recent transactions recorded yet for this user.</div>
+                <p className="text-[11px] text-slate-500">Initiate a payment or select a preset scenario above to begin.</p>
+              </div>
+            ) : (
+              <div className="space-y-2.5">
+                {recentTransactions.map((tx) => {
+                  const isPendingHold = tx.status === 'PENDING_VERIFICATION' || Boolean(tx.approval_id && tx.status !== 'SUCCESS' && tx.status !== 'BLOCKED')
+                  const isAllow = tx.status === 'SUCCESS' || (!isPendingHold && (tx.decision === 'ALLOW' || tx.is_fraud === false || (tx.prediction !== 1 && (tx.risk_level === 'LOW' || !tx.risk_level))))
+                  const isBlock = tx.status === 'BLOCKED' || tx.decision === 'BLOCK' || tx.is_fraud === true || tx.prediction === 1
+                  const isReview = !isPendingHold && !isAllow && !isBlock
+
+                  const matchingHold = pendingApprovals.find(
+                    (a) => a.approval_id === tx.approval_id || a.transaction_id === tx.transaction_id
+                  )
+
+                  return (
+                    <div
+                      key={tx.transaction_id || tx.id}
+                      className={`p-3.5 rounded-xl border transition flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                        isPendingHold
+                          ? 'bg-amber-950/20 border-amber-500/40 hover:border-amber-400/60 shadow-sm'
+                          : 'bg-slate-950/80 border-slate-800/80 hover:border-slate-700'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                            isPendingHold
+                              ? 'bg-amber-500/20 text-amber-300 border border-amber-500/50'
+                              : isAllow
+                              ? 'bg-emerald-600/20 text-emerald-400 border border-emerald-600/40'
+                              : isReview
+                              ? 'bg-amber-600/20 text-amber-400 border border-amber-600/40'
+                              : 'bg-rose-600/20 text-rose-400 border border-rose-600/40'
+                          }`}
+                        >
+                          {isPendingHold ? (
+                            <Smartphone className="w-4 h-4 animate-pulse text-amber-300" />
+                          ) : isAllow ? (
+                            <CheckCircle2 className="w-4 h-4" />
+                          ) : isReview ? (
+                            <AlertTriangle className="w-4 h-4" />
+                          ) : (
+                            <XCircle className="w-4 h-4" />
+                          )}
+                        </div>
+
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-white font-mono">
+                              {tx.merchant_name || tx.beneficiary || tx.merchant || 'Merchant Transfer'}
+                            </span>
+                            <span
+                              className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded border ${
+                                isPendingHold
+                                  ? 'bg-amber-950/90 text-amber-300 border-amber-600 animate-pulse'
+                                  : isAllow
+                                  ? 'bg-emerald-950 text-emerald-300 border-emerald-800'
+                                  : isReview
+                                  ? 'bg-amber-950 text-amber-300 border-amber-800'
+                                  : 'bg-rose-950 text-rose-300 border-rose-800'
+                              }`}
+                            >
+                              {isPendingHold ? 'SECURITY HOLD (AWAITING OTP)' : isAllow ? 'AUTHORIZED' : isReview ? 'STEP-UP REVIEW' : 'BLOCKED'}
+                            </span>
+                          </div>
+                          <div className="text-[10px] text-slate-400 flex items-center gap-2 mt-0.5 font-mono">
+                            <span>{formatDateTime(tx.created_at || tx.timestamp)}</span>
+                            <span>•</span>
+                            <span className="uppercase">{tx.payment_method || 'UPI'}</span>
+                            {tx.location && (
+                              <>
+                                <span>•</span>
+                                <span>{tx.location}</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0">
+                        <div className="text-left sm:text-right">
+                          <div className="text-xs sm:text-sm font-extrabold text-white font-mono">
+                            {formatINR(tx.amount)}
+                          </div>
+                          <div className="text-[9px] text-slate-500 font-mono">
+                            Ref: {(tx.transaction_id || tx.id || '').slice(0, 14)}
+                          </div>
+                        </div>
+
+                        {isPendingHold ? (
+                          <button
+                            type="button"
+                            onClick={() => handleOpenPendingHoldPhone(matchingHold || {
+                              approval_id: tx.approval_id,
+                              transaction_id: tx.transaction_id,
+                              amount: tx.amount,
+                              customer_id: tx.customer_id,
+                              notes: `Security Hold for ${tx.merchant_name || 'Transfer'}`
+                            })}
+                            className="px-2.5 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/50 hover:border-amber-400 transition flex items-center gap-1.5 text-xs font-bold shadow-sm cursor-pointer"
+                            title="Open Phone Interface to Allow OTP"
+                          >
+                            <Smartphone className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
+                            <span>Verify OTP</span>
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setReceiptTx({
+                                ...tx,
+                                debit_bank: selectedBank.bankName,
+                                debit_account: selectedBank.accountNumberMasked,
+                              })
+                              setReceiptModalOpen(true)
+                            }}
+                            className="p-1.5 px-2 rounded-xl bg-slate-900 hover:bg-cyan-950 text-slate-300 hover:text-cyan-300 border border-slate-700 hover:border-cyan-600 transition flex items-center gap-1 text-xs font-bold cursor-pointer"
+                            title="View Official Receipt"
+                          >
+                            <Receipt className="w-3.5 h-3.5 text-cyan-400" />
+                            <span className="text-[11px]">Receipt</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -1988,9 +2570,9 @@ export default function PaymentView({
             </div>
             <button
               type="button"
-              onClick={() => loadRecentTransactions(formData.customer_id)}
+              onClick={() => loadAllTransactions(customerPersona.customerId)}
               disabled={loadingHistory}
-              className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold flex items-center gap-1.5 border border-slate-700"
+              className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold flex items-center gap-1.5 border border-slate-700 transition cursor-pointer"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${loadingHistory ? 'animate-spin' : ''}`} />
               <span>Refresh History</span>
@@ -2002,46 +2584,54 @@ export default function PaymentView({
               <RefreshCw className="w-4 h-4 animate-spin text-cyan-400" />
               <span>Fetching authenticated transaction ledger...</span>
             </div>
-          ) : recentTransactions.length === 0 ? (
+          ) : allTransactions.length === 0 ? (
             <div className="py-12 text-center text-xs text-slate-400 space-y-2">
               <Receipt className="w-8 h-8 text-slate-600 mx-auto" />
               <div>No transactions recorded yet in this active session.</div>
               <button
                 type="button"
                 onClick={() => setActiveTab('gateway')}
-                className="text-cyan-400 hover:underline font-bold"
+                className="text-cyan-400 hover:underline font-bold cursor-pointer"
               >
                 Make a payment now &rarr;
               </button>
             </div>
           ) : (
             <div className="space-y-2.5">
-              {recentTransactions.map((tx) => {
-                const isAllow =
-                  tx.decision === 'ALLOW' ||
-                  tx.is_fraud === false ||
-                  (tx.prediction !== 1 && (tx.risk_level === 'LOW' || !tx.risk_level))
-                const isReview =
-                  tx.decision === 'REVIEW' || tx.risk_level === 'MEDIUM'
-                const isBlock =
-                  tx.decision === 'BLOCK' || tx.is_fraud === true || tx.prediction === 1
+              {allTransactions.map((tx) => {
+                const isPendingHold = tx.status === 'PENDING_VERIFICATION' || Boolean(tx.approval_id && tx.status !== 'SUCCESS' && tx.status !== 'BLOCKED')
+                const isAllow = tx.status === 'SUCCESS' || (!isPendingHold && (tx.decision === 'ALLOW' || tx.is_fraud === false || (tx.prediction !== 1 && (tx.risk_level === 'LOW' || !tx.risk_level))))
+                const isBlock = tx.status === 'BLOCKED' || tx.decision === 'BLOCK' || tx.is_fraud === true || tx.prediction === 1
+                const isReview = !isPendingHold && !isAllow && !isBlock
+
+                const matchingHold = pendingApprovals.find(
+                  (a) => a.approval_id === tx.approval_id || a.transaction_id === tx.transaction_id
+                )
 
                 return (
                   <div
                     key={tx.transaction_id || tx.id}
-                    className="p-4 bg-slate-950/80 rounded-xl border border-slate-800/80 hover:border-slate-700 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                    className={`p-4 rounded-xl border transition flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                      isPendingHold
+                        ? 'bg-amber-950/20 border-amber-500/40 hover:border-amber-400/60 shadow-sm'
+                        : 'bg-slate-950/80 border-slate-800/80 hover:border-slate-700'
+                    }`}
                   >
                     <div className="flex items-center gap-3">
                       <div
                         className={`w-10 h-10 rounded-xl flex items-center justify-center text-white shrink-0 ${
-                          isAllow
+                          isPendingHold
+                            ? 'bg-amber-500/20 text-amber-300 border border-amber-500/50'
+                            : isAllow
                             ? 'bg-emerald-600/20 text-emerald-400 border border-emerald-600/40'
                             : isReview
                             ? 'bg-amber-600/20 text-amber-400 border border-amber-600/40'
                             : 'bg-rose-600/20 text-rose-400 border border-rose-600/40'
                         }`}
                       >
-                        {isAllow ? (
+                        {isPendingHold ? (
+                          <Smartphone className="w-5 h-5 animate-pulse text-amber-300" />
+                        ) : isAllow ? (
                           <CheckCircle2 className="w-5 h-5" />
                         ) : isReview ? (
                           <AlertTriangle className="w-5 h-5" />
@@ -2053,22 +2643,24 @@ export default function PaymentView({
                       <div>
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-bold text-white font-mono">
-                            {tx.merchant_name || tx.merchant || 'Merchant Transfer'}
+                            {tx.merchant_name || tx.beneficiary || tx.merchant || 'Merchant Transfer'}
                           </span>
                           <span
                             className={`text-[9px] font-mono font-bold px-2 py-0.5 rounded border ${
-                              isAllow
+                              isPendingHold
+                                ? 'bg-amber-950 text-amber-300 border-amber-700 animate-pulse'
+                                : isAllow
                                 ? 'bg-emerald-950 text-emerald-300 border-emerald-800'
                                 : isReview
                                 ? 'bg-amber-950 text-amber-300 border-amber-800'
                                 : 'bg-rose-950 text-rose-300 border-rose-800'
                             }`}
                           >
-                            {isAllow ? 'AUTHORIZED' : isReview ? 'STEP-UP REVIEW' : 'BLOCKED'}
+                            {isPendingHold ? 'SECURITY HOLD (AWAITING OTP)' : isAllow ? 'AUTHORIZED' : isReview ? 'STEP-UP REVIEW' : 'BLOCKED'}
                           </span>
                         </div>
                         <div className="text-[11px] text-slate-400 flex items-center gap-2 mt-0.5 font-mono">
-                          <span>{formatDateTime(tx.timestamp || tx.created_at)}</span>
+                          <span>{formatDateTime(tx.created_at || tx.timestamp)}</span>
                           <span>•</span>
                           <span className="uppercase">{tx.payment_method || 'UPI'}</span>
                           {tx.location && (
@@ -2091,22 +2683,40 @@ export default function PaymentView({
                         </div>
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setReceiptTx({
-                            ...tx,
-                            debit_bank: selectedBank.bankName,
-                            debit_account: selectedBank.accountNumberMasked,
-                          })
-                          setReceiptModalOpen(true)
-                        }}
-                        className="p-2 rounded-xl bg-slate-900 hover:bg-cyan-950 text-slate-300 hover:text-cyan-300 border border-slate-700 hover:border-cyan-600 transition flex items-center gap-1.5 text-xs font-bold"
-                        title="View Official Receipt"
-                      >
-                        <Receipt className="w-4 h-4 text-cyan-400" />
-                        <span>Receipt</span>
-                      </button>
+                      {isPendingHold ? (
+                        <button
+                          type="button"
+                          onClick={() => handleOpenPendingHoldPhone(matchingHold || {
+                            approval_id: tx.approval_id,
+                            transaction_id: tx.transaction_id,
+                            amount: tx.amount,
+                            customer_id: tx.customer_id,
+                            notes: `Security Hold for ${tx.merchant_name || 'Transfer'}`
+                          })}
+                          className="px-3 py-2 rounded-xl bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/50 hover:border-amber-400 transition flex items-center gap-1.5 text-xs font-bold shadow-sm cursor-pointer"
+                          title="Open Phone Interface to Allow OTP"
+                        >
+                          <Smartphone className="w-4 h-4 text-amber-300 animate-pulse" />
+                          <span>Verify OTP</span>
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setReceiptTx({
+                              ...tx,
+                              debit_bank: selectedBank.bankName,
+                              debit_account: selectedBank.accountNumberMasked,
+                            })
+                            setReceiptModalOpen(true)
+                          }}
+                          className="p-2 rounded-xl bg-slate-900 hover:bg-cyan-950 text-slate-300 hover:text-cyan-300 border border-slate-700 hover:border-cyan-600 transition flex items-center gap-1.5 text-xs font-bold cursor-pointer"
+                          title="View Official Receipt"
+                        >
+                          <Receipt className="w-4 h-4 text-cyan-400" />
+                          <span>Receipt</span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 )

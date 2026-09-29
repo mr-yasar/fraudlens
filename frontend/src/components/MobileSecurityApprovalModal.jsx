@@ -136,13 +136,28 @@ export default function MobileSecurityApprovalModal({
       setCopied(false)
       setExpiryCountdown(300)
 
-      const initialOtp =
-        transaction?.otp_code ||
-        String(Math.floor(100000 + Math.random() * 900000))
-      setGeneratedOtp(initialOtp)
+      let initialOtp = transaction?.otp_code
 
-      // Incoming SMS Push Banner after 400ms
-      const smsTimer = setTimeout(() => {
+      const initOtp = async () => {
+        // If opened from a pending hold list without pre-supplied OTP, request genuine OTP from backend
+        if (!initialOtp && approvalId && approvalId !== 'PEND_DEMO_01' && !approvalId.startsWith('DEMO_')) {
+          try {
+            const res = await paymentApi.sendApprovalOtp(approvalId)
+            if (res?.otp_code) {
+              initialOtp = res.otp_code
+            }
+          } catch {
+            // fallback if network or endpoint fails
+          }
+        }
+
+        if (!initialOtp) {
+          initialOtp = String(Math.floor(100000 + Math.random() * 900000))
+        }
+
+        setGeneratedOtp(initialOtp)
+
+        // Incoming SMS Push Banner after 350ms
         setIncomingSms({
           sender: 'FraudLens Bank SMS',
           code: initialOtp,
@@ -154,15 +169,16 @@ export default function MobileSecurityApprovalModal({
           time: 'now',
         })
         sound.playAlert && sound.playAlert()
-      }, 400)
+      }
 
+      const smsTimer = setTimeout(initOtp, 350)
       setCooldown(30)
       setTimeout(() => inputRefs[0]?.current?.focus(), 300)
       return () => clearTimeout(smsTimer)
     } else {
       setIncomingSms(null)
     }
-  }, [isOpen, transaction])
+  }, [isOpen, transaction, approvalId])
 
   if (!isOpen || typeof document === 'undefined') return null
 

@@ -4,7 +4,69 @@
  * and role-based data isolation.
  */
 
-export function getCustomerPersona(user) {
+export function getCustomerPersona(user, selectedPersonaId = null) {
+  if (selectedPersonaId) {
+    const s = String(selectedPersonaId).toLowerCase()
+    if (s.includes('ajay')) {
+      return {
+        customerId: 'CUST_AJAY_004',
+        name: 'Ajay',
+        customerName: 'Ajay',
+        email: 'ajay@fraudlens.ai',
+        tier: 'ENTERPRISE',
+        isPremium: true,
+        fraudRate: '0.2%',
+        baselineType: 'Enterprise Security Tier (Adaptive AI + Enclave Vault)',
+        badgeColor: 'bg-indigo-950/90 text-indigo-200 border-indigo-500/70 shadow-[0_0_15px_rgba(99,102,241,0.35)]',
+        color: 'indigo',
+        defaultPresetId: 'scenario_ajay_saas',
+        isCustomer: true,
+      }
+    }
+    if (s.includes('sowmiya') || s.includes('soumya')) {
+      return {
+        customerId: 'CUST_SOWMIYA_003',
+        name: 'Sowmiya',
+        customerName: 'Sowmiya',
+        email: 'sowmiya@fraudlens.ai',
+        fraudRate: '26.0%',
+        baselineType: 'Botnet ATO Attack (Pre-Auth Block)',
+        badgeColor: 'bg-rose-950/80 text-rose-300 border-rose-700/60',
+        color: 'rose',
+        defaultPresetId: 'scenario_sowmiya_block',
+        isCustomer: true,
+      }
+    }
+    if (s.includes('mohana')) {
+      return {
+        customerId: 'CUST_MOHANA_002',
+        name: 'Mohana',
+        customerName: 'Mohana',
+        email: 'mohana@fraudlens.ai',
+        fraudRate: '12.0%',
+        baselineType: 'Elevated Velocity (Step-Up OTP)',
+        badgeColor: 'bg-amber-950/80 text-amber-300 border-amber-700/60',
+        color: 'amber',
+        defaultPresetId: 'scenario_mohana_review',
+        isCustomer: true,
+      }
+    }
+    if (s.includes('monisha')) {
+      return {
+        customerId: 'CUST_MONISHA_001',
+        name: 'Monisha',
+        customerName: 'Monisha',
+        email: 'monisha@fraudlens.ai',
+        fraudRate: '3.0%',
+        baselineType: 'Safe Habitual (Zero-Friction Auto-Approved, No OTP)',
+        badgeColor: 'bg-emerald-950/80 text-emerald-300 border-emerald-700/60',
+        color: 'emerald',
+        defaultPresetId: 'scenario_monisha_safe',
+        isCustomer: true,
+      }
+    }
+  }
+
   if (!user) {
     return {
       customerId: 'CUST_MONISHA_001',
@@ -83,7 +145,7 @@ export function getCustomerPersona(user) {
       baselineType: 'Enterprise Security Tier (Adaptive AI + Enclave Vault)',
       badgeColor: 'bg-indigo-950/90 text-indigo-200 border-indigo-500/70 shadow-[0_0_15px_rgba(99,102,241,0.35)]',
       color: 'indigo',
-      defaultPresetId: 'scenario_a_normal',
+      defaultPresetId: 'scenario_ajay_saas',
       isCustomer: true,
     }
   }

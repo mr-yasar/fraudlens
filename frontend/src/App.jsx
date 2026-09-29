@@ -17,6 +17,7 @@ import {
   BrainCircuit,
   Radio,
   CheckCircle2,
+  Sparkles,
 } from 'lucide-react'
 
 import { AuthProvider, useAuth } from './context/AuthContext'
@@ -226,19 +227,21 @@ function CommandCenterApp() {
   // If user is not authenticated and not in unlock transition and not in logout exit, display login scene
   if (!isAuthenticated && !isTransitioning && !isLoggingOut) {
     return (
-      <LoginScene
-        onLoginSuccess={() => {
-          setIsTransitioning(false)
-          setShowWelcome(true)
-          setActiveView('dashboard')
-        }}
-        login={login}
-        register={register}
-        authLoading={authLoading}
-        authError={authError}
-        isConnected={isConnected}
-        latency={latency}
-      />
+      <ErrorBoundary onReset={() => window.location.reload()}>
+        <LoginScene
+          onLoginSuccess={() => {
+            setIsTransitioning(false)
+            setShowWelcome(true)
+            setActiveView('dashboard')
+          }}
+          login={login}
+          register={register}
+          authLoading={authLoading}
+          authError={authError}
+          isConnected={isConnected}
+          latency={latency}
+        />
+      </ErrorBoundary>
     )
   }
 
@@ -589,8 +592,10 @@ function CommandCenterApp() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <CommandCenterApp />
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <CommandCenterApp />
+      </AuthProvider>
+    </ErrorBoundary>
   )
 }

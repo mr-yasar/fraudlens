@@ -21,11 +21,16 @@ class TransactionSummaryResponse(BaseModel):
     customer_id: str
     amount: float
     transaction_hour: int
+    merchant_name: Optional[str] = None
     merchant_category: Optional[str] = None
+    beneficiary: Optional[str] = None
+    payment_method: Optional[str] = None
     transaction_country: Optional[str] = None
     geo_location_region: Optional[str] = None
     device_type: Optional[str] = None
     transaction_type: Optional[str] = None
+    status: Optional[str] = "SUCCESS"
+    approval_id: Optional[str] = None
     fraud_probability: Optional[float] = None
     prediction: Optional[str] = None
     risk_score: Optional[float] = None

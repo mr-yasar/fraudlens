@@ -201,9 +201,12 @@ def list_pending_approvals(
     current_user: User = Depends(get_current_user),
 ) -> List[ApprovalDetailResponse]:
     """List unresolved step-up verification challenges."""
-    query = db.query(TransactionApproval).filter(TransactionApproval.status == ApprovalStatus.PENDING.value)
-    if customer_id:
-        query = query.filter(TransactionApproval.customer_id == customer_id)
+    from backend.app.api.deps import get_customer_id_for_user
+    user_cust_id = get_customer_id_for_user(current_user, db)
+    if user_cust_id is not None:
+        query = query.filter(TransactionApproval.customer_id == user_cust_id)
+    elif customer_id:
+        query = query.filter(TransactionApproval.customer_id == customer_id.strip())
     
     approvals = query.order_by(TransactionApproval.requested_at.desc()).all()
     now = datetime.now(timezone.utc)
