@@ -38,16 +38,38 @@ _model_cooldowns: Dict[str, float] = {}
 _request_counter: int = 0
 ROTATION_INTERVAL = 4
 
+# ── In-process env cache (avoids re-reading .env file on every LLM call) ──
+_env_cache: Dict[str, str] = {}
+_env_mtime: float = 0.0
+
 
 def _reload_env() -> None:
-    """Reload environment variables from root .env if it exists."""
-    if ENV_PATH.exists():
-        load_dotenv(dotenv_path=ENV_PATH, override=True)
+    """Load .env once and cache values in-process. Re-reads only if the file changes on disk."""
+    global _env_mtime, _env_cache
+    if not ENV_PATH.exists():
+        return
+    try:
+        mtime = ENV_PATH.stat().st_mtime
+    except OSError:
+        return
+    if mtime == _env_mtime and _env_cache:
+        return  # File unchanged — use cache
+    load_dotenv(dotenv_path=ENV_PATH, override=True)
+    _env_mtime = mtime
+    # Snapshot the keys we care about
+    _env_cache = {
+        "GEMINI_API_KEY": os.getenv("GEMINI_API_KEY", "").strip(),
+        "GROK_API_KEY": os.getenv("GROK_API_KEY", "").strip(),
+        "XAI_API_KEY": os.getenv("XAI_API_KEY", "").strip(),
+        "MISTRAL_API_KEY": os.getenv("MISTRAL_API_KEY", "").strip(),
+        "SECRET_KEY": os.getenv("SECRET_KEY", "").strip(),
+        "DEFAULT_LLM_PROVIDER": os.getenv("DEFAULT_LLM_PROVIDER", "gemini").strip(),
+    }
 
 
 def get_gemini_api_key() -> str:
     _reload_env()
-    key = os.getenv("GEMINI_API_KEY", "").strip()
+    key = _env_cache.get("GEMINI_API_KEY", "") or os.getenv("GEMINI_API_KEY", "").strip()
     if key and key != "your_gemini_api_key_here":
         return key
     return ""
@@ -55,7 +77,8 @@ def get_gemini_api_key() -> str:
 
 def get_grok_api_key() -> str:
     _reload_env()
-    key = os.getenv("GROK_API_KEY", "").strip() or os.getenv("XAI_API_KEY", "").strip()
+    key = (_env_cache.get("GROK_API_KEY", "") or _env_cache.get("XAI_API_KEY", "")
+           or os.getenv("GROK_API_KEY", "").strip() or os.getenv("XAI_API_KEY", "").strip())
     if key and key != "your_grok_api_key_here":
         return key
     return ""
@@ -63,7 +86,7 @@ def get_grok_api_key() -> str:
 
 def get_mistral_api_key() -> str:
     _reload_env()
-    key = os.getenv("MISTRAL_API_KEY", "").strip()
+    key = _env_cache.get("MISTRAL_API_KEY", "") or os.getenv("MISTRAL_API_KEY", "").strip()
     if key and key != "your_mistral_api_key_here":
         return key
     return ""
@@ -71,7 +94,7 @@ def get_mistral_api_key() -> str:
 
 def get_default_provider() -> str:
     _reload_env()
-    return os.getenv("DEFAULT_LLM_PROVIDER", "gemini").lower().strip()
+    return (_env_cache.get("DEFAULT_LLM_PROVIDER") or os.getenv("DEFAULT_LLM_PROVIDER", "gemini")).lower().strip()
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -348,9 +371,12 @@ def _call_gemini(
                 exc_str = str(exc).lower()
                 logger.warning("Gemini (new SDK) model %s failed: %s", model_name, exc)
                 last_error = exc
-                if "429" in exc_str or "quota" in exc_str or "rate" in exc_str:
-                    logger.info("Setting 45s cooldown for %s", model_name)
-                    _model_cooldowns[model_name] = time.time() + 45.0
+                if "429" in exc_str or "quota" in exc_str or "rate" in exc_str or "resource_exhausted" in exc_str:
+                    logger.info("Setting 60s cooldown for Gemini candidates due to quota limit")
+                    now_cooldown = time.time() + 60.0
+                    for m in candidate_models:
+                        _model_cooldowns[m] = now_cooldown
+                    raise exc
 
         if last_error:
             raise last_error
@@ -386,8 +412,11 @@ def _call_gemini(
                 exc_str = str(exc).lower()
                 logger.warning("Gemini (legacy) model %s failed: %s", model_name, exc)
                 last_error = exc
-                if "429" in exc_str or "quota" in exc_str or "rate" in exc_str:
-                    _model_cooldowns[model_name] = time.time() + 45.0
+                if "429" in exc_str or "quota" in exc_str or "rate" in exc_str or "resource_exhausted" in exc_str:
+                    now_cooldown = time.time() + 60.0
+                    for m in candidate_models:
+                        _model_cooldowns[m] = now_cooldown
+                    raise exc
 
         raise last_error or RuntimeError("All Gemini candidate models failed.")
 

@@ -33,10 +33,11 @@ SAFE_AUTH_REFUSAL = (
 
 # Common extraction trigger patterns
 SECRET_EXTRACTION_PATTERNS = [
-    r"\b(?:show|give|tell|print|reveal|display|output|leak|share|dump|read|get)\b.*?\b(?:api[_\s-]?key|secret[_\s-]?key|gemini[_\s-]?key|grok[_\s-]?key|xai[_\s-]?key|token|bearer|password|credential|env|environ|\.env)\b",
+    r"\b(?:show|give|tell|print|reveal|display|output|leak|share|dump|read|get)\b.*?(?:[a-zA-Z0-9_]*api[_\s-]?key|[a-zA-Z0-9_]*secret[_\s-]?key|gemini[_\s-]?key|grok[_\s-]?key|xai[_\s-]?key|token|bearer|password|credential|env|environ|\.env)\b",
     r"\b(?:what\s+is|what's)\s+(?:the\s+)?(?:gemini|grok|xai|backend|system|api|secret)\s+(?:api[_\s-]?key|key|token|secret|password)\b",
-    r"\b(?:api[_\s-]?key|secret[_\s-]?key)\s*(?:=|:|\?)\b",
+    r"(?:api[_\s-]?key|secret[_\s-]?key)\s*(?:=|:|\?)\b",
     r"\b(?:export|printenv|cat\s+\.env|type\s+\.env)\b",
+    r"\b(?:gemini|grok|xai|mistral)?[_\s-]*(?:api[_\s-]?key|secret[_\s-]?key)\b",
 ]
 
 PROMPT_EXTRACTION_PATTERNS = [
@@ -108,17 +109,17 @@ class SecretRedactionGuard:
 
         # 2. Regex scrubber for standard API key formats
         # Gemini / Google API keys: AIza... or AQ....
-        sanitized = re.sub(r"\bAIza[0-9A-Za-z_-]{35}\b", "[PROTECTED_API_KEY]", sanitized)
-        sanitized = re.sub(r"\bAQ\.[a-zA-Z0-9_-]{30,}\b", "[PROTECTED_API_KEY]", sanitized)
+        sanitized = re.sub(r"\bAIza[0-9A-Za-z_-]{20,50}\b", "[PROTECTED_API_KEY]", sanitized)
+        sanitized = re.sub(r"\bAQ\.[a-zA-Z0-9_-]{20,}\b", "[PROTECTED_API_KEY]", sanitized)
 
         # xAI / Grok keys: xai-...
-        sanitized = re.sub(r"\bxai-[a-zA-Z0-9_-]{40,}\b", "[PROTECTED_API_KEY]", sanitized)
+        sanitized = re.sub(r"\bxai-[a-zA-Z0-9_-]{20,}\b", "[PROTECTED_API_KEY]", sanitized)
 
         # Mistral AI keys: mstrl_...
-        sanitized = re.sub(r"\bmstrl_[a-zA-Z0-9_-]{20,}\b", "[PROTECTED_API_KEY]", sanitized)
+        sanitized = re.sub(r"\bmstrl_[a-zA-Z0-9_-]{15,}\b", "[PROTECTED_API_KEY]", sanitized)
 
         # OpenAI / generic bearer tokens: sk-...
-        sanitized = re.sub(r"\bsk-[a-zA-Z0-9]{20,}\b", "[PROTECTED_API_KEY]", sanitized)
+        sanitized = re.sub(r"\bsk-[a-zA-Z0-9_-]{15,}\b", "[PROTECTED_API_KEY]", sanitized)
 
         # Database URLs with credentials
         sanitized = re.sub(

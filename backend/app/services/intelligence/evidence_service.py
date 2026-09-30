@@ -159,8 +159,46 @@ class EvidenceContextService:
 
     @classmethod
     def build_evidence_block(cls, query: str, context_hint: Optional[str] = None) -> str:
-        """Construct verified project & database evidence block for LLM prompts."""
+        """Construct verified project & database evidence block for LLM prompts.
+
+        Performance note: DB calls only fire when the query actually references a
+        transaction, customer, or requests system stats. General questions skip
+        all DB work and return just the mandatory mathematical definitions.
+        """
         entities = cls.extract_entity_references(query)
+
+        # Fast path: nothing entity-specific requested → just return the mandatory
+        # mathematical/policy definitions block (no DB calls needed).
+        needs_db = bool(
+            entities.get("transaction_id")
+            or entities.get("customer_name")
+            or entities.get("customer_id")
+            or entities.get("wants_model_metrics")
+            or entities.get("wants_database_stats")
+        )
+
+        # Always-present mathematical definitions (zero DB cost)
+        mandatory_block = (
+            "### CORE MATHEMATICAL & POLICY DEFINITIONS (MANDATORY):\n"
+            "1. Fraud Probability != Risk Score:\n"
+            "   - Fraud Probability is the statistical output of the ML model pipeline (0.0 to 1.0 or 0-100%).\n"
+            "   - Risk Score is the independent 0-100 composite operational score.\n"
+            "   - Never equate 80% probability to 80 risk score without evidence.\n"
+            "2. Decision Tiers:\n"
+            "   - 0–30: LOW RISK → Instant auto-approval (frictionless sub-4ms clearance).\n"
+            "   - 31–70: MEDIUM RISK → Interactive Mobile OTP Step-Up challenge.\n"
+            "   - 71–100: HIGH RISK → Instant hard block & automated forensic case creation.\n"
+            "3. TreeSHAP Attribution != Causality:\n"
+            "   - SHAP values quantify feature contributions to the model prediction (Lloyd Shapley cooperative game theory).\n"
+            "   - Positive SHAP (red) indicates factors pushing risk higher; Negative SHAP (green) indicates mitigating factors.\n"
+            "   - Never claim SHAP 'proves' this feature caused the fraud.\n"
+            "4. Model prediction is NOT factual fraud confirmation; it is an algorithmic likelihood."
+        )
+
+        if not needs_db:
+            return mandatory_block
+
+        # ── Entity-specific DB work only runs when genuinely needed ──
         blocks = []
 
         # 1. Transaction Evidence
@@ -247,22 +285,5 @@ class EvidenceContextService:
                     "Database is operating in cached mode; exact live row counts unavailable. Do not fabricate numbers."
                 )
 
-        # 5. Core Mathematical Rules (Always present to prevent hallucination)
-        blocks.append(
-            "### CORE MATHEMATICAL & POLICY DEFINITIONS (MANDATORY):\n"
-            "1. Fraud Probability != Risk Score:\n"
-            "   - Fraud Probability is the statistical output of the ML model pipeline (0.0 to 1.0 or 0-100%).\n"
-            "   - Risk Score is the independent 0-100 composite operational score.\n"
-            "   - Never equate 80% probability to 80 risk score without evidence.\n"
-            "2. Decision Tiers:\n"
-            "   - 0–30: LOW RISK → Instant auto-approval (frictionless sub-4ms clearance).\n"
-            "   - 31–70: MEDIUM RISK → Interactive Mobile OTP Step-Up challenge.\n"
-            "   - 71–100: HIGH RISK → Instant hard block & automated forensic case creation.\n"
-            "3. TreeSHAP Attribution != Causality:\n"
-            "   - SHAP values quantify feature contributions to the model prediction (Lloyd Shapley cooperative game theory).\n"
-            "   - Positive SHAP (red) indicates factors pushing risk higher; Negative SHAP (green) indicates mitigating factors.\n"
-            "   - Never claim SHAP 'proves' this feature caused the fraud.\n"
-            "4. Model prediction is NOT factual fraud confirmation; it is an algorithmic likelihood."
-        )
-
+        blocks.append(mandatory_block)
         return "\n\n".join(blocks)

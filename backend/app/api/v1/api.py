@@ -57,6 +57,7 @@ api_router.include_router(admin_database_router, prefix="/admin/database", tags=
 api_router.include_router(dashboard_router, prefix="/dashboard", tags=["Dashboard & Analytics"])
 api_router.include_router(audit_logs_router, prefix="/audit-logs", tags=["Audit Logging"])
 api_router.include_router(ai_assistant_router, prefix="/ai", tags=["AI Assistant (Gemini + Grok)"])
+api_router.include_router(ai_assistant_router, prefix="/ai-assistant", tags=["AI Assistant Centralized Contract"])
 
 
 

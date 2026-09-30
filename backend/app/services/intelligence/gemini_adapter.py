@@ -135,7 +135,11 @@ class GeminiAdapter:
                     logger.warning("Gemini (new SDK) model %s failed: %s", model_name, exc)
                     last_error = exc
                     if "429" in exc_str or "quota" in exc_str or "rate" in exc_str or "resource_exhausted" in exc_str:
-                        _model_cooldowns[model_name] = time.time() + 45.0
+                        # Key-level quota reached — cooldown all models and fail fast to secondary provider
+                        now_cooldown = time.time() + 60.0
+                        for m in candidates:
+                            _model_cooldowns[m] = now_cooldown
+                        raise exc
                     continue
 
             # All candidates tried — return None to let the caller try another path
@@ -209,8 +213,11 @@ class GeminiAdapter:
                 exc_str = str(exc).lower()
                 logger.warning("Gemini (legacy SDK) model %s failed: %s", model_name, exc)
                 last_error = exc
-                if "429" in exc_str or "quota" in exc_str or "rate" in exc_str:
-                    _model_cooldowns[model_name] = time.time() + 45.0
+                if "429" in exc_str or "quota" in exc_str or "rate" in exc_str or "resource_exhausted" in exc_str:
+                    now_cooldown = time.time() + 60.0
+                    for m in extended_candidates:
+                        _model_cooldowns[m] = now_cooldown
+                    raise exc
 
         raise last_error or RuntimeError("All Gemini candidate models failed.")
 

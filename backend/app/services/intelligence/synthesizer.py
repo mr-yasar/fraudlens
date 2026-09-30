@@ -7,8 +7,9 @@ Sections 7, 8, 26 compliance:
   and mathematical precision (probability != risk score).
 """
 
+import re
 import logging
-from typing import Optional
+from typing import Optional, Dict, Any
 
 from backend.app.services.intelligence.secret_guard import SecretRedactionGuard
 from backend.app.services.intelligence.gemini_adapter import GeminiAdapter
@@ -66,15 +67,38 @@ class ResponseValidator:
     """Validates final generated responses against security and factual guardrails."""
 
     @classmethod
-    def validate_and_scrub(cls, text: str) -> str:
+    def validate_and_scrub(
+        cls,
+        text: str,
+        role: Optional[str] = None,
+        user_info: Optional[Dict[str, Any]] = None,
+    ) -> str:
         """Run post-flight validation and scrub any accidental secret disclosure."""
         if not text:
             return ""
 
-        # Scrub all sensitive patterns (API keys, secrets, tokens, cards)
+        # 1. Scrub all sensitive patterns (API keys, secrets, tokens, cards, passwords)
         cleaned = SecretRedactionGuard.sanitize(text)
 
-        # Enforce that forbidden model references (e.g. 3.8) are scrubbed if an LLM hallucinated it
+        # 2. Enforce that forbidden model references (e.g. 3.8) are scrubbed
         cleaned = cleaned.replace("gemini-3.8", "gemini-3.7").replace("Gemini 3.8", "Gemini 3.7")
+
+        # 3. Scrub accidental OTP exposures: "OTP is 440628" -> "OTP is [PROTECTED_OTP]"
+        cleaned = re.sub(
+            r"\b(?:otp|one-time\s+password|verification\s+code)\s*(?:is|:|=)\s*(\d{4,8})\b",
+            "OTP: [PROTECTED_OTP]",
+            cleaned,
+            flags=re.IGNORECASE,
+        )
+
+        # 4. If in customer mode, scrub any foreign customer identifiers
+        active_role = (role or (user_info.get("role") if user_info else "customer")).lower().strip()
+        if "customer" in active_role and user_info:
+            active_cust_id = (user_info.get("customer_id") or "").upper().strip()
+            # If active customer is known, redact other canonical customer IDs
+            foreign_ids = ["CUST_MONISHA_001", "CUST_MOHANA_002", "CUST_SOWMIYA_003", "CUST_AJAY_004"]
+            for f_id in foreign_ids:
+                if active_cust_id and f_id != active_cust_id:
+                    cleaned = cleaned.replace(f_id, "[PROTECTED_USER_ID]")
 
         return cleaned

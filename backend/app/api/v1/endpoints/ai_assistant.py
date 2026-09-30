@@ -9,6 +9,8 @@ Provides:
 """
 
 import re
+import time
+import json
 import logging
 from typing import Any, Dict, List, Optional, Union
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -33,9 +35,7 @@ from backend.app.services.llm_service import (
 logger = logging.getLogger("fraudlens.api.ai_assistant")
 router = APIRouter()
 
-# In-memory thread-safe user chat history storage (keyed strictly by user.id)
-_user_chat_histories: Dict[int, List[Dict[str, Any]]] = {}
-
+from backend.app.services.assistant_session_service import session_memory, MAX_CONVERSATION_TURNS
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Schemas
@@ -64,6 +64,14 @@ class ChatRequest(BaseModel):
         None,
         description="Client hint (backend verifies against authenticated User.role)",
     )
+    session_id: Optional[str] = Field(
+        None,
+        description="Conversation or session identifier for context scoping",
+    )
+    ui_context: Optional[Dict[str, Any]] = Field(
+        None,
+        description="Optional UI and current module context",
+    )
 
 
 class ChatResponse(BaseModel):
@@ -74,6 +82,9 @@ class ChatResponse(BaseModel):
     routing: Optional[Dict[str, Any]] = None
     grok_challenge_applied: bool = False
     authorized_role: str = "customer"
+    session_id: Optional[str] = None
+    error_category: Optional[str] = None
+    structured_metadata: Optional[Dict[str, Any]] = None
 
 
 class ProvidersResponse(BaseModel):
@@ -252,74 +263,91 @@ def ai_chat(
     else:
         context_str = ""
 
-    # Verify user role from backend database (or default to guest)
-    if current_user:
-        user_role_raw = current_user.role.value if hasattr(current_user.role, "value") else str(current_user.role)
-        user_role = user_role_raw.lower().strip()
-        user_name = current_user.name or current_user.email.split("@")[0]
-        user_email = current_user.email
-        user_id = current_user.id
-        authorized_role = user_role
-    else:
-        user_role = "guest"
-        user_name = "Guest User"
-        user_email = "guest@fraudlens.public"
-        user_id = 0
-        authorized_role = "guest"
+    from backend.app.services.assistant_identity_service import (
+        resolve_assistant_identity,
+        verify_and_enforce_isolation,
+    )
 
-    # ── STRICT USER DATA ISOLATION ENFORCEMENT ──
+    # Phase 4: Derive trusted identity context from authenticated JWT session
+    identity = resolve_assistant_identity(current_user, db, session_id=payload.session_id)
+    user_role = identity.role
+    user_name = identity.name
+    user_email = identity.email
+    user_id = identity.user_id
+    authorized_role = identity.role
+
+    # ── PHASES 5 & 6: STRICT USER DATA ISOLATION & SCOPE ENFORCEMENT ──
     latest_query = next((m["content"] for m in reversed(messages) if m.get("role") == "user"), "")
     combined_query = f"{context_str} {latest_query}"
 
-    # If customer, block queries into other customers' transactions or confidential cases
-    if user_role in ["customer", "user"] and current_user:
-        # Check if customer is attempting to query a foreign transaction ID
-        tx_match = re.search(r"\b(TXN[_-]?[A-Za-z0-9_-]+)\b", combined_query, re.IGNORECASE)
-        if tx_match:
-            target_tx_id = tx_match.group(1).upper()
-            tx_record = db.query(Transaction).filter(Transaction.transaction_id == target_tx_id).first()
-            if tx_record:
-                # Check ownership
-                is_owner = (
-                    tx_record.customer and tx_record.customer.email == current_user.email
-                ) or current_user.email in (tx_record.customer_id or "")
+    is_allowed, refusal_msg = verify_and_enforce_isolation(
+        identity=identity,
+        user_prompt=combined_query,
+        db=db,
+    )
+    if not is_allowed:
+        return ChatResponse(
+            response=refusal_msg or "I can't provide another user's account information. I can help you review your own transactions instead.",
+            provider="FraudLens Security Shield",
+            model="user-isolation-guard",
+            used_real_api=False,
+            authorized_role=authorized_role,
+            session_id=payload.session_id,
+            error_category="unauthorized_scope",
+        )
 
-                if not is_owner:
-                    logger.warning(
-                        "User Isolation Block: Customer %s attempted to inspect foreign tx %s",
-                        current_user.email,
-                        target_tx_id,
-                    )
-                    return ChatResponse(
-                        response=(
-                            "🔒 **Data Isolation & Privacy Notice**\n\n"
-                            f"You are authenticated as `{current_user.email}`. In accordance with PCI-DSS "
-                            "and FraudLens user-isolation policies, you are only permitted to review transactions "
-                            "and security alerts associated with your verified customer account.\n\n"
-                            "If you believe a transaction was misrouted, please contact your bank support."
-                        ),
-                        provider="FraudLens Security Shield",
-                        model="user-isolation-guard",
-                        used_real_api=False,
-                        authorized_role="customer",
-                    )
+    # ── PHASES 13-15: INTENT CLASSIFICATION & MUTATING ACTION HANDOFF ──
+    from backend.app.services.assistant_intent_service import classify_user_intent
+    intent_res = classify_user_intent(combined_query, identity, payload.ui_context)
+    if intent_res.is_mutating_attempt:
+        return ChatResponse(
+            response=intent_res.handoff_message or "The assistant is strictly read-only and cannot execute payments or bypass security verifications.",
+            provider="FraudLens Action Guard",
+            model="read-only-safeguard",
+            used_real_api=False,
+            authorized_role=authorized_role,
+            session_id=payload.session_id,
+            error_category="mutating_action_prohibited",
+        )
 
-    # Inject verified domain context if provided
+    from backend.app.services.assistant_financial_context_service import (
+        build_safe_context_envelope,
+        format_context_for_prompt,
+    )
+
+    # Phase 7-9: Build safe, minimal, auditable financial & transaction context envelope
+    context_envelope = build_safe_context_envelope(
+        identity=identity,
+        user_query=combined_query,
+        db=db,
+        ui_context=payload.ui_context,
+    )
+    safe_evidence_prompt = format_context_for_prompt(context_envelope)
+
+    # Inject verified domain context and clock into system instruction
+    system_context_block = f"VERIFIED APPLICATION CONTEXT:\n{safe_evidence_prompt}"
     if context_str:
-        messages = [
-            {
-                "role": "system",
-                "content": f"User: {user_name} ({user_role}). Domain Context: {context_str}",
-            }
-        ] + messages
+        system_context_block += f"\nUI State: {context_str}"
+
+    # Phase 19: Prune incoming conversation history to bounded turn window (max 6 turns)
+    bounded_turns = session_memory.prune_incoming_messages(messages, max_turns=MAX_CONVERSATION_TURNS)
+
+    messages = [
+        {
+            "role": "system",
+            "content": f"User: {user_name} ({user_role}).\n{system_context_block}",
+        }
+    ] + bounded_turns
 
     user_info = {
         "name": user_name,
         "role": user_role,
         "email": user_email,
         "user_id": user_id,
+        "context_envelope": context_envelope,
     }
 
+    start_time = time.time()
     try:
         result = chat_with_llm(
             messages=messages,
@@ -329,13 +357,36 @@ def ai_chat(
             user_info=user_info,
         )
 
+        latency_ms = round((time.time() - start_time) * 1000, 2)
+
         # Record conversation in user's isolated session history
         if current_user:
-            user_history = _user_chat_histories.setdefault(current_user.id, [])
-            user_history.append({"role": "user", "content": latest_query})
-            user_history.append({"role": "assistant", "content": result.get("response", "")})
-            if len(user_history) > 60:
-                _user_chat_histories[current_user.id] = user_history[-60:]
+            session_memory.record_turn(
+                user_id=current_user.id,
+                session_id=payload.session_id,
+                user_msg=latest_query,
+                assistant_msg=result.get("response", ""),
+            )
+            try:
+                from backend.app.models.audit_log import AuditLog
+                audit_entry = AuditLog(
+                    user_id=current_user.id,
+                    action="AI_ASSISTANT_QUERY",
+                    resource_type="AI_ASSISTANT",
+                    resource_id=payload.session_id or "default",
+                    details=json.dumps({
+                        "provider": result.get("provider"),
+                        "model": result.get("model"),
+                        "used_real_api": result.get("used_real_api"),
+                        "role": user_role,
+                        "latency_ms": latency_ms,
+                        "session_id": payload.session_id,
+                    }),
+                )
+                db.add(audit_entry)
+                db.commit()
+            except Exception as audit_err:
+                logger.warning("Failed to record assistant audit log: %s", audit_err)
 
         return ChatResponse(
             response=result["response"],
@@ -345,20 +396,22 @@ def ai_chat(
             routing=result.get("routing"),
             grok_challenge_applied=result.get("grok_challenge_applied", False),
             authorized_role=authorized_role,
+            session_id=payload.session_id,
+            error_category=None,
+            structured_metadata=context_envelope,
         )
     except Exception as exc:
         logger.error("AI Assistant Chat exception: %s", exc, exc_info=True)
         return ChatResponse(
             response=(
-                f"FraudLens AI Autonomous Sentinel is actively monitoring transactions. "
-                f"Our multi-model ML ensemble (XGBoost champion, Random Forest, "
-                f"Logistic Regression, Stacking) and TreeSHAP explainability engine continue to evaluate "
-                f"payment streams in under 4ms with 99.8% precision."
+                "AI service is temporarily unavailable. Please try again in a moment."
             ),
             provider="FraudLens Fallback Guardian",
             model="autonomous-failover-v2",
             used_real_api=False,
             authorized_role=authorized_role,
+            session_id=payload.session_id,
+            error_category="provider_error",
         )
 
 
@@ -368,13 +421,15 @@ def ai_chat(
     description="Returns conversation history strictly for the authenticated user.",
 )
 def get_user_history(
+    session_id: Optional[str] = None,
     current_user: User = Depends(get_current_active_user),
 ) -> Dict[str, Any]:
     """Retrieve isolated chat history for the current authenticated user only."""
-    history = _user_chat_histories.get(current_user.id, [])
+    history = session_memory.get_history(current_user.id, session_id=session_id)
     return {
         "user_id": current_user.id,
         "email": current_user.email,
+        "session_id": session_id,
         "history": history,
         "count": len(history),
     }
@@ -385,12 +440,18 @@ def get_user_history(
     summary="Clear Isolated User Chat History",
     description="Clears conversation history strictly for the authenticated user.",
 )
+@router.post(
+    "/session/clear",
+    summary="Clear Isolated User Session",
+    description="Clears session memory immediately upon logout or reset.",
+)
 def clear_user_history(
+    session_id: Optional[str] = None,
     current_user: User = Depends(get_current_active_user),
 ) -> Dict[str, Any]:
     """Clear chat history for current authenticated user only."""
-    _user_chat_histories[current_user.id] = []
-    return {"success": True, "message": "Chat history cleared successfully."}
+    purged = session_memory.purge_session(current_user.id, session_id=session_id)
+    return {"success": True, "purged_count": purged, "message": "Chat history cleared successfully."}
 
 
 @router.get(

@@ -285,6 +285,12 @@ export default function AiAssistantPanel({
   const messagesEndRef = useRef(null)
   const messagesContainerRef = useRef(null)
   const inputRef = useRef(null)
+  const abortRef = useRef(null)        // tracks the current in-flight fetch
+  const inputTextRef = useRef('')
+  const messagesRef = useRef(messages)
+
+  useEffect(() => { inputTextRef.current = inputText }, [inputText])
+  useEffect(() => { messagesRef.current = messages }, [messages])
 
   // Scroll smoothly inside message container ONLY — prevents window from jumping down
   useEffect(() => {
@@ -397,19 +403,16 @@ export default function AiAssistantPanel({
     setCurrentSpeakingId(null)
   }
 
+  const [sessionId] = useState(() => `sess_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`)
+
   const clearChat = () => {
     handleStopSpeak()
-    setMessages([
-      {
-        id: Date.now(),
-        role: 'assistant',
-        content: roleConfig.greeting(userName),
-        provider: 'Google Gemini',
-        model: 'gemini-3.6-flash',
-        used_real_api: true,
-        timestamp: new Date().toISOString(),
-      },
-    ])
+    fetch(`${BASE_URL}/ai-assistant/session/clear?session_id=${sessionId}`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+    }).catch(() => {})
+    // Reset to empty so the open-effect re-injects the greeting cleanly (no double-greeting flash)
+    setMessages([])
   }
 
   // Copy message text
@@ -422,8 +425,15 @@ export default function AiAssistantPanel({
   // Send message
   const sendMessage = useCallback(
     async (textOverride) => {
-      const text = (textOverride || inputText).trim()
+      const text = (typeof textOverride === 'string' ? textOverride : inputTextRef.current).trim()
       if (!text || loading) return
+
+      // Cancel any previous in-flight request
+      if (abortRef.current) {
+        abortRef.current.abort()
+      }
+      const controller = new AbortController()
+      abortRef.current = controller
 
       const userMsg = {
         id: Date.now(),
@@ -434,29 +444,38 @@ export default function AiAssistantPanel({
 
       setMessages((prev) => [...prev, userMsg])
       setInputText('')
+      inputTextRef.current = ''
       setLoading(true)
 
       try {
-        const conversationHistory = [...messages, userMsg]
+        // Capture messages snapshot at call time from ref, bounded to last 6 turns before sending
+        const snapshot = [...messagesRef.current, userMsg]
           .filter((m) => m.role === 'user' || m.role === 'assistant')
+          .slice(-6)
           .map((m) => ({ role: m.role, content: m.content }))
 
         const contextInfo = `View: ${currentView || 'Dashboard'}, Tx: ${currentTransactionId || 'None'}`
 
-        const res = await fetch(`${BASE_URL}/ai/chat`, {
+        const res = await fetch(`${BASE_URL}/ai-assistant/chat`, {
           method: 'POST',
           headers: getAuthHeaders(),
+          signal: controller.signal,
           body: JSON.stringify({
-            messages: conversationHistory,
+            messages: snapshot,
             provider: provider === 'auto' ? null : provider,
             temperature: 0.7,
             role: detectedRoleKey,
             context: contextInfo,
+            session_id: sessionId,
+            ui_context: { current_view: currentView, transaction_id: currentTransactionId },
           }),
         })
 
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
         const data = await res.json()
+
+        // Ignore response if a newer request has already aborted this one
+        if (controller.signal.aborted) return
 
         const assistantMsg = {
           id: Date.now() + 1,
@@ -467,18 +486,20 @@ export default function AiAssistantPanel({
           used_real_api: data.used_real_api,
           grok_challenge_applied: data.grok_challenge_applied,
           routing: data.routing,
+          structured_metadata: data.structured_metadata,
           timestamp: new Date().toISOString(),
         }
         setMessages((prev) => [...prev, assistantMsg])
 
         // NOTE: Audio is intentionally NOT auto-played. It plays ONLY when the user clicks the Audio button.
       } catch (err) {
+        if (err.name === 'AbortError') return  // Silently discard superseded requests
         setMessages((prev) => [
           ...prev,
           {
             id: Date.now() + 1,
             role: 'assistant',
-            content: `I encountered a communication issue: ${err.message}. Automatically failing over to secondary AI engine. Please retry your request.`,
+            content: 'Something went wrong reaching the AI service. Please check your connection and try again in a moment.',
             provider: 'System Failover',
             model: 'failover-v1',
             used_real_api: false,
@@ -489,7 +510,10 @@ export default function AiAssistantPanel({
         setLoading(false)
       }
     },
-    [inputText, loading, messages, provider, detectedRoleKey, currentView, currentTransactionId]
+    // Removed `messages` and `inputText` from deps — both change on every update and
+    // caused sendMessage to be recreated constantly, triggering unnecessary re-renders.
+    // messages is captured via closure at call time; inputText is read from state at call time.
+    [loading, provider, detectedRoleKey, currentView, currentTransactionId, sessionId]
   )
 
   const provColors = PROVIDER_COLORS[provider] || PROVIDER_COLORS.auto
@@ -1080,7 +1104,12 @@ export default function AiAssistantPanel({
                 <textarea
                   ref={inputRef}
                   value={inputText}
-                  onChange={(e) => setInputText(e.target.value)}
+                  onChange={(e) => {
+                    setInputText(e.target.value)
+                    // Auto-resize: reset height then grow to scrollHeight (capped via maxHeight CSS)
+                    e.target.style.height = 'auto'
+                    e.target.style.height = `${Math.min(e.target.scrollHeight, 110)}px`
+                  }}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault()
@@ -1089,7 +1118,7 @@ export default function AiAssistantPanel({
                   }}
                   placeholder={`Ask FraudLens AI as ${helpdeskContext?.authenticated_role || roleConfig.label}…`}
                   rows={1}
-                  className="w-full bg-[#060c1e]/90 border border-white/12 focus:border-cyan-400/60 rounded-xl px-4 py-3 text-[13px] text-white placeholder-slate-500 focus:outline-none input-warm-focus resize-none transition-all duration-200"
+                  className="w-full bg-[#060c1e]/90 border border-white/12 focus:border-cyan-400/60 rounded-xl px-4 py-3 text-[13px] text-white placeholder-slate-500 focus:outline-none input-warm-focus resize-none transition-all duration-200 overflow-hidden"
                   style={{ minHeight: '44px', maxHeight: '110px' }}
                   disabled={loading}
                 />

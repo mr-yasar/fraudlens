@@ -163,6 +163,11 @@ export default function AiInvestigationCommandCenter({
 
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
+  const inputTextRef = useRef('')
+  const messagesRef = useRef(messages)
+
+  useEffect(() => { inputTextRef.current = inputText }, [inputText])
+  useEffect(() => { messagesRef.current = messages }, [messages])
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -233,7 +238,7 @@ export default function AiInvestigationCommandCenter({
   // Send query to AI Orchestrator
   const handleSendMessage = useCallback(
     async (overrideText = null) => {
-      const queryText = (overrideText || inputText).trim()
+      const queryText = (typeof overrideText === 'string' ? overrideText : inputTextRef.current).trim()
       if (!queryText || loading) return
 
       const userMsg = {
@@ -244,7 +249,8 @@ export default function AiInvestigationCommandCenter({
       }
 
       setMessages((prev) => [...prev, userMsg])
-      if (!overrideText) setInputText('')
+      setInputText('')
+      inputTextRef.current = ''
       setLoading(true)
 
       // Sequenced Video-like Scanning Steps
@@ -266,7 +272,7 @@ export default function AiInvestigationCommandCenter({
       }, 2300)
 
       try {
-        const historyForApi = messages.slice(-6).map((m) => ({
+        const historyForApi = messagesRef.current.slice(-6).map((m) => ({
           role: m.role,
           content: m.content,
         }))
