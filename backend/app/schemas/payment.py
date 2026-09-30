@@ -139,6 +139,14 @@ class PreAuthDecisionResult(BaseModel):
     device_session_intelligence: Optional[Dict[str, Any]] = None
     network_intelligence: Optional[Dict[str, Any]] = None
     otp_code: Optional[str] = Field(default=None, description="Dynamic 6-digit OTP generated for SMS verification challenge")
+    # Rapid Transaction Activity & Security Trigger Telemetry
+    rapid_activity_detected: bool = Field(default=False, description="Whether rapid repeated transactions were detected")
+    rapid_activity_count: int = Field(default=0, description="Total transactions detected in rapid activity window")
+    rapid_activity_window_minutes: int = Field(default=60, description="Time window for rapid activity evaluation in minutes")
+    recent_transaction_amounts: List[float] = Field(default_factory=list, description="Amounts of recent transactions in the evaluation window")
+    security_trigger: Optional[str] = Field(default=None, description="Security trigger condition e.g. RAPID_TRANSACTION_ACTIVITY")
+    why_otp_reason: Optional[str] = Field(default=None, description="Primary human explanation for why OTP is required")
+    why_otp_explanation: Optional[str] = Field(default=None, description="Detailed contextual security explanation for account protection")
 
 
 class ApprovalActionRequest(BaseModel):
@@ -167,6 +175,13 @@ class ApprovalDetailResponse(BaseModel):
     expires_at: datetime
     is_expired: bool = False
     otp_code: Optional[str] = Field(default=None, description="6-digit SMS OTP verification code")
+    rapid_activity_detected: bool = Field(default=False, description="Whether rapid transaction activity was detected")
+    rapid_activity_count: int = Field(default=0, description="Total transaction count in window")
+    rapid_activity_window_minutes: int = Field(default=60, description="Window in minutes")
+    recent_transaction_amounts: List[float] = Field(default_factory=list, description="Recent transaction amounts")
+    security_trigger: Optional[str] = Field(default=None, description="Security trigger reason")
+    why_otp_reason: Optional[str] = Field(default=None, description="Primary explanation")
+    why_otp_explanation: Optional[str] = Field(default=None, description="Detailed explanation")
 
 
 class BeneficiaryResponse(BaseModel):

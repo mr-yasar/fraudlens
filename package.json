@@ -1,0 +1,13 @@
+{
+  "name": "fraudlens-ai",
+  "version": "2.1.1",
+  "private": true,
+  "description": "FraudLens AI - Explainable Financial Fraud Detection Platform",
+  "scripts": {
+    "dev": "npm --prefix frontend run dev",
+    "build": "npm --prefix frontend run build",
+    "lint": "npm --prefix frontend run lint",
+    "frontend": "npm --prefix frontend run dev",
+    "backend": ".venv/Scripts/python -m uvicorn backend.app.main:app --reload --host 127.0.0.1 --port 8000"
+  }
+}

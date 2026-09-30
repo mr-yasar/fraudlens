@@ -20,7 +20,7 @@ import { formatINR } from '../utils/formatters'
 
 import { getCustomerPersona } from '../utils/customerHelper'
 
-export default function LiveTransactionMonitorView({ onInvestigate, onViewExplanation, user, isAdmin }) {
+export default function LiveTransactionMonitorView({ onInvestigate, onRaiseComplaint, onViewExplanation, user, isAdmin }) {
   const customerPersona = getCustomerPersona(user)
   const isCustomer = customerPersona.isCustomer
 
@@ -69,8 +69,9 @@ export default function LiveTransactionMonitorView({ onInvestigate, onViewExplan
       customerFilter === 'ALL' ||
       tx.customer_id === customerFilter ||
       (customerFilter === 'CUST_MONISHA_001' && tx.customer_id?.includes('MONISHA')) ||
-      (customerFilter === 'CUST_MOHANA_002' && tx.customer_id?.includes('MOHANA')) ||
-      (customerFilter === 'CUST_SOWMIYA_003' && tx.customer_id?.includes('SOWMIYA'))
+      (customerFilter === 'CUST_MOHANA_002' && (tx.customer_id?.includes('MOHANA') || tx.customer_id?.includes('MOGANA'))) ||
+      (customerFilter === 'CUST_SOWMIYA_003' && (tx.customer_id?.includes('SOWMIYA') || tx.customer_id?.includes('SOUMYA'))) ||
+      (customerFilter === 'CUST_AJAY_004' && tx.customer_id?.includes('AJAY'))
     const matchSearch =
       tx.transaction_id?.toLowerCase().includes(search.toLowerCase()) ||
       tx.merchant_name?.toLowerCase().includes(search.toLowerCase()) ||
@@ -243,6 +244,16 @@ export default function LiveTransactionMonitorView({ onInvestigate, onViewExplan
               >
                 Sowmiya (26%)
               </button>
+              <button
+                onClick={() => setCustomerFilter('CUST_AJAY_004')}
+                className={`px-2 py-1.5 rounded-lg text-xs font-mono font-bold border transition ${
+                  customerFilter === 'CUST_AJAY_004'
+                    ? 'bg-indigo-950 border-indigo-600 text-indigo-300'
+                    : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-indigo-400'
+                }`}
+              >
+                Ajay (0.2%)
+              </button>
             </div>
           )}
         </div>
@@ -346,15 +357,26 @@ export default function LiveTransactionMonitorView({ onInvestigate, onViewExplan
                             <span>Explain</span>
                           </button>
                         )}
-                        {onInvestigate && (
+                        {isAdmin && onInvestigate && (
                           <button
                             type="button"
-                            onClick={() => onInvestigate(tx.transaction_id)}
-                            className="px-2.5 py-1 rounded bg-slate-800 hover:bg-cyan-950 text-slate-300 hover:text-cyan-300 border border-slate-700 hover:border-cyan-700 font-medium text-[11px] transition inline-flex items-center gap-1"
+                            onClick={() => onInvestigate(tx.transaction_id, tx)}
+                            className="px-2.5 py-1 rounded bg-slate-800 hover:bg-cyan-950 text-slate-300 hover:text-cyan-300 border border-slate-700 hover:border-cyan-700 font-medium text-[11px] transition inline-flex items-center gap-1 cursor-pointer"
                             title={`Open fraud case investigation for ${tx.transaction_id}`}
                           >
                             <Eye className="w-3 h-3" />
                             <span>Investigate</span>
+                          </button>
+                        )}
+                        {!isAdmin && onRaiseComplaint && (
+                          <button
+                            type="button"
+                            onClick={() => onRaiseComplaint(tx.transaction_id, tx)}
+                            className="px-2.5 py-1 rounded bg-rose-950/70 hover:bg-rose-900 text-rose-300 hover:text-white border border-rose-800/80 hover:border-rose-600 font-semibold text-[11px] transition inline-flex items-center gap-1 shadow-sm cursor-pointer"
+                            title={`Report fraud or raise complaint for ${tx.transaction_id}`}
+                          >
+                            <ShieldAlert className="w-3 h-3 text-rose-400" />
+                            <span>Report Fraud</span>
                           </button>
                         )}
                       </div>

@@ -1141,14 +1141,24 @@ export default function PaymentView({
         setTimelineStage('security_hold')
         setPhoneModalTx({
           ...formData,
+          transaction_id: result.transaction_id || `TXN-${Date.now().toString().slice(-6)}`,
+          customer_id: result.customer_id || formData.customer_id,
+          customer_name: customerPersona?.name || 'Customer',
           merchant_name: finalMerchantName,
           amount: result.amount || formData.amount,
           risk_score: result.risk_score,
           risk_level: result.risk_level,
           fraud_probability: result.fraud_probability,
           otp_code: result.otp_code,
+          rapid_activity_detected: result.rapid_activity_detected,
+          rapid_activity_count: result.rapid_activity_count,
+          rapid_activity_window_minutes: result.rapid_activity_window_minutes,
+          recent_transaction_amounts: result.recent_transaction_amounts,
+          security_trigger: result.security_trigger,
+          why_otp_reason: result.why_otp_reason,
+          why_otp_explanation: result.why_otp_explanation,
           rule_triggered:
-            result.triggered_rules?.[0]?.rule_name || 'Behavioral Risk Anomaly Detected',
+            result.security_trigger || result.why_otp_reason || result.triggered_rules?.[0]?.rule_name || 'Behavioral Risk Anomaly Detected',
         })
         setPhoneModalApprovalId(result.approval_id || null)
         setShowPhoneModal(true)
@@ -1215,20 +1225,52 @@ export default function PaymentView({
     }
   }
 
+  const getPendingHoldReason = useCallback((hold) => {
+    if (!hold) return 'Step-up verification challenge generated'
+    if (hold.why_otp_reason) return hold.why_otp_reason
+    if (typeof hold.notes === 'string') {
+      if (hold.notes.startsWith('{')) {
+        try {
+          const parsed = JSON.parse(hold.notes)
+          return parsed.reason || parsed.why_otp_reason || parsed.explanation || 'Rapid transaction activity detected'
+        } catch {
+          return 'Rapid transaction activity detected'
+        }
+      }
+      return hold.notes
+    }
+    return 'Step-up verification challenge generated'
+  }, [])
+
   // Open phone interface for any pending hold (from top summary card or banner)
   const handleOpenPendingHoldPhone = useCallback((specificHold = null) => {
     const hold = specificHold || (pendingApprovals && pendingApprovals.length > 0 ? pendingApprovals[0] : null)
 
     if (hold) {
+      const parsedReason = getPendingHoldReason(hold)
+      const cleanMerchant = (hold.notes && typeof hold.notes === 'string' && !hold.notes.startsWith('{'))
+        ? hold.notes
+        : 'Pending Transfer on Hold'
+
       setPhoneModalTx({
+        transaction_id: hold.transaction_id || hold.approval_id,
         amount: hold.amount || 8500,
         currency: hold.currency || 'INR',
-        merchant_name: hold.notes || 'Pending Transfer on Hold',
+        merchant_name: cleanMerchant,
         customer_id: hold.customer_id || formData.customer_id,
+        customer_name: customerPersona?.name || 'Customer',
         risk_score: hold.risk_score || 58,
         risk_level: hold.risk_level || 'MEDIUM',
         fraud_probability: hold.fraud_probability || 0.58,
-        rule_triggered: 'Suspicious Geo-Velocity & Step-Up Check (Security Hold)',
+        rapid_activity_detected: hold.rapid_activity_detected,
+        rapid_activity_count: hold.rapid_activity_count,
+        rapid_activity_window_minutes: hold.rapid_activity_window_minutes,
+        recent_transaction_amounts: hold.recent_transaction_amounts,
+        security_trigger: hold.security_trigger,
+        why_otp_reason: hold.why_otp_reason || parsedReason,
+        why_otp_explanation: hold.why_otp_explanation,
+        rule_triggered:
+          hold.security_trigger || hold.why_otp_reason || parsedReason || 'Suspicious Geo-Velocity & Step-Up Check (Security Hold)',
         location: 'Salem, IN',
         device: formData.device_type || 'Windows PC',
       })
@@ -1237,7 +1279,7 @@ export default function PaymentView({
     } else {
       setActionSuccessMsg('No transactions currently on hold. When a suspicious transaction occurs, it will automatically open the phone.')
     }
-  }, [pendingApprovals, formData])
+  }, [pendingApprovals, formData, customerPersona, getPendingHoldReason])
 
   const selectedBank = linkedBankAccounts.find((b) => b.id === selectedBankId) || linkedBankAccounts[0] || {}
   const availableBalance = Number(wallet ? wallet.simulated_balance : selectedBank.balance || 0)
@@ -1422,7 +1464,7 @@ export default function PaymentView({
                   </span>
                 </div>
                 <p className="text-[11px] text-slate-300 mt-0.5">
-                  {pendingApprovals[0]?.notes || 'Step-up verification challenge generated'} • ₹{(pendingApprovals[0]?.amount || 0).toLocaleString('en-IN')} awaiting user OTP approval
+                  {getPendingHoldReason(pendingApprovals[0])} • ₹{(pendingApprovals[0]?.amount || 0).toLocaleString('en-IN')} awaiting user OTP approval
                 </p>
               </div>
             </div>
@@ -2274,6 +2316,41 @@ export default function PaymentView({
                     </button>
                   )}
 
+                  {decisionResult.decision === 'REVIEW' && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPhoneModalTx({
+                          ...formData,
+                          transaction_id: decisionResult.transaction_id || `TXN-${Date.now().toString().slice(-6)}`,
+                          customer_id: decisionResult.customer_id || formData.customer_id,
+                          customer_name: customerPersona?.name || 'Customer',
+                          merchant_name: finalMerchantName,
+                          amount: decisionResult.amount || formData.amount,
+                          risk_score: decisionResult.risk_score,
+                          risk_level: decisionResult.risk_level,
+                          fraud_probability: decisionResult.fraud_probability,
+                          otp_code: decisionResult.otp_code,
+                          rapid_activity_detected: decisionResult.rapid_activity_detected,
+                          rapid_activity_count: decisionResult.rapid_activity_count,
+                          rapid_activity_window_minutes: decisionResult.rapid_activity_window_minutes,
+                          recent_transaction_amounts: decisionResult.recent_transaction_amounts,
+                          security_trigger: decisionResult.security_trigger,
+                          why_otp_reason: decisionResult.why_otp_reason,
+                          why_otp_explanation: decisionResult.why_otp_explanation,
+                          rule_triggered:
+                            decisionResult.security_trigger || decisionResult.why_otp_reason || 'Rapid Transaction Activity Security Signal',
+                        })
+                        setPhoneModalApprovalId(decisionResult.approval_id || null)
+                        setShowPhoneModal(true)
+                      }}
+                      className="px-4 py-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white rounded-xl text-xs font-bold uppercase tracking-wider shadow-lg flex items-center gap-2 transition"
+                    >
+                      <Lock className="w-4 h-4" />
+                      <span>Complete OTP Verification</span>
+                    </button>
+                  )}
+
                   <div className="text-right font-mono">
                     <div className="text-[10px] text-slate-400 uppercase">Decision Speed</div>
                     <div className="text-xs font-bold text-white">
@@ -2282,6 +2359,71 @@ export default function PaymentView({
                   </div>
                 </div>
               </div>
+
+              {/* Security Decision Formula & Explanation Banner */}
+              {(decisionResult.decision === 'REVIEW' || decisionResult.verification_required) && (
+                <div className="p-4 rounded-xl bg-gradient-to-r from-amber-950/50 via-slate-900 to-amber-950/30 border border-amber-500/40 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2 text-amber-400 font-bold text-xs uppercase tracking-wider font-mono">
+                      <Zap className="w-4 h-4 text-amber-400 animate-pulse" />
+                      <span>Security Decision Formula</span>
+                    </div>
+                    <div className="text-xs sm:text-sm font-semibold text-white flex flex-wrap items-center gap-2 font-mono">
+                      <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-slate-200">
+                        Base Risk Score: {decisionResult.risk_score}/100 ({decisionResult.risk_level})
+                      </span>
+                      <span className="text-amber-400 font-bold">+</span>
+                      <span className="px-2 py-0.5 rounded bg-amber-950 border border-amber-600 text-amber-200">
+                        {decisionResult.rapid_activity_detected ? 'Rapid Transaction Security Signal' : 'Adaptive Security Verification'}
+                      </span>
+                      <span className="text-amber-400 font-bold">=</span>
+                      <span className="px-2 py-0.5 rounded bg-emerald-950 border border-emerald-500 text-emerald-300 font-extrabold">
+                        OTP Verification Required
+                      </span>
+                    </div>
+                    <p className="text-xs text-amber-200/90 font-medium">
+                      {decisionResult.why_otp_reason || 'Multiple transactions detected within a short period. Additional verification is required before this payment can be completed.'}
+                    </p>
+                    {decisionResult.why_otp_explanation && (
+                      <p className="text-[11px] text-slate-400 italic">
+                        {decisionResult.why_otp_explanation}
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPhoneModalTx({
+                        ...formData,
+                        transaction_id: decisionResult.transaction_id || `TXN-${Date.now().toString().slice(-6)}`,
+                        customer_id: decisionResult.customer_id || formData.customer_id,
+                        customer_name: customerPersona?.name || 'Customer',
+                        merchant_name: finalMerchantName,
+                        amount: decisionResult.amount || formData.amount,
+                        risk_score: decisionResult.risk_score,
+                        risk_level: decisionResult.risk_level,
+                        fraud_probability: decisionResult.fraud_probability,
+                        otp_code: decisionResult.otp_code,
+                        rapid_activity_detected: decisionResult.rapid_activity_detected,
+                        rapid_activity_count: decisionResult.rapid_activity_count,
+                        rapid_activity_window_minutes: decisionResult.rapid_activity_window_minutes,
+                        recent_transaction_amounts: decisionResult.recent_transaction_amounts,
+                        security_trigger: decisionResult.security_trigger,
+                        why_otp_reason: decisionResult.why_otp_reason,
+                        why_otp_explanation: decisionResult.why_otp_explanation,
+                        rule_triggered:
+                          decisionResult.security_trigger || decisionResult.why_otp_reason || 'Rapid Transaction Activity Security Signal',
+                      })
+                      setPhoneModalApprovalId(decisionResult.approval_id || null)
+                      setShowPhoneModal(true)
+                    }}
+                    className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 shrink-0 shadow-lg shadow-amber-500/20 transition"
+                  >
+                    <span>Enter OTP Now</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
 
               {/* Metric Telemetry Row */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

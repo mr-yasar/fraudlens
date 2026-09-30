@@ -128,6 +128,47 @@ def create_investigation(
     db.commit()
     db.refresh(investigation)
 
+    # 7. Create In-App Security Alert & Real-Time Notification for Admin Review
+    from backend.app.services.alert_service import AlertService, AlertType
+    from backend.app.services.notification_service import NotificationService, NotificationPayload, NotificationType
+
+    user_name = current_user.name or (current_user.email.split('@')[0].capitalize() if current_user.email else "Customer")
+    risk_level_str = tx.risk_level or ("HIGH" if tx.is_fraud == 1 else "MEDIUM")
+
+    try:
+        AlertService.create_alert(
+            db=db,
+            alert_type=AlertType.REVIEW_REQUIRED,
+            severity="HIGH" if risk_level_str == "HIGH" else "MEDIUM",
+            message=f"New Fraud Complaint — {user_name} (Case #{case_id}, TX: {tx.transaction_id}, Risk: {risk_level_str})",
+            entity_id=case_id,
+            details={
+                "user_name": user_name,
+                "user_email": current_user.email,
+                "case_id": case_id,
+                "transaction_id": tx.transaction_id,
+                "risk_level": risk_level_str,
+                "amount": float(tx.amount) if tx.amount else 0.0,
+                "status": InvestigationStatus.OPEN.value,
+                "notes": payload.notes,
+            },
+        )
+        NotificationService.get_instance().dispatch_all(
+            NotificationPayload(
+                user_id=current_user.id,
+                customer_id=tx.customer_id,
+                transaction_id=tx.transaction_id,
+                notification_type=NotificationType.HIGH_RISK_ALERT,
+                title=f"New Fraud Complaint — {user_name}",
+                message=f"User {user_name} filed a fraud dispute for transaction {tx.transaction_id} (Case #{case_id}, Risk: {risk_level_str}).",
+                amount=float(tx.amount) if tx.amount else None,
+                risk_level=risk_level_str,
+            )
+        )
+    except Exception as notify_err:
+        # Non-blocking notification
+        pass
+
     # Fetch investigator info if assigned
     inv_user = db.query(User).filter(User.id == investigation.investigator_id).first() if investigation.investigator_id else None
 
@@ -377,22 +418,16 @@ def update_investigation(
 
     tx = db.query(Transaction).filter(Transaction.transaction_id == investigation.transaction_id).first()
 
-    # Customer Isolation check
-    user_cust_id = get_customer_id_for_user(current_user, db)
-    if user_cust_id is not None:
-        if not tx or tx.customer_id != user_cust_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Access denied: You do not have permission to modify this investigation case.",
-            )
-        if payload.investigator_id is not None:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Customers cannot reassign case investigators.",
-            )
+    # Strict Role Guard: Only fraud investigators and administrators can modify or resolve fraud cases
+    role_str = str(current_user.role or "").upper().strip()
+    if role_str not in ("ADMIN", "SUPERADMIN", "FRAUD_INVESTIGATOR", "INVESTIGATOR", "ANALYST"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied: Only fraud investigators and administrators can modify, adjudicate, or resolve fraud cases.",
+        )
 
     # Check permission for investigator role (Admin can update any case; investigator can update assigned or open cases)
-    if current_user.role in (UserRole.FRAUD_INVESTIGATOR.value, "FRAUD_INVESTIGATOR"):
+    if role_str in ("FRAUD_INVESTIGATOR", "INVESTIGATOR", "ANALYST"):
         if investigation.investigator_id is not None and investigation.investigator_id != current_user.id:
             # If case is assigned to another investigator, non-admin cannot arbitrarily overwrite
             raise HTTPException(
@@ -663,16 +698,15 @@ def generate_ai_copilot_dossier(
             detail=f"Investigation case with ID '{case_id}' not found.",
         )
 
-    tx = db.query(Transaction).filter(Transaction.transaction_id == investigation.transaction_id).first()
+    # Strict Role Guard: Only Admin and Fraud Investigator can run internal AI forensic copilot
+    role_str = str(current_user.role or "").upper().strip()
+    if role_str not in ("ADMIN", "SUPERADMIN", "FRAUD_INVESTIGATOR", "INVESTIGATOR", "ANALYST"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied: AI Forensic Copilot investigation tools are restricted to authorized fraud investigators and administrators.",
+        )
 
-    # Customer Isolation check
-    user_cust_id = get_customer_id_for_user(current_user, db)
-    if user_cust_id is not None:
-        if not tx or tx.customer_id != user_cust_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Access denied: You do not have permission to generate AI Copilot dossiers for this case.",
-            )
+
 
     from backend.app.services.ai_copilot_service import AiCopilotService
     try:

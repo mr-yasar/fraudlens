@@ -222,27 +222,76 @@ def list_pending_approvals(
     approvals = query.order_by(TransactionApproval.requested_at.desc()).all()
     now = datetime.now(timezone.utc)
 
-    return [
-        ApprovalDetailResponse(
-            approval_id=a.approval_id,
-            payment_id=a.payment_id,
-            transaction_id=a.transaction_id,
-            customer_id=a.customer_id,
-            status=a.status,
-            amount=a.amount,
-            currency=a.currency,
-            risk_score=a.risk_score,
-            risk_level=a.risk_level,
-            fraud_probability=a.fraud_probability,
-            challenge_type=a.challenge_type,
-            notes=a.notes,
-            requested_at=a.requested_at,
-            responded_at=a.responded_at,
-            expires_at=a.expires_at,
-            is_expired=(now > (a.expires_at.replace(tzinfo=timezone.utc) if a.expires_at.tzinfo is None else a.expires_at)),
+    result_approvals = []
+    for a in approvals:
+        is_expired = (now > (a.expires_at.replace(tzinfo=timezone.utc) if a.expires_at.tzinfo is None else a.expires_at))
+        rapid_detected = False
+        rapid_count = 0
+        window_mins = 60
+        rec_amounts = []
+        sec_trigger = None
+        otp_reason = None
+        otp_explanation = None
+        otp_code_val = a.verification_token
+
+        if a.notes:
+            try:
+                notes_data = json.loads(a.notes)
+                if isinstance(notes_data, dict):
+                    rapid_detected = bool(notes_data.get("rapid_activity_detected", False))
+                    rapid_count = int(notes_data.get("rapid_activity_count", 0))
+                    window_mins = int(notes_data.get("window_minutes", 60))
+                    rec_amounts = notes_data.get("recent_transaction_amounts", [])
+                    sec_trigger = notes_data.get("security_trigger")
+                    otp_reason = notes_data.get("reason")
+                    otp_explanation = notes_data.get("explanation")
+                    if not otp_code_val:
+                        otp_code_val = notes_data.get("otp_code")
+            except Exception:
+                if "Rapid Transaction Activity" in a.notes:
+                    rapid_detected = True
+                    sec_trigger = "RAPID_TRANSACTION_ACTIVITY"
+                    otp_reason = "Multiple transactions were detected within a short period. For your account's protection, additional verification is required before this payment can be completed."
+                    otp_explanation = "Rapid transaction activity may indicate unusual or unauthorized activity."
+
+        display_notes = otp_reason or a.notes
+        if display_notes and isinstance(display_notes, str) and display_notes.startswith("{"):
+            try:
+                parsed_json = json.loads(display_notes)
+                display_notes = parsed_json.get("reason") or parsed_json.get("explanation") or "Step-up security verification active"
+            except Exception:
+                display_notes = "Step-up security verification active"
+
+        result_approvals.append(
+            ApprovalDetailResponse(
+                approval_id=a.approval_id,
+                payment_id=a.payment_id,
+                transaction_id=a.transaction_id,
+                customer_id=a.customer_id,
+                status=a.status,
+                amount=a.amount,
+                currency=a.currency,
+                risk_score=a.risk_score,
+                risk_level=a.risk_level,
+                fraud_probability=a.fraud_probability,
+                challenge_type=a.challenge_type,
+                notes=display_notes,
+                requested_at=a.requested_at,
+                responded_at=a.responded_at,
+                expires_at=a.expires_at,
+                is_expired=is_expired,
+                otp_code=otp_code_val,
+                rapid_activity_detected=rapid_detected,
+                rapid_activity_count=rapid_count,
+                rapid_activity_window_minutes=window_mins,
+                recent_transaction_amounts=rec_amounts,
+                security_trigger=sec_trigger,
+                why_otp_reason=otp_reason,
+                why_otp_explanation=otp_explanation,
+            )
         )
-        for a in approvals
-    ]
+
+    return result_approvals
 
 
 @router.get(

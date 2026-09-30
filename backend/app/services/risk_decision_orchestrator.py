@@ -21,6 +21,7 @@ import uuid
 from datetime import datetime, timezone, timedelta
 from typing import Any, Dict, List, Optional, Tuple
 from fastapi import HTTPException, status
+from sqlalchemy import desc
 from sqlalchemy.orm import Session
 
 from backend.app.models.user import User
@@ -319,6 +320,39 @@ class RiskDecisionOrchestrator:
 
         final_risk_score = min(100, max(0, int(round(final_risk_score))))
 
+        # -----------------------------------------------------------------
+        # STEP 8A: Customer-Isolated Rapid Transaction Activity Detection
+        # -----------------------------------------------------------------
+        window_minutes = 60
+        now_utc = datetime.now(timezone.utc)
+        cutoff_time = now_utc - timedelta(minutes=window_minutes)
+
+        # Efficient query strictly filtered by request.customer_id (preserving complete multi-user isolation)
+        recent_customer_txs = (
+            db.query(Transaction)
+            .filter(Transaction.customer_id == request.customer_id)
+            .order_by(desc(Transaction.created_at))
+            .limit(50)
+            .all()
+        )
+
+        recent_in_window: List[Transaction] = []
+        for tx in recent_customer_txs:
+            if tx.created_at:
+                tx_dt = tx.created_at
+                if tx_dt.tzinfo is None:
+                    tx_dt = tx_dt.replace(tzinfo=timezone.utc)
+                if tx_dt >= cutoff_time:
+                    recent_in_window.append(tx)
+
+        # Total count includes prior transactions in the 60m window + current transaction
+        prior_tx_count = len(recent_in_window)
+        rapid_activity_count = prior_tx_count + 1
+        recent_transaction_amounts = [float(tx.amount) for tx in recent_in_window[:5] if tx.amount is not None]
+
+        # Trigger rapid activity security signal if 3 or more transactions within 60 minutes
+        is_rapid_activity = (rapid_activity_count >= 3)
+
         # Decision classification
         tx_id = f"PAY-{uuid.uuid4().hex[:12].upper()}"
         case_id = None
@@ -326,6 +360,9 @@ class RiskDecisionOrchestrator:
         generated_otp = None
         verification_required = False
         balance_after = balance_before
+        security_trigger = None
+        why_otp_reason = None
+        why_otp_explanation = None
 
         # Unified Risk-Based Decision Classification for all users
         if final_risk_score > 70 or rule_result.hard_block or dev_assessment.is_spoofed_environment:
@@ -337,6 +374,15 @@ class RiskDecisionOrchestrator:
             verification_required = True
             balance_after = balance_before  # No deduction until user verifies OTP and explicitly approves
             
+            if is_rapid_activity:
+                security_trigger = "RAPID_TRANSACTION_ACTIVITY"
+                why_otp_reason = "Multiple transactions were detected within a short period. For your account's protection, additional verification is required before this payment can be completed."
+                why_otp_explanation = "Rapid transaction activity may indicate unusual or unauthorized activity."
+            else:
+                security_trigger = "HIGH_RISK_ANOMALY"
+                why_otp_reason = "Elevated risk signals detected for this transaction. Security verification is required to safeguard your funds."
+                why_otp_explanation = "Unusual parameters or transaction characteristics were detected by our fraud protection system."
+
             approval_id = f"APP-{uuid.uuid4().hex[:10].upper()}"
             generated_otp = f"{random.randint(100000, 999999)}"
             approval_rec = TransactionApproval(
@@ -353,7 +399,16 @@ class RiskDecisionOrchestrator:
                 fraud_probability=round(ml_prob, 4),
                 challenge_type="SMS_OTP",
                 verification_token=generated_otp,
-                notes=f"High-Risk Security Hold. Score: {final_risk_score}/100. Verification OTP: {generated_otp}",
+                notes=json.dumps({
+                    "reason": why_otp_reason,
+                    "explanation": why_otp_explanation,
+                    "security_trigger": security_trigger,
+                    "rapid_activity_detected": is_rapid_activity,
+                    "rapid_activity_count": rapid_activity_count,
+                    "recent_transaction_amounts": recent_transaction_amounts,
+                    "window_minutes": window_minutes,
+                    "otp_code": generated_otp,
+                }),
                 expires_at=datetime.now(timezone.utc) + timedelta(minutes=15),
             )
             db.add(approval_rec)
@@ -381,6 +436,15 @@ class RiskDecisionOrchestrator:
             verification_required = True
             balance_after = balance_before  # No deduction until user verifies OTP and explicitly approves
             
+            if is_rapid_activity:
+                security_trigger = "RAPID_TRANSACTION_ACTIVITY"
+                why_otp_reason = "Multiple transactions were detected within a short period. For your account's protection, additional verification is required before this payment can be completed."
+                why_otp_explanation = "Rapid transaction activity may indicate unusual or unauthorized activity."
+            else:
+                security_trigger = "STEP_UP_VERIFICATION"
+                why_otp_reason = "Step-up security verification required before this payment can proceed."
+                why_otp_explanation = "Periodic routine check to confirm cardholder identity and secure authorization."
+
             approval_id = f"APP-{uuid.uuid4().hex[:10].upper()}"
             generated_otp = f"{random.randint(100000, 999999)}"
             approval_rec = TransactionApproval(
@@ -397,7 +461,16 @@ class RiskDecisionOrchestrator:
                 fraud_probability=round(ml_prob, 4),
                 challenge_type="SMS_OTP",
                 verification_token=generated_otp,
-                notes=f"Medium-Risk Step-Up OTP Challenge. Score: {final_risk_score}/100. Verification OTP: {generated_otp}",
+                notes=json.dumps({
+                    "reason": why_otp_reason,
+                    "explanation": why_otp_explanation,
+                    "security_trigger": security_trigger,
+                    "rapid_activity_detected": is_rapid_activity,
+                    "rapid_activity_count": rapid_activity_count,
+                    "recent_transaction_amounts": recent_transaction_amounts,
+                    "window_minutes": window_minutes,
+                    "otp_code": generated_otp,
+                }),
                 expires_at=datetime.now(timezone.utc) + timedelta(minutes=15),
             )
             db.add(approval_rec)
@@ -416,8 +489,52 @@ class RiskDecisionOrchestrator:
             )
             db.add(investigation)
 
+        elif is_rapid_activity:
+            # LOW BASE FRAUD SCORE + RAPID ACTIVITY = OTP REQUIRED!
+            # Preserve existing ML/fraud scoring: risk_score and risk_level (LOW) remain untouched!
+            decision = PaymentDecision.REVIEW
+            risk_level = RiskLevelEnum.LOW
+            lifecycle_status = PaymentLifecycleStatus.REVIEW_REQUIRED
+            status_message = f"Rapid transaction activity detected ({rapid_activity_count} transactions within {window_minutes} mins). Additional OTP verification required for account protection."
+            verification_required = True
+            balance_after = balance_before  # No deduction until user verifies OTP and explicitly approves
+            
+            security_trigger = "RAPID_TRANSACTION_ACTIVITY"
+            why_otp_reason = "Multiple transactions were detected within a short period. For your account's protection, additional verification is required before this payment can be completed."
+            why_otp_explanation = "Rapid transaction activity may indicate unusual or unauthorized activity."
+
+            approval_id = f"APP-{uuid.uuid4().hex[:10].upper()}"
+            generated_otp = f"{random.randint(100000, 999999)}"
+            approval_rec = TransactionApproval(
+                approval_id=approval_id,
+                payment_id=tx_id,
+                transaction_id=tx_id,
+                customer_id=request.customer_id,
+                user_id=current_user.id if current_user else None,
+                status=ApprovalStatus.PENDING.value,
+                amount=request.amount,
+                currency=request.currency,
+                risk_score=final_risk_score,
+                risk_level=risk_level.value,
+                fraud_probability=round(ml_prob, 4),
+                challenge_type="SMS_OTP",
+                verification_token=generated_otp,
+                notes=json.dumps({
+                    "reason": why_otp_reason,
+                    "explanation": why_otp_explanation,
+                    "security_trigger": security_trigger,
+                    "rapid_activity_detected": True,
+                    "rapid_activity_count": rapid_activity_count,
+                    "recent_transaction_amounts": recent_transaction_amounts,
+                    "window_minutes": window_minutes,
+                    "otp_code": generated_otp,
+                }),
+                expires_at=datetime.now(timezone.utc) + timedelta(minutes=15),
+            )
+            db.add(approval_rec)
+
         else:
-            # LOW RISK: Frictionless Auto-Approval, deduct balance, save transaction
+            # LOW RISK & NO RAPID ACTIVITY: Frictionless Auto-Approval, deduct balance, save transaction
             decision = PaymentDecision.ALLOW
             risk_level = RiskLevelEnum.LOW
             lifecycle_status = PaymentLifecycleStatus.SUCCEEDED
@@ -665,6 +782,13 @@ class RiskDecisionOrchestrator:
             behaviour_intelligence=beh_report.to_dict(),
             device_session_intelligence=dev_assessment.to_dict(),
             network_intelligence=net_report.to_dict(),
+            rapid_activity_detected=is_rapid_activity,
+            rapid_activity_count=rapid_activity_count if is_rapid_activity else 0,
+            rapid_activity_window_minutes=window_minutes,
+            recent_transaction_amounts=recent_transaction_amounts,
+            security_trigger=security_trigger,
+            why_otp_reason=why_otp_reason,
+            why_otp_explanation=why_otp_explanation,
         )
 
         # -----------------------------------------------------------------

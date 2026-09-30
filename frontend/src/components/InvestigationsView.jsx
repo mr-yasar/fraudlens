@@ -38,6 +38,7 @@ export default function InvestigationsView({
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(15)
   const [statusFilter, setStatusFilter] = useState('')
+  const [decisionFilter, setDecisionFilter] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -107,7 +108,8 @@ export default function InvestigationsView({
       const data = await investigationsApi.list({
         page,
         limit,
-        status: statusFilter,
+        status: statusFilter || undefined,
+        decision: decisionFilter || undefined,
       })
       setCases(data.items || [])
       setTotal(data.total || 0)
@@ -120,7 +122,7 @@ export default function InvestigationsView({
 
   useEffect(() => {
     fetchCases()
-  }, [page, statusFilter])
+  }, [page, statusFilter, decisionFilter])
 
   const handleOpenCase = async (caseId) => {
     setCaseLoading(true)
@@ -138,6 +140,47 @@ export default function InvestigationsView({
     }
   }
 
+  // Direct adjudication handler: updates backend SQLite DB and refreshes state
+  const handleQuickAdjudicate = async (caseId, decision, targetStatus = 'RESOLVED', customNotes = null) => {
+    setSubmitting(true)
+    setUpdateMsg(null)
+    try {
+      const isFraud = decision === 'CONFIRMED_FRAUD'
+      const isGenuine = decision === 'GENUINE'
+      const notes = customNotes || editNotes?.trim() || (isFraud
+        ? 'Confirmed fraud determination by investigator. Transaction flagged, session terminated, and funds frozen.'
+        : isGenuine
+        ? 'Investigator verified transaction telemetry as genuine / false positive.'
+        : 'Case moved to active investigation review.')
+
+      const payload = {
+        status: targetStatus,
+        decision: decision || null,
+        notes: notes,
+      }
+      const updated = await investigationsApi.update(caseId, payload)
+      if (selectedCase && selectedCase.case_id === caseId) {
+        setSelectedCase(updated)
+        setEditStatus(updated.status)
+        setEditDecision(updated.decision || '')
+        setEditNotes(updated.notes || '')
+      }
+      setUpdateMsg(
+        isFraud
+          ? '✓ Decision Persisted: FRAUD CONFIRMED (Status: RESOLVED)'
+          : isGenuine
+          ? '✓ Decision Persisted: NOT FRAUD / GENUINE (Status: RESOLVED)'
+          : `✓ Case status updated to ${targetStatus}`
+      )
+      fetchCases()
+      setTimeout(() => setUpdateMsg(null), 4000)
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to apply investigation decision')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   const handleSaveCase = async (e) => {
     e.preventDefault()
     if (!selectedCase) return
@@ -151,7 +194,7 @@ export default function InvestigationsView({
       }
       const updated = await investigationsApi.update(selectedCase.case_id, payload)
       setSelectedCase(updated)
-      setUpdateMsg('Case updated and logged successfully')
+      setUpdateMsg('✓ Case record and determinations saved successfully to database')
       fetchCases()
       setTimeout(() => setUpdateMsg(null), 3500)
     } catch (err) {
@@ -169,14 +212,10 @@ export default function InvestigationsView({
       <div>
         <h2 className="text-xl font-bold text-white flex items-center gap-2">
           <ShieldAlert className="w-5 h-5 text-cyan-400" />
-          {isCustomer
-            ? `Personal Fraud Cases & Dispute Resolution Hub`
-            : `Investigation & Case Management Operations`}
+          <span>Fraud Investigation &amp; Case Adjudication Operations</span>
         </h2>
         <p className="text-xs text-slate-400 mt-0.5">
-          {isCustomer
-            ? `Active security investigation cases, dispute tracking, and AI forensic intelligence for ${customerPersona.customerName || customerPersona.name}. Strictly private to your account transactions.`
-            : `End-to-end case tracking, evidence logging, status transitions, and final fraud adjudications across all customer transactions.`}
+          End-to-end case tracking, evidence logging, status transitions, and final fraud adjudications across customer transactions and reported complaints.
         </p>
       </div>
 
@@ -238,31 +277,42 @@ export default function InvestigationsView({
 
       {/* Filter Bar */}
       <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800 shadow-md flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-mono text-slate-400 uppercase">Status:</span>
-          <div className="flex gap-1.5">
-            {['', 'OPEN', 'UNDER_REVIEW', 'RESOLVED'].map((st) => (
-              <button
-                key={st}
-                onClick={() => {
-                  setStatusFilter(st)
-                  setPage(1)
-                }}
-                className={`px-3 py-1 rounded-xl text-xs font-medium font-mono transition ${
-                  statusFilter === st
-                    ? 'bg-cyan-950 text-cyan-300 border border-cyan-800 font-bold'
-                    : 'bg-slate-950/60 text-slate-400 border border-slate-800 hover:text-white'
-                }`}
-              >
-                {st === '' ? 'ALL' : st}
-              </button>
-            ))}
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-mono text-slate-400 uppercase">Case Filter:</span>
+          <div className="flex flex-wrap gap-1.5">
+            {[
+              { label: 'ALL CASES', status: '', decision: '' },
+              { label: 'NEW / OPEN', status: 'OPEN', decision: '' },
+              { label: 'UNDER INVESTIGATION', status: 'UNDER_REVIEW', decision: '' },
+              { label: 'FRAUD CONFIRMED', status: '', decision: 'CONFIRMED_FRAUD' },
+              { label: 'NOT FRAUD', status: '', decision: 'GENUINE' },
+              { label: 'RESOLVED', status: 'RESOLVED', decision: '' },
+            ].map((f) => {
+              const isActive = statusFilter === f.status && decisionFilter === f.decision
+              return (
+                <button
+                  key={f.label}
+                  onClick={() => {
+                    setStatusFilter(f.status)
+                    setDecisionFilter(f.decision)
+                    setPage(1)
+                  }}
+                  className={`px-3 py-1 rounded-xl text-xs font-medium font-mono transition cursor-pointer ${
+                    isActive
+                      ? 'bg-cyan-950 text-cyan-300 border border-cyan-700 font-bold shadow'
+                      : 'bg-slate-950/60 text-slate-400 border border-slate-800 hover:text-white hover:bg-slate-900'
+                  }`}
+                >
+                  {f.label}
+                </button>
+              )
+            })}
           </div>
         </div>
 
         <button
           onClick={fetchCases}
-          className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition"
+          className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition cursor-pointer"
           title="Refresh Cases"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
@@ -348,18 +398,42 @@ export default function InvestigationsView({
                         {c.investigator_name || (c.investigator_id ? `Analyst #${c.investigator_id}` : 'Unassigned')}
                       </td>
                       <td className="py-3 px-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
+                        <div className="flex items-center justify-end gap-1.5">
+                          {/* Fast Adjudication Buttons on Row */}
+                          {c.status !== 'RESOLVED' && (
+                            <>
+                              <button
+                                type="button"
+                                disabled={submitting}
+                                onClick={() => handleQuickAdjudicate(c.case_id, 'CONFIRMED_FRAUD', 'RESOLVED')}
+                                className="px-2 py-1 rounded-lg bg-rose-950/80 hover:bg-rose-900 text-rose-300 hover:text-white border border-rose-800/80 hover:border-rose-600 text-[10px] font-mono font-bold transition flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                                title="Confirm Fraud & Resolve Case"
+                              >
+                                <span>Confirm Fraud</span>
+                              </button>
+                              <button
+                                type="button"
+                                disabled={submitting}
+                                onClick={() => handleQuickAdjudicate(c.case_id, 'GENUINE', 'RESOLVED')}
+                                className="px-2 py-1 rounded-lg bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 hover:text-white border border-emerald-800/80 hover:border-emerald-600 text-[10px] font-mono font-bold transition flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                                title="Mark Not Fraud / Genuine"
+                              >
+                                <span>Not Fraud</span>
+                              </button>
+                            </>
+                          )}
+
                           <button
                             onClick={() => setAiModalCaseId(c.case_id)}
-                            className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-purple-700 via-indigo-700 to-cyan-700 hover:from-purple-600 hover:to-cyan-600 text-white text-xs font-bold shadow flex items-center gap-1.5 transition active:scale-95"
+                            className="px-2.5 py-1 rounded-lg bg-gradient-to-r from-purple-700 via-indigo-700 to-cyan-700 hover:from-purple-600 hover:to-cyan-600 text-white text-xs font-bold shadow flex items-center gap-1.5 transition active:scale-95 cursor-pointer"
                             title="Launch AI Forensic Copilot (Gemini, Grok, Siri Voice & Attack Diagrams)"
                           >
                             <Bot className="w-3.5 h-3.5 text-cyan-300" />
-                            <span>AI Copilot &amp; Siri</span>
+                            <span className="hidden sm:inline">AI Copilot</span>
                           </button>
                           <button
                             onClick={() => handleOpenCase(c.case_id)}
-                            className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-xs font-medium transition"
+                            className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 text-xs font-medium transition cursor-pointer"
                           >
                             Manage &rarr;
                           </button>
@@ -383,14 +457,14 @@ export default function InvestigationsView({
             <button
               disabled={page <= 1}
               onClick={() => setPage(page - 1)}
-              className="p-1 rounded-lg bg-slate-800 disabled:opacity-40 text-slate-300"
+              className="p-1 rounded-lg bg-slate-800 disabled:opacity-40 text-slate-300 cursor-pointer"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
             <button
               disabled={page >= totalPages}
               onClick={() => setPage(page + 1)}
-              className="p-1 rounded-lg bg-slate-800 disabled:opacity-40 text-slate-300"
+              className="p-1 rounded-lg bg-slate-800 disabled:opacity-40 text-slate-300 cursor-pointer"
             >
               <ChevronRight className="w-4 h-4" />
             </button>
@@ -433,17 +507,57 @@ export default function InvestigationsView({
               <button
                 type="button"
                 onClick={() => setAiModalCaseId(selectedCase.case_id)}
-                className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 text-white text-xs font-bold shadow-lg flex items-center gap-1.5 transition active:scale-95 shrink-0"
+                className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 text-white text-xs font-bold shadow-lg flex items-center gap-1.5 transition active:scale-95 shrink-0 cursor-pointer"
               >
                 <Sparkles className="w-3.5 h-3.5 text-amber-300" />
                 <span>Launch AI Briefing &amp; Voice</span>
               </button>
             </div>
 
+            {/* Fast-Track Immediate Case Determination Bar */}
+            <div className="p-4 rounded-2xl bg-slate-950 border border-indigo-900/60 shadow-lg space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-mono uppercase font-bold text-slate-300 flex items-center gap-1.5">
+                  <ShieldAlert className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Fast-Track Adjudication Actions (Persists to Database):</span>
+                </span>
+                <span className="text-[10px] font-mono text-slate-500">Immediate Database Save</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  disabled={submitting}
+                  onClick={() => handleQuickAdjudicate(selectedCase.case_id, 'CONFIRMED_FRAUD', 'RESOLVED')}
+                  className="px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-500 hover:to-rose-600 text-white font-mono font-bold text-xs transition flex items-center justify-center gap-1.5 shadow-md shadow-rose-950/40 disabled:opacity-50 cursor-pointer active:scale-95"
+                >
+                  <ShieldAlert className="w-4 h-4" />
+                  <span>Confirm Fraud</span>
+                </button>
+                <button
+                  type="button"
+                  disabled={submitting}
+                  onClick={() => handleQuickAdjudicate(selectedCase.case_id, 'GENUINE', 'RESOLVED')}
+                  className="px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white font-mono font-bold text-xs transition flex items-center justify-center gap-1.5 shadow-md shadow-emerald-950/40 disabled:opacity-50 cursor-pointer active:scale-95"
+                >
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>Not Fraud (Genuine)</span>
+                </button>
+                <button
+                  type="button"
+                  disabled={submitting}
+                  onClick={() => handleQuickAdjudicate(selectedCase.case_id, null, 'UNDER_REVIEW')}
+                  className="px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white font-mono font-bold text-xs transition flex items-center justify-center gap-1.5 shadow-md shadow-amber-950/40 disabled:opacity-50 cursor-pointer active:scale-95"
+                >
+                  <Clock className="w-4 h-4" />
+                  <span>Under Investigation</span>
+                </button>
+              </div>
+            </div>
+
             {updateMsg && (
-              <div className="p-3 rounded-xl bg-emerald-950/70 border border-emerald-800 text-emerald-300 text-xs flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4" />
-                <span>{updateMsg}</span>
+              <div className="p-3.5 rounded-xl bg-emerald-950/80 border border-emerald-500/80 text-emerald-200 text-xs font-mono flex items-center gap-2 shadow-lg animate-fadeIn">
+                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span className="font-bold">{updateMsg}</span>
               </div>
             )}
 
@@ -531,7 +645,7 @@ export default function InvestigationsView({
                       setSelectedCase(null)
                       onInspectExplanation(txId)
                     }}
-                    className="text-purple-400 hover:text-purple-300 text-xs font-mono flex items-center gap-1"
+                    className="text-purple-400 hover:text-purple-300 text-xs font-mono flex items-center gap-1 cursor-pointer"
                   >
                     Inspect SHAP for this Transaction &rarr;
                   </button>
@@ -541,14 +655,14 @@ export default function InvestigationsView({
                   <button
                     type="button"
                     onClick={() => setSelectedCase(null)}
-                    className="px-3 py-1.5 rounded-xl bg-slate-800 text-slate-300 text-xs hover:bg-slate-700"
+                    className="px-3 py-1.5 rounded-xl bg-slate-800 text-slate-300 text-xs hover:bg-slate-700 cursor-pointer"
                   >
                     Close
                   </button>
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="px-4 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-xs transition disabled:opacity-50 flex items-center gap-1.5"
+                    className="px-4 py-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-semibold text-xs transition disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
                   >
                     <RefreshCw className={`w-3.5 h-3.5 ${submitting ? 'animate-spin' : ''}`} />
                     {submitting ? 'Saving...' : 'Update Investigation Record'}
@@ -565,13 +679,14 @@ export default function InvestigationsView({
         isOpen={Boolean(aiModalCaseId)}
         caseId={aiModalCaseId}
         onClose={() => setAiModalCaseId(null)}
-        onDecisionApplied={(appliedDecision, newStatus) => {
+        onDecisionApplied={(appliedDecision, newStatus, updatedCase) => {
           fetchCases()
           if (selectedCase && selectedCase.case_id === aiModalCaseId) {
             setSelectedCase((prev) => ({
               ...prev,
               decision: appliedDecision,
               status: newStatus,
+              ...(updatedCase || {}),
             }))
             setEditStatus(newStatus)
             setEditDecision(appliedDecision)

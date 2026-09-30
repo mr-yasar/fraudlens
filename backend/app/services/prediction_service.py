@@ -152,13 +152,13 @@ class FraudPredictionService:
     def _prepare_row_df(self, raw_dict: Dict[str, Any]) -> Tuple[pd.DataFrame, Dict[str, Any]]:
         """Ensure input payload has all primary dataset features and canonical fields normalized."""
         d = dict(raw_dict)
+        curr = str(d.get("currency") or d.get("Currency") or "INR").upper()
+        norm_rate = 83.0 if curr == "INR" else 1.0
+
         amt_val = d.get("amount") if d.get("amount") is not None else (d.get("Amount") if d.get("Amount") is not None else d.get("transaction_amount"))
         amt = float(amt_val if amt_val is not None else 100.0)
-        d["amount"] = amt
-        d["Amount"] = amt
-        d["transaction_amount"] = amt
-
-        # Determine realistic baseline average amount (DO NOT default to current transaction amt!)
+        
+        # Determine realistic baseline average amount
         merch_avg = float(d.get("merchant_average_ticket") or 1500.0)
         baseline = (
             d.get("customer_historical_avg_amount")
@@ -173,28 +173,38 @@ class FraudPredictionService:
         except Exception:
             avg_amt = merch_avg
 
-        d["customer_historical_avg_amount"] = avg_amt
-        d["Average_Previous_Amount"] = avg_amt
-        d["avg_transaction_amount_30d_customer"] = avg_amt
+        prev_amt_val = d.get("Previous_Transaction_Amount") if d.get("Previous_Transaction_Amount") is not None else d.get("previous_transaction_amount")
+        prev_amt = float(prev_amt_val if prev_amt_val is not None else avg_amt)
+
+        # Ratios are scale-invariant
+        amt_ratio = float(amt / (avg_amt + 1e-5))
+        d["amount_to_avg_ratio"] = amt_ratio
+        d["Amount_Ratio"] = amt_ratio
+
+        # Scale raw currency amounts to match ML preprocessor training distribution
+        model_amt = amt / norm_rate
+        model_avg = avg_amt / norm_rate
+        model_prev = prev_amt / norm_rate
+
+        d["amount"] = model_amt
+        d["Amount"] = model_amt
+        d["transaction_amount"] = model_amt
+        d["customer_historical_avg_amount"] = model_avg
+        d["Average_Previous_Amount"] = model_avg
+        d["avg_transaction_amount_30d_customer"] = model_avg
 
         max_amt_val = d.get("customer_historical_max_amount")
         max_amt = float(max_amt_val if max_amt_val is not None else (avg_amt * 2.5))
-        d["customer_historical_max_amount"] = max_amt
+        d["customer_historical_max_amount"] = max_amt / norm_rate
 
         prior_tx_val = d.get("customer_total_transactions_prior")
         prior_tx = int(prior_tx_val if prior_tx_val is not None else 25)
         d["customer_total_transactions_prior"] = prior_tx
 
-        prev_amt_val = d.get("Previous_Transaction_Amount") if d.get("Previous_Transaction_Amount") is not None else d.get("previous_transaction_amount")
-        prev_amt = float(prev_amt_val if prev_amt_val is not None else avg_amt)
-        d["Previous_Transaction_Amount"] = prev_amt
-        d["previous_transaction_amount"] = prev_amt
-
-        amt_ratio = float(amt / (avg_amt + 1e-5))
-        d["amount_to_avg_ratio"] = amt_ratio
-        d["Amount_Ratio"] = amt_ratio
-        d["Amount_Deviation"] = float(amt - avg_amt)
-        d["amount_deviation_zscore"] = float((amt - avg_amt) / (avg_amt * 0.4 + 1e-5))
+        d["Previous_Transaction_Amount"] = model_prev
+        d["previous_transaction_amount"] = model_prev
+        d["Amount_Deviation"] = float(model_amt - model_avg)
+        d["amount_deviation_zscore"] = float((model_amt - model_avg) / (model_avg * 0.4 + 1e-5))
 
         tx_type = str(d.get("transaction_type") or d.get("Transaction_Type") or "Purchase")
         d["transaction_type"] = tx_type

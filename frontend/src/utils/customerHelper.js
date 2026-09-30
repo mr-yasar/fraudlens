@@ -14,23 +14,26 @@ export function getCustomerPersona(user, selectedPersonaId = null) {
   // If an actual customer is logged in, their own authenticated identity is SACROSANCT.
   // selectedPersonaId MUST NEVER hijack or override an authenticated customer's identity!
   if (user && !isAdmin) {
-    if (email.includes('ajay') || name.includes('ajay') || email.includes('premium') || name.includes('alexander') || user?.account_tier === 'PREMIUM' || user?.account_tier === 'ENTERPRISE') {
+    // 1a. Check Monisha first
+    if (email.includes('monisha') || name.includes('monisha')) {
       return {
-        customerId: 'CUST_AJAY_004',
-        name: 'Ajay',
-        customerName: 'Ajay',
-        email: user.email || 'ajay@fraudlens.ai',
-        tier: 'ENTERPRISE',
-        isPremium: true,
-        fraudRate: '0.2%',
-        baselineType: 'Enterprise Security Tier (Adaptive AI + Enclave Vault)',
-        badgeColor: 'bg-indigo-950/90 text-indigo-200 border-indigo-500/70 shadow-[0_0_15px_rgba(99,102,241,0.35)]',
-        color: 'indigo',
-        defaultPresetId: 'scenario_ajay_saas',
+        customerId: 'CUST_MONISHA_001',
+        name: 'Monisha',
+        customerName: 'Monisha',
+        email: user.email,
+        tier: 'STANDARD',
+        fraudRate: '3.0%',
+        baselineType: 'Safe Habitual (Zero-Friction Auto-Approved, No OTP)',
+        badgeColor: 'bg-emerald-950/80 text-emerald-300 border-emerald-700/60',
+        color: 'emerald',
+        defaultPresetId: 'scenario_monisha_safe',
         isCustomer: true,
+        isPremium: false,
       }
     }
-    if (email.includes('mohana') || name.includes('mohana')) {
+
+    // 1b. Check Mohana / Mogana
+    if (email.includes('mohana') || name.includes('mohana') || email.includes('mogana') || name.includes('mogana')) {
       return {
         customerId: 'CUST_MOHANA_002',
         name: 'Mohana',
@@ -43,8 +46,11 @@ export function getCustomerPersona(user, selectedPersonaId = null) {
         color: 'amber',
         defaultPresetId: 'scenario_mohana_review',
         isCustomer: true,
+        isPremium: false,
       }
     }
+
+    // 1c. Check Sowmiya
     if (email.includes('soumya') || name.includes('soumya') || email.includes('sowmiya') || name.includes('sowmiya')) {
       return {
         customerId: 'CUST_SOWMIYA_003',
@@ -61,18 +67,21 @@ export function getCustomerPersona(user, selectedPersonaId = null) {
         isPremium: false,
       }
     }
-    if (email.includes('monisha') || name.includes('monisha')) {
+
+    // 1d. Check Ajay
+    if (email.includes('ajay') || name.includes('ajay') || email.includes('premium') || name.includes('alexander') || email.includes('alex')) {
       return {
-        customerId: 'CUST_MONISHA_001',
-        name: 'Monisha',
-        customerName: 'Monisha',
-        email: user.email,
-        tier: 'STANDARD',
-        fraudRate: '3.0%',
-        baselineType: 'Safe Habitual (Zero-Friction Auto-Approved, No OTP)',
-        badgeColor: 'bg-emerald-950/80 text-emerald-300 border-emerald-700/60',
-        color: 'emerald',
-        defaultPresetId: 'scenario_monisha_safe',
+        customerId: 'CUST_AJAY_004',
+        name: 'Ajay',
+        customerName: 'Ajay',
+        email: user.email || 'ajay@fraudlens.ai',
+        tier: 'ENTERPRISE',
+        isPremium: true,
+        fraudRate: '0.2%',
+        baselineType: 'Enterprise Security Tier (Adaptive AI + Enclave Vault)',
+        badgeColor: 'bg-indigo-950/90 text-indigo-200 border-indigo-500/70 shadow-[0_0_15px_rgba(99,102,241,0.35)]',
+        color: 'indigo',
+        defaultPresetId: 'scenario_ajay_saas',
         isCustomer: true,
       }
     }
@@ -175,3 +184,36 @@ export function getCustomerPersona(user, selectedPersonaId = null) {
     isCustomer: false,
   }
 }
+
+/**
+ * Resolve human-friendly customer name from customer_id or user record
+ */
+export function resolveCustomerName(customerId, fallback = 'Customer') {
+  if (!customerId) return fallback
+  const s = String(customerId).toUpperCase()
+  if (s.includes('MONISHA')) return 'Monisha'
+  if (s.includes('MOHANA') || s.includes('MOGANA')) return 'Mogana'
+  if (s.includes('SOWMIYA') || s.includes('SOUMYA')) return 'Sowmiya'
+  if (s.includes('AJAY')) return 'Ajay'
+  return fallback
+}
+
+/**
+ * Get visual badge colors and meta for customer IDs
+ */
+export function getCustomerMeta(customerId) {
+  const name = resolveCustomerName(customerId)
+  switch (name) {
+    case 'Monisha':
+      return { name: 'Monisha', color: 'emerald', bgBadge: 'bg-emerald-950/80 text-emerald-300 border-emerald-700/60' }
+    case 'Mogana':
+      return { name: 'Mogana', color: 'amber', bgBadge: 'bg-amber-950/80 text-amber-300 border-amber-700/60' }
+    case 'Sowmiya':
+      return { name: 'Sowmiya', color: 'rose', bgBadge: 'bg-rose-950/80 text-rose-300 border-rose-700/60' }
+    case 'Ajay':
+      return { name: 'Ajay', color: 'indigo', bgBadge: 'bg-indigo-950/90 text-indigo-300 border-indigo-600/70' }
+    default:
+      return { name: customerId || 'Customer', color: 'slate', bgBadge: 'bg-slate-900 text-slate-300 border-slate-700' }
+  }
+}
+

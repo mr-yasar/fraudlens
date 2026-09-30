@@ -240,7 +240,7 @@ export default function DashboardView({ onSelectTransaction, onOpenCase, onOpenP
             )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {/* Persona 1: Monisha */}
             <div
               onClick={() =>
@@ -283,17 +283,17 @@ export default function DashboardView({ onSelectTransaction, onOpenCase, onOpenP
               </div>
             </div>
 
-            {/* Persona 2: Mohana */}
+            {/* Persona 2: Mogana */}
             <div
               onClick={() =>
                 setActiveModal({
                   type: 'PERSONA',
-                  title: 'Mohana (CUST_MOHANA_002) Profile',
+                  title: 'Mogana (CUST_MOHANA_002) Profile',
                   badge: '12.0% FRAUD RATE • STEP-UP OTP',
                   badgeColor: 'bg-amber-950 text-amber-300 border-amber-800',
                   icon: AlertTriangle,
                   data: {
-                    name: 'Mohana',
+                    name: 'Mogana',
                     id: 'CUST_MOHANA_002',
                     fraudRate: '12.0%',
                     tenure: '180 Days',
@@ -309,14 +309,14 @@ export default function DashboardView({ onSelectTransaction, onOpenCase, onOpenP
               <div>
                 <div className="flex items-center justify-between mb-1.5">
                   <span className="text-xs font-bold text-white group-hover:text-amber-300 transition">
-                    Mohana (CUST_MOHANA_002)
+                    Mogana (CUST_MOHANA_002)
                   </span>
                   <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-amber-950 text-amber-300 border border-amber-800">
                     12.0% FRAUD
                   </span>
                 </div>
                 <p className="text-[11px] text-slate-300 leading-relaxed mb-2">
-                  Unfamiliar device &amp; cross-city Salem purchase. Elevated anomaly &rarr; FraudLens requests <strong className="text-amber-400">REVIEW (Step-Up OTP)</strong>.
+                  Unfamiliar device &amp; cross-city purchase. Elevated anomaly &rarr; FraudLens requests <strong className="text-amber-400">REVIEW (Step-Up OTP)</strong>.
                 </p>
               </div>
               <div className="w-full mt-2 py-1.5 px-2.5 rounded-lg bg-amber-950/70 hover:bg-amber-900/80 border border-amber-800/80 text-amber-300 text-xs font-semibold flex items-center justify-center gap-1.5 transition">
@@ -362,6 +362,48 @@ export default function DashboardView({ onSelectTransaction, onOpenCase, onOpenP
                 </p>
               </div>
               <div className="w-full mt-2 py-1.5 px-2.5 rounded-lg bg-rose-950/70 hover:bg-rose-900/80 border border-rose-800/80 text-rose-300 text-xs font-semibold flex items-center justify-center gap-1.5 transition">
+                <span>Inspect Persona Telemetry</span>
+                <ArrowUpRight className="w-3.5 h-3.5" />
+              </div>
+            </div>
+
+            {/* Persona 4: Ajay */}
+            <div
+              onClick={() =>
+                setActiveModal({
+                  type: 'PERSONA',
+                  title: 'Ajay (CUST_AJAY_004) Profile',
+                  badge: '0.2% FRAUD RATE • ENTERPRISE ADAPTIVE AI',
+                  badgeColor: 'bg-indigo-950 text-indigo-300 border-indigo-800',
+                  icon: Zap,
+                  data: {
+                    name: 'Ajay',
+                    id: 'CUST_AJAY_004',
+                    fraudRate: '0.2%',
+                    tenure: '720 Days',
+                    balance: '₹15,00,000.00',
+                    location: 'Bangalore, Karnataka / Global Tech Hub',
+                    usualMerchants: 'AWS Cloud Services, OpenAI, GitHub Enterprise',
+                    policy: 'Adaptive ML Enclave & Zero-Day Botnet Shield',
+                  },
+                })
+              }
+              className="p-3.5 rounded-xl bg-slate-900/80 border border-indigo-800/50 hover:border-indigo-500/60 transition flex flex-col justify-between cursor-pointer group shadow"
+            >
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-xs font-bold text-white group-hover:text-indigo-300 transition">
+                    Ajay (CUST_AJAY_004)
+                  </span>
+                  <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-indigo-950 text-indigo-300 border border-indigo-800">
+                    0.2% FRAUD
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-300 leading-relaxed mb-2">
+                  High-volume enterprise SaaS billing &amp; API infrastructure. Enclave protection &rarr; <strong className="text-indigo-400">ENTERPRISE (Adaptive Shield)</strong>.
+                </p>
+              </div>
+              <div className="w-full mt-2 py-1.5 px-2.5 rounded-lg bg-indigo-950/70 hover:bg-indigo-900/80 border border-indigo-800/80 text-indigo-300 text-xs font-semibold flex items-center justify-center gap-1.5 transition">
                 <span>Inspect Persona Telemetry</span>
                 <ArrowUpRight className="w-3.5 h-3.5" />
               </div>
@@ -1468,13 +1510,27 @@ export default function DashboardView({ onSelectTransaction, onOpenCase, onOpenP
                 </div>
               </div>
 
+              {activeModal.data.entity_id && (activeModal.data.entity_id.startsWith('CASE-') || activeModal.data.entity_id.startsWith('TX-') || activeModal.data.entity_id.startsWith('PAY-')) && onOpenCase && (
+                <button
+                  onClick={() => {
+                    const targetId = activeModal.data.entity_id
+                    setActiveModal(null)
+                    onOpenCase(targetId)
+                  }}
+                  className="w-full py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold transition flex items-center justify-center gap-2 shadow-lg cursor-pointer"
+                >
+                  <ShieldAlert className="w-4 h-4" />
+                  <span>Open Case in Fraud Investigation Hub &rarr;</span>
+                </button>
+              )}
+
               {!activeModal.data.is_acknowledged && (
                 <button
                   onClick={() => {
                     handleAcknowledgeAlert(activeModal.data.alert_id)
                     setActiveModal(null)
                   }}
-                  className="w-full py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold transition flex items-center justify-center gap-2"
+                  className="w-full py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-bold transition flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <CheckCircle2 className="w-4 h-4" />
                   <span>Acknowledge This Security Alert</span>

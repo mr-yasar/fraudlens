@@ -146,6 +146,47 @@ export default function AiInvestigationModal({
     }
   }, [isOpen, caseId, provider])
 
+  // Direct Decision Persistence Handler (Fixes bug: persists to DB immediately)
+  const [applyingDecision, setApplyingDecision] = useState(false)
+  const [decisionFeedback, setDecisionFeedback] = useState(null)
+
+  const handleApplyDecision = async (decision) => {
+    if (!caseId) return
+    setApplyingDecision(true)
+    setDecisionFeedback(null)
+    try {
+      const isFraud = decision === 'CONFIRMED_FRAUD'
+      const status = 'RESOLVED'
+      const notes = isFraud
+        ? 'Confirmed fraud determination by investigator via AI Forensic Copilot. Session invalidated and transaction flagged.'
+        : 'Verified genuine / false positive determination by investigator via AI Forensic Copilot.'
+
+      const updated = await investigationsApi.update(caseId, {
+        status,
+        decision,
+        notes,
+      })
+
+      sound.playSuccess && sound.playSuccess()
+      setDecisionFeedback({
+        decision,
+        status,
+        message: isFraud
+          ? 'FRAUD CONFIRMED: Case status updated to RESOLVED & saved to database.'
+          : 'MARKED GENUINE / NOT FRAUD: Case status updated to RESOLVED & saved to database.',
+      })
+
+      if (onDecisionApplied) {
+        onDecisionApplied(decision, status, updated)
+      }
+    } catch (err) {
+      sound.playError && sound.playError()
+      alert(err instanceof Error ? err.message : 'Failed to save fraud determination')
+    } finally {
+      setApplyingDecision(false)
+    }
+  }
+
   // Voice Command Dispatcher
   const handleVoiceCommand = (cmd) => {
     sound.playBlip && sound.playBlip()
@@ -154,14 +195,10 @@ export default function AiInvestigationModal({
       handleSpeakScript()
     } else if (cmd.includes('freeze') || cmd.includes('fraud') || cmd.includes('block')) {
       setVoiceCommandFeedback('Executing: Confirming Fraud & Freezing Card')
-      if (onDecisionApplied) {
-        onDecisionApplied('CONFIRMED_FRAUD')
-      }
-    } else if (cmd.includes('genuine') || cmd.includes('safe') || cmd.includes('allow')) {
-      setVoiceCommandFeedback('Executing: Marking Genuine False Positive')
-      if (onDecisionApplied) {
-        onDecisionApplied('GENUINE')
-      }
+      handleApplyDecision('CONFIRMED_FRAUD')
+    } else if (cmd.includes('genuine') || cmd.includes('safe') || cmd.includes('allow') || cmd.includes('not fraud')) {
+      setVoiceCommandFeedback('Executing: Marking Genuine / Not Fraud')
+      handleApplyDecision('GENUINE')
     } else if (cmd.includes('diagram') || cmd.includes('flow') || cmd.includes('kill chain')) {
       setVoiceCommandFeedback('Executing: Switching to Attack Diagram')
       setActiveTab('diagram')
@@ -584,7 +621,7 @@ export default function AiInvestigationModal({
                   </div>
 
                   {/* Recommended Action Recommendation Banner */}
-                  <div className="p-4 rounded-2xl bg-purple-950/40 border border-purple-700/60 flex items-center justify-between gap-3">
+                  <div className="p-4 rounded-2xl bg-purple-950/40 border border-purple-700/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
                       <div className="text-[10px] font-mono text-purple-300 uppercase font-bold">
                         AI Recommended Determination
@@ -593,23 +630,40 @@ export default function AiInvestigationModal({
                         {dossier.recommended_action}
                       </div>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       <button
                         type="button"
-                        onClick={() => onDecisionApplied && onDecisionApplied('CONFIRMED_FRAUD')}
-                        className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-md transition"
+                        disabled={applyingDecision}
+                        onClick={() => handleApplyDecision('CONFIRMED_FRAUD')}
+                        className="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs shadow-md transition disabled:opacity-50 flex items-center gap-1.5 cursor-pointer active:scale-95"
                       >
-                        Confirm Fraud &amp; Freeze
+                        <ShieldAlert className="w-3.5 h-3.5" />
+                        <span>{applyingDecision ? 'Saving to Database...' : 'Confirm Fraud & Freeze'}</span>
                       </button>
                       <button
                         type="button"
-                        onClick={() => onDecisionApplied && onDecisionApplied('GENUINE')}
-                        className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition"
+                        disabled={applyingDecision}
+                        onClick={() => handleApplyDecision('GENUINE')}
+                        className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-md transition disabled:opacity-50 flex items-center gap-1.5 cursor-pointer active:scale-95"
                       >
-                        Mark Genuine
+                        <ShieldCheck className="w-3.5 h-3.5" />
+                        <span>{applyingDecision ? 'Saving to Database...' : 'Mark Genuine (Not Fraud)'}</span>
                       </button>
                     </div>
                   </div>
+
+                  {/* Immediate Persistent Decision Confirmation */}
+                  {decisionFeedback && (
+                    <div className="p-3.5 rounded-xl bg-emerald-950/90 border border-emerald-500/80 text-emerald-200 text-xs font-mono flex flex-wrap items-center justify-between gap-2 shadow-lg animate-fadeIn">
+                      <div className="flex items-center gap-2">
+                        <Check className="w-4 h-4 text-emerald-400" />
+                        <span className="font-bold">{decisionFeedback.message}</span>
+                      </div>
+                      <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-emerald-900 border border-emerald-600 text-emerald-300">
+                        Persisted in SQLite DB
+                      </span>
+                    </div>
+                  )}
                 </div>
               )}
 
