@@ -5,7 +5,6 @@ Models trained and calibrated on full production dataset.
 import sys
 import types
 
-# Ensure compatibility when Windows Smart App Control blocks optional sklearn C-extensions
 if "sklearn.decomposition._online_lda_fast" not in sys.modules:
     try:
         from sklearn.decomposition import _online_lda_fast  # noqa: F401
@@ -15,6 +14,16 @@ if "sklearn.decomposition._online_lda_fast" not in sys.modules:
         _m._dirichlet_expectation_2d = None
         _m.mean_change = None
         sys.modules["sklearn.decomposition._online_lda_fast"] = _m
+
+# Mock additional C-extensions blocked by AppLocker
+for mod_name in [
+    "sklearn.svm._liblinear",
+    "sklearn.svm._libsvm",
+    "sklearn.svm._libsvm_sparse",
+    "sklearn.cluster._k_means_common",
+]:
+    if mod_name not in sys.modules:
+        sys.modules[mod_name] = types.ModuleType(mod_name)
 
 from contextlib import asynccontextmanager
 import logging

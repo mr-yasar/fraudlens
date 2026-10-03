@@ -1,13 +1,2 @@
 """ML Explainability Package."""
-
-from ml.explainability.shap_explainer import (
-    FraudShapExplainer,
-    FeatureAttribution,
-    LocalExplanation,
-)
-
-__all__ = [
-    "FraudShapExplainer",
-    "FeatureAttribution",
-    "LocalExplanation",
-]
+# Eager imports removed to prevent DLL loading issues at startup

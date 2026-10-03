@@ -15,11 +15,6 @@ from backend.app.schemas.prediction import (
     GlobalExplanationResponse,
 )
 from backend.app.services.risk_scoring_service import RiskScoringEngine
-from ml.preprocessing.pipeline import FullFraudPreprocessor
-from ml.explainability.shap_explainer import FraudShapExplainer
-from ml.anomaly.isolation_forest_service import AnomalyIntelligenceService
-from ml.evaluation.uncertainty_service import UncertaintyEstimationService
-from ml.explainability.counterfactual_engine import CounterfactualEngine
 from backend.app.services.explanation_composer import ExplanationComposer
 
 
@@ -30,7 +25,7 @@ class FraudPredictionService:
 
     def __init__(self, artifact_dir: Union[str, Path] = "ml/artifacts") -> None:
         self.artifact_dir = Path(artifact_dir)
-        self.preprocessor: Optional[FullFraudPreprocessor] = None
+        self.preprocessor: Optional[Any] = None
         self.model: Optional[Any] = None
         self.candidate_models: Dict[str, Any] = {}
         self.metadata: Dict[str, Any] = {}
@@ -39,7 +34,7 @@ class FraudPredictionService:
         self.model_version: str = "v1.0.0"
         self.threshold: float = 0.5
         self.risk_engine = RiskScoringEngine()
-        self.shap_explainer: Optional[FraudShapExplainer] = None
+        self.shap_explainer: Optional[Any] = None
         self.is_ready: bool = False
 
         self._last_mtime: float = 0.0
