@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import {
   FileSpreadsheet,
   CheckCircle2,
@@ -9,8 +9,13 @@ import {
   Lock,
   ShieldCheck,
   Filter,
+  Eye,
+  Copy,
+  Check,
+  Code,
 } from 'lucide-react'
 import { premiumApi } from '../../services/api'
+import GlobalCenterModal from '../common/GlobalCenterModal'
 
 export default function PremiumAuditTrail({ user }) {
   const [logs, setLogs] = useState([])
@@ -18,6 +23,8 @@ export default function PremiumAuditTrail({ user }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [actionFilter, setActionFilter] = useState('')
+  const [selectedLog, setSelectedLog] = useState(null)
+  const [copied, setCopied] = useState(false)
 
   const loadLogs = useCallback(async () => {
     try {
@@ -111,7 +118,11 @@ export default function PremiumAuditTrail({ user }) {
                 </tr>
               ) : (
                 logs.map((lg) => (
-                  <tr key={lg.id} className="hover:bg-slate-800/40 transition">
+                  <tr
+                    key={lg.id}
+                    onClick={() => setSelectedLog(lg)}
+                    className="hover:bg-slate-800/40 transition cursor-pointer"
+                  >
                     <td className="p-3 text-slate-400">
                       {lg.timestamp ? new Date(lg.timestamp).toLocaleString() : 'Recent'}
                     </td>
@@ -132,8 +143,17 @@ export default function PremiumAuditTrail({ user }) {
                         {lg.result || 'RECORDED'}
                       </span>
                     </td>
-                    <td className="p-3 text-slate-400 max-w-xs truncate font-mono text-[11px]">
-                      {lg.details || '-'}
+                    <td className="p-3 text-slate-300">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setSelectedLog(lg)
+                        }}
+                        className="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs text-cyan-300 flex items-center gap-1 transition"
+                      >
+                        <Eye className="w-3 h-3" />
+                        <span>Inspect</span>
+                      </button>
                     </td>
                   </tr>
                 ))
@@ -142,6 +162,72 @@ export default function PremiumAuditTrail({ user }) {
           </table>
         </div>
       </div>
+
+      {/* Selected Audit Log Modal */}
+      {selectedLog && (
+        <GlobalCenterModal
+          isOpen={Boolean(selectedLog)}
+          onClose={() => setSelectedLog(null)}
+          title={`Audit Event: ${selectedLog.action}`}
+          subtitle={`${selectedLog.resource_type || selectedLog.entity || 'SYSTEM'} • ${selectedLog.timestamp ? new Date(selectedLog.timestamp).toUTCString() : 'Recorded'}`}
+          icon={ShieldCheck}
+          badge={selectedLog.result || 'RECORDED'}
+          badgeType={selectedLog.result === 'SUCCESS' ? 'success' : 'warning'}
+          maxWidth="max-w-xl"
+          footer={
+            <div className="flex justify-end w-full">
+              <button
+                type="button"
+                onClick={() => setSelectedLog(null)}
+                className="px-4 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          }
+        >
+          <div className="space-y-3 font-mono text-xs">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] uppercase text-slate-400 font-bold">
+                Formatted Event Payload
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  let text = ''
+                  if (typeof selectedLog.details === 'object') text = JSON.stringify(selectedLog.details, null, 2)
+                  else {
+                    try {
+                      text = JSON.stringify(JSON.parse(selectedLog.details), null, 2)
+                    } catch {
+                      text = String(selectedLog.details || 'No details')
+                    }
+                  }
+                  navigator.clipboard?.writeText(text).then(() => {
+                    setCopied(true)
+                    setTimeout(() => setCopied(false), 2000)
+                  })
+                }}
+                className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 text-[10px] flex items-center gap-1 transition cursor-pointer"
+              >
+                {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                <span>{copied ? 'Copied' : 'Copy'}</span>
+              </button>
+            </div>
+            <pre className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-[11px] text-emerald-300/90 max-h-60 overflow-y-auto whitespace-pre-wrap break-words break-all">
+              {typeof selectedLog.details === 'object'
+                ? JSON.stringify(selectedLog.details, null, 2)
+                : (() => {
+                    try {
+                      return JSON.stringify(JSON.parse(selectedLog.details), null, 2)
+                    } catch {
+                      return selectedLog.details || 'No details recorded.'
+                    }
+                  })()}
+            </pre>
+          </div>
+        </GlobalCenterModal>
+      )}
     </div>
   )
 }

@@ -37,13 +37,13 @@ def list_audit_logs(
     """Retrieve filtered, paginated audit logs."""
     query = db.query(AuditLog).outerjoin(User, AuditLog.user_id == User.id)
 
-    if action:
+    if action and isinstance(action, str):
         query = query.filter(AuditLog.action == action.strip())
 
-    if resource_type:
+    if resource_type and isinstance(resource_type, str):
         query = query.filter(AuditLog.resource_type == resource_type.strip())
 
-    if search:
+    if search and isinstance(search, str):
         pattern = f"%{search.strip()}%"
         query = query.filter(
             or_(
@@ -53,13 +53,14 @@ def list_audit_logs(
             )
         )
 
-    if start_date:
+    if start_date and isinstance(start_date, datetime):
         query = query.filter(AuditLog.created_at >= start_date)
 
-    if end_date:
+    if end_date and isinstance(end_date, datetime):
         query = query.filter(AuditLog.created_at <= end_date)
 
-    order_func = desc if sort_order.lower() == "desc" else asc
+    is_desc = True if not isinstance(sort_order, str) else (sort_order.lower() == "desc")
+    order_func = desc if is_desc else asc
     query = query.order_by(order_func(AuditLog.created_at))
 
     total = query.count()

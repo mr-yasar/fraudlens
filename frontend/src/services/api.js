@@ -351,6 +351,35 @@ export const adminDatabaseApi = {
     })
     return handleResponse(res)
   },
+  downloadDatabase: async () => {
+    const res = await fetch(`${BASE_URL}/admin/database/download`, {
+      headers: getAuthHeaders(),
+    })
+    if (!res.ok) {
+      let errMsg = `Database download failed with status ${res.status}`
+      try {
+        const errJson = await res.json()
+        if (errJson.detail) errMsg = errJson.detail
+      } catch {}
+      throw new Error(errMsg)
+    }
+    const blob = await res.blob()
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    const disposition = res.headers.get('content-disposition')
+    let filename = `fraudlens_database_${new Date().toISOString().slice(0, 10)}.db`
+    if (disposition && disposition.includes('filename=')) {
+      const match = disposition.match(/filename="?([^"]+)"?/)
+      if (match && match[1]) filename = match[1]
+    }
+    a.download = filename
+    document.body.appendChild(a)
+    a.click()
+    window.URL.revokeObjectURL(url)
+    document.body.removeChild(a)
+    return { filename, size: blob.size }
+  },
 }
 
 // 6. Admin ML & Dataset API (ADMIN Only)

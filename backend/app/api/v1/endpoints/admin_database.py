@@ -3,10 +3,12 @@
 import os
 import sqlite3
 import shutil
+import logging
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.responses import FileResponse
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -15,6 +17,8 @@ from backend.app.core.config import settings
 from backend.app.models.user import User
 from backend.app.models.audit_log import AuditLog
 from backend.app.api.deps import require_admin
+
+logger = logging.getLogger("fraudlens.admin_database")
 
 router = APIRouter()
 
@@ -31,6 +35,35 @@ def _format_bytes(size: int) -> str:
         return f"{size / (1024 * 1024 * 1024):.2f} GB"
 
 
+def _resolve_database_file() -> Optional[Path]:
+    """Find the actual active sqlite database file on disk."""
+    raw_path = str(engine.url).replace("sqlite:///", "").replace("sqlite://", "")
+    p = Path(raw_path)
+
+    # 1. Direct path check
+    if p.is_absolute() and p.exists() and p.stat().st_size > 0:
+        return p
+
+    # 2. Relative to cwd
+    cwd_path = p.resolve()
+    if cwd_path.exists() and cwd_path.stat().st_size > 0:
+        return cwd_path
+
+    # 3. Check project root / parent directories
+    current = Path(__file__).resolve()
+    for parent in [current.parent, current.parents[1], current.parents[2], current.parents[3], current.parents[4]]:
+        candidate = parent / p.name
+        if candidate.exists() and candidate.stat().st_size > 0:
+            return candidate
+
+    # 4. Fallback: check workspace root
+    root_candidate = Path(r"e:\fraudinvestigation") / p.name
+    if root_candidate.exists() and root_candidate.stat().st_size > 0:
+        return root_candidate
+
+    return cwd_path if cwd_path.exists() else None
+
+
 @router.get(
     "/health",
     summary="Get Database Health & Storage Telemetry (Admin Only)",
@@ -42,18 +75,13 @@ def get_database_health(
 ) -> Dict[str, Any]:
     """Retrieve comprehensive live database statistics and schema counts."""
     is_sqlite = "sqlite" in str(engine.url)
-    db_path = None
+    db_path = _resolve_database_file() if is_sqlite else None
     file_size_bytes = 0
     wal_size_bytes = 0
 
-    if is_sqlite:
-        # Extract file path from sqlite:///./path
-        raw_path = str(engine.url).replace("sqlite:///", "").replace("sqlite://", "")
-        db_path = Path(raw_path).resolve()
-        if db_path.exists():
-            file_size_bytes = db_path.stat().st_size
-        
-        wal_path = Path(f"{raw_path}-wal").resolve()
+    if db_path and db_path.exists():
+        file_size_bytes = db_path.stat().st_size
+        wal_path = Path(f"{db_path}-wal")
         if wal_path.exists():
             wal_size_bytes = wal_path.stat().st_size
 
@@ -271,9 +299,8 @@ def create_database_backup(
     if not is_sqlite:
         raise HTTPException(status_code=400, detail="Online file backup is only supported for local storage engines.")
 
-    raw_path = str(engine.url).replace("sqlite:///", "").replace("sqlite://", "")
-    src_db = Path(raw_path).resolve()
-    if not src_db.exists():
+    src_db = _resolve_database_file()
+    if not src_db or not src_db.exists() or src_db.stat().st_size == 0:
         raise HTTPException(status_code=404, detail="Source database file not found.")
 
     backup_dir = Path("backend/backups").resolve()
@@ -320,3 +347,64 @@ def create_database_backup(
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Database backup failed: {str(e)}")
+
+
+@router.get(
+    "/download",
+    summary="Download Actual Live Database (Admin Only)",
+    description="Safely streams the actual current SQLite database file (fraud_detection.db) used by FraudLens.",
+)
+def download_database(
+    db: Session = Depends(get_db),
+    admin: User = Depends(require_admin),
+):
+    """Download the actual current active SQLite database."""
+    is_sqlite = "sqlite" in str(engine.url)
+    if not is_sqlite:
+        raise HTTPException(
+            status_code=400,
+            detail="Direct database file download is only supported for local storage engines.",
+        )
+
+    db_path = _resolve_database_file()
+    if not db_path or not db_path.exists() or db_path.stat().st_size == 0:
+        raise HTTPException(
+            status_code=404,
+            detail="Active database file not found on server.",
+        )
+
+    try:
+        # Checkpoint WAL passively so all committed changes are flushed to the db file
+        db.execute(text("PRAGMA wal_checkpoint(PASSIVE)"))
+        db.commit()
+    except Exception as e:
+        logger.warning("Could not flush WAL before download: %s", e)
+
+    # Record audit log
+    try:
+        db.add(
+            AuditLog(
+                user_id=admin.id,
+                action="DATABASE_DOWNLOADED",
+                resource_type="database",
+                resource_id=db_path.name,
+                details=f"Production database file downloaded ({_format_bytes(db_path.stat().st_size)}).",
+            )
+        )
+        db.commit()
+    except Exception as e:
+        logger.warning("Could not record audit log for database download: %s", e)
+
+    timestamp_str = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    download_filename = f"fraudlens_database_{timestamp_str}.db"
+
+    return FileResponse(
+        path=str(db_path),
+        filename=download_filename,
+        media_type="application/x-sqlite3",
+        headers={
+            "Content-Disposition": f'attachment; filename="{download_filename}"',
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+        },
+    )
+

@@ -5,7 +5,6 @@ import {
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
-  Plus,
   RefreshCw,
   Eye,
   ShieldAlert,
@@ -37,26 +36,8 @@ export default function TransactionsView({ onViewExplanation, user, isAdmin }) {
   // Details Modal state
   const [selectedTx, setSelectedTx] = useState(null)
 
-  // Live Evaluation Form modal state
-  const [showEvaluateModal, setShowEvaluateModal] = useState(false)
-  const [evalLoading, setEvalLoading] = useState(false)
-  const [evalError, setEvalError] = useState(null)
-  const [evalResult, setEvalResult] = useState(null)
-
   // Case creation notification
   const [caseMsg, setCaseMsg] = useState(null)
-
-  // Evaluation Form inputs
-  const [evalForm, setEvalForm] = useState({
-    transaction_id: 'TX-LIVE-001',
-    customer_id: 'CUST-1001',
-    amount: 1250.0,
-    transaction_hour: 14,
-    merchant_category: 'electronics',
-    transaction_country: 'US',
-    device_type: 'mobile_ios',
-    transaction_type: 'ONLINE',
-  })
 
   const fetchTransactions = async () => {
     setLoading(true)
@@ -111,30 +92,6 @@ export default function TransactionsView({ onViewExplanation, user, isAdmin }) {
     }
   }
 
-  const handleEvaluateSubmit = async (e) => {
-    e.preventDefault()
-    setEvalLoading(true)
-    setEvalError(null)
-    try {
-      const payload = {
-        transaction_id: evalForm.transaction_id,
-        customer_id: evalForm.customer_id,
-        amount: parseFloat(evalForm.amount),
-        transaction_hour: parseInt(evalForm.transaction_hour, 10),
-        merchant_category: evalForm.merchant_category,
-        transaction_country: evalForm.transaction_country,
-        device_type: evalForm.device_type,
-        transaction_type: evalForm.transaction_type,
-      }
-      const res = await transactionsApi.evaluate(payload)
-      setEvalResult(res)
-      fetchTransactions()
-    } catch (err) {
-      setEvalError(err instanceof Error ? err.message : 'Evaluation failed')
-    } finally {
-      setEvalLoading(false)
-    }
-  }
 
   const totalPages = Math.ceil(total / limit) || 1
 
@@ -166,23 +123,8 @@ export default function TransactionsView({ onViewExplanation, user, isAdmin }) {
               : 'Audit 29,009 master financial transactions across all 29 certified merchants, evaluate multi-factor risk scores, and investigate flagged cases.'}
           </p>
         </div>
-
-        <button
-          onClick={() => {
-            setEvalResult(null)
-            setEvalError(null)
-            setEvalForm({
-              ...evalForm,
-              transaction_id: `TX-LIVE-${Date.now().toString().slice(-6)}`,
-            })
-            setShowEvaluateModal(true)
-          }}
-          className="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-semibold shadow-lg shadow-cyan-950 transition flex items-center gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          Evaluate New Transaction
-        </button>
       </div>
+
 
       {caseMsg && (
         <div className="p-3 rounded-xl bg-emerald-950/70 border border-emerald-800 text-emerald-300 text-xs flex items-center gap-2">
@@ -495,161 +437,6 @@ export default function TransactionsView({ onViewExplanation, user, isAdmin }) {
         </GlobalCenterModal>
       )}
 
-      {/* Real-time Evaluation Modal */}
-      {showEvaluateModal && (
-        <GlobalCenterModal
-          isOpen={showEvaluateModal}
-          onClose={() => setShowEvaluateModal(false)}
-          title="Real-Time Transaction Evaluation"
-          subtitle="Runs full ML inference, multi-factor risk scoring, and commits transaction to database."
-          badge="PIPELINE INFERENCE"
-          badgeType="info"
-          icon={Sparkles}
-          maxWidth="max-w-xl"
-        >
-          <div className="space-y-4">
-            {evalError && (
-              <div className="p-3 rounded-xl bg-rose-950/70 border border-rose-800 text-rose-300 text-xs">
-                {evalError}
-              </div>
-            )}
-
-            <form onSubmit={handleEvaluateSubmit} className="space-y-3 text-xs">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] font-medium text-slate-400 mb-1">Transaction ID</label>
-                  <input
-                    type="text"
-                    required
-                    value={evalForm.transaction_id}
-                    onChange={(e) => setEvalForm({ ...evalForm, transaction_id: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-100 font-mono focus:outline-none focus:border-cyan-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-medium text-slate-400 mb-1">Customer ID</label>
-                  <input
-                    type="text"
-                    required
-                    value={evalForm.customer_id}
-                    onChange={(e) => setEvalForm({ ...evalForm, customer_id: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-100 font-mono focus:outline-none focus:border-cyan-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-medium text-slate-400 mb-1">Amount (₹ INR)</label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0.01"
-                    required
-                    value={evalForm.amount}
-                    onChange={(e) => setEvalForm({ ...evalForm, amount: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-100 font-mono focus:outline-none focus:border-cyan-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-medium text-slate-400 mb-1">Merchant Category</label>
-                  <select
-                    value={evalForm.merchant_category}
-                    onChange={(e) => setEvalForm({ ...evalForm, merchant_category: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-cyan-500"
-                  >
-                    <option value="electronics">Electronics</option>
-                    <option value="luxury_goods">Luxury Goods</option>
-                    <option value="grocery">Grocery</option>
-                    <option value="clothing">Clothing</option>
-                    <option value="travel">Travel</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-[11px] font-medium text-slate-400 mb-1">Country</label>
-                  <input
-                    type="text"
-                    required
-                    value={evalForm.transaction_country}
-                    onChange={(e) => setEvalForm({ ...evalForm, transaction_country: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-100 font-mono focus:outline-none focus:border-cyan-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-medium text-slate-400 mb-1">Device Type</label>
-                  <select
-                    value={evalForm.device_type}
-                    onChange={(e) => setEvalForm({ ...evalForm, device_type: e.target.value })}
-                    className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-cyan-500"
-                  >
-                    <option value="mobile_ios">Mobile iOS</option>
-                    <option value="desktop_windows">Desktop Windows</option>
-                    <option value="mobile_android">Mobile Android</option>
-                    <option value="unknown">Unknown</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
-                <button
-                  type="button"
-                  onClick={() => setShowEvaluateModal(false)}
-                  className="px-3 py-1.5 rounded-xl bg-slate-800 text-slate-300 text-xs hover:bg-slate-700"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={evalLoading}
-                  className="px-4 py-1.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-semibold text-xs transition disabled:opacity-50 flex items-center gap-1.5"
-                >
-                  <RefreshCw className={`w-3.5 h-3.5 ${evalLoading ? 'animate-spin' : ''}`} />
-                  {evalLoading ? 'Evaluating...' : 'Run Pipeline Inference'}
-                </button>
-              </div>
-            </form>
-
-            {/* Evaluation Result Display */}
-            {evalResult && (
-              <div className="p-4 rounded-xl bg-slate-950 border border-cyan-800/80 space-y-3 mt-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-white">Inference Engine Result</span>
-                  <span
-                    className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase ${
-                      evalResult.prediction === 1
-                        ? 'bg-rose-950 text-rose-400 border border-rose-800'
-                        : 'bg-emerald-950 text-emerald-400 border border-emerald-800'
-                    }`}
-                  >
-                    {evalResult.prediction === 1 ? 'FRAUD (1)' : 'GENUINE (0)'}
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 text-[11px] font-mono">
-                  <div className="p-2 bg-slate-900 rounded-lg">
-                    <span className="text-slate-400 block text-[10px]">Probability</span>
-                    <span className="text-cyan-300 font-bold">
-                      {(Number(evalResult.fraud_probability || 0) * 100).toFixed(1)}%
-                    </span>
-                  </div>
-                  <div className="p-2 bg-slate-900 rounded-lg">
-                    <span className="text-slate-400 block text-[10px]">Risk Score</span>
-                    <span className="text-white font-bold">{evalResult.risk_score} ({evalResult.risk_level})</span>
-                  </div>
-                </div>
-
-                {evalResult.risk_factors && (
-                  <div className="text-[11px] text-slate-300">
-                    <span className="text-[10px] font-mono uppercase text-slate-400 block mb-1">Key Factors</span>
-                    <ul className="list-disc pl-4 space-y-0.5 text-slate-400">
-                      {evalResult.risk_factors.map((f, i) => (
-                        <li key={i}>{typeof f === 'string' ? f : JSON.stringify(f)}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </GlobalCenterModal>
-      )}
     </div>
   )
 }

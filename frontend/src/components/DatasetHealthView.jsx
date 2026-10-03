@@ -28,8 +28,9 @@ export default function DatasetHealthView() {
   const [error, setError] = useState(null)
 
   // Maintenance action states
-  const [actionLoading, setActionLoading] = useState(null) // 'integrity' | 'optimize' | 'backup'
+  const [actionLoading, setActionLoading] = useState(null) // 'integrity' | 'optimize' | 'backup' | 'download'
   const [actionResultModal, setActionResultModal] = useState(null)
+  const [downloadSuccessMsg, setDownloadSuccessMsg] = useState(null)
 
   const fetchDatabaseHealth = async () => {
     setLoading(true)
@@ -48,6 +49,21 @@ export default function DatasetHealthView() {
   useEffect(() => {
     fetchDatabaseHealth()
   }, [])
+
+  const handleDownloadDatabase = async () => {
+    setActionLoading('download')
+    setError(null)
+    setDownloadSuccessMsg(null)
+    try {
+      const res = await adminDatabaseApi.downloadDatabase()
+      setDownloadSuccessMsg(`Active production database downloaded successfully: ${res.filename} (${(res.size / (1024 * 1024)).toFixed(2)} MB)`)
+      setTimeout(() => setDownloadSuccessMsg(null), 7000)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to download database')
+    } finally {
+      setActionLoading(null)
+    }
+  }
 
   const handleRunIntegrityCheck = async () => {
     setActionLoading('integrity')
@@ -212,17 +228,51 @@ export default function DatasetHealthView() {
                 <span>{actionLoading === 'backup' ? 'Backing Up...' : 'Instant DB Backup'}</span>
               </button>
 
+              {/* Action 4: Real Database File Download */}
+              <button
+                onClick={handleDownloadDatabase}
+                disabled={actionLoading !== null}
+                className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-bold transition flex items-center gap-2 disabled:opacity-50 cursor-pointer shadow-lg shadow-cyan-950/40"
+                title="Download the actual live SQLite database file (fraud_detection.db) directly to your machine"
+              >
+                <Download className={`w-3.5 h-3.5 ${actionLoading === 'download' ? 'animate-bounce text-white' : 'text-white'}`} />
+                <span>{actionLoading === 'download' ? 'Preparing Download...' : 'Download Database'}</span>
+              </button>
+
               {/* Refresh */}
               <button
                 onClick={fetchDatabaseHealth}
                 disabled={loading}
-                className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition"
+                className="p-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition cursor-pointer"
                 title="Refresh live metrics"
               >
                 <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-cyan-400' : ''}`} />
               </button>
             </div>
           </div>
+
+          {/* Feedback & Error Banners */}
+          {downloadSuccessMsg && (
+            <div className="p-3.5 rounded-2xl bg-emerald-950/80 border border-emerald-700 text-emerald-300 text-xs flex items-center gap-2 font-mono shadow-md">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>{downloadSuccessMsg}</span>
+            </div>
+          )}
+
+          {error && (
+            <div className="p-3.5 rounded-2xl bg-rose-950/80 border border-rose-700 text-rose-300 text-xs flex items-center justify-between gap-2 shadow-md">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+                <span>{error}</span>
+              </div>
+              <button
+                onClick={() => setError(null)}
+                className="text-rose-400 hover:text-white text-xs underline cursor-pointer"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
 
           {/* 4 Health Stat Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -232,10 +282,14 @@ export default function DatasetHealthView() {
                 <Layers className="w-3.5 h-3.5 text-cyan-400" />
               </div>
               <div className="text-2xl font-black font-mono text-white mt-1">
-                {healthData?.total_records ? healthData.total_records.toLocaleString() : '32,000+'}
+                {healthData?.total_records !== undefined && healthData?.total_records !== null
+                  ? healthData.total_records.toLocaleString()
+                  : loading
+                  ? 'Calculating...'
+                  : '0'}
               </div>
               <div className="text-[11px] text-cyan-400/90 mt-1 font-medium">
-                Across {healthData?.total_tables || 20} relational tables
+                Across {healthData?.total_tables !== undefined ? healthData.total_tables : (loading ? '...' : 0)} relational tables
               </div>
             </div>
 
@@ -245,7 +299,7 @@ export default function DatasetHealthView() {
                 <HardDrive className="w-3.5 h-3.5 text-indigo-400" />
               </div>
               <div className="text-2xl font-black font-mono text-indigo-300 mt-1">
-                {healthData?.file_size || '14.8 MB'}
+                {healthData?.file_size || (loading ? 'Inspecting...' : '0 B')}
               </div>
               <div className="text-[11px] text-slate-400 mt-1 font-mono">
                 WAL Journal: {healthData?.wal_size || '0 B'}
@@ -350,7 +404,7 @@ export default function DatasetHealthView() {
                 </p>
               </div>
               <span className="text-[10px] font-mono px-2.5 py-1 rounded-full bg-slate-950 border border-slate-800 text-cyan-400 font-bold">
-                {healthData?.tables?.length || 20} Tables Monitored
+                {healthData?.tables?.length ?? 0} Tables Monitored
               </span>
             </div>
 
