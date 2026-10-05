@@ -72,14 +72,13 @@ export default function Sidebar({
     : [
         { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
         { id: 'ai-copilot', label: 'AI Investigation Copilot', icon: Bot, isHighlight: true },
-        { id: 'analyzer', label: 'Transaction Risk Analyzer', icon: BrainCircuit, isHighlight: true },
         { id: 'live-monitor', label: 'Live Transaction Radar', icon: Radio, isHighlight: true },
         { id: 'merchants', label: 'Merchant Intelligence', icon: Store },
         { id: 'transactions', label: 'All Transactions', icon: History },
         { id: 'explainable-ai', label: 'Explainable AI & SHAP', icon: Sparkles },
         { id: 'model-lab', label: 'Model Lab & Registry', icon: Cpu },
         { id: 'dataset-health', label: 'Database & Storage Health', icon: Database },
-      ].filter((item) => !isAdmin || item.id !== 'payment')
+      ].filter((item) => !isAdmin || (item.id !== 'payment' && item.id !== 'analyzer'))
 
   const systemNav = [
     { id: 'audit-logs', label: 'Audit Trail & Compliance', icon: FileSpreadsheet },

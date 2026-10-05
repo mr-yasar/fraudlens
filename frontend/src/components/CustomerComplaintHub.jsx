@@ -59,7 +59,7 @@ export default function CustomerComplaintHub({
   onViewExplanation = null,
   onSwitchToRadar = null,
 }) {
-  const customerPersona = getCustomerPersona(user)
+  const customerPersona = getCustomerPersona(user) || {}
 
   const [activeTab, setActiveTab] = useState(initialTxId ? 'raise' : 'raise')
   const [transactions, setTransactions] = useState([])

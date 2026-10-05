@@ -25,8 +25,8 @@ import { getCustomerPersona } from '../utils/customerHelper'
 import GlobalCenterModal from './common/GlobalCenterModal'
 
 export default function CustomersView({ onSelectTransaction, user, isAdmin }) {
-  const customerPersona = getCustomerPersona(user)
-  const isCustomer = customerPersona.isCustomer
+  const customerPersona = getCustomerPersona(user) || {}
+  const isCustomer = !isAdmin && Boolean(customerPersona.isCustomer)
 
   const [customers, setCustomers] = useState([])
   const [total, setTotal] = useState(0)

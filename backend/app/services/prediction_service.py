@@ -1,8 +1,14 @@
-"""Prediction and Explainability Service Layer."""
+import sys
+from pathlib import Path
+
+# Ensure repo root is always in sys.path so ml.* modules and joblib unpickling always resolve
+_REPO_ROOT = Path(__file__).resolve().parents[3]
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
 
 from dataclasses import asdict
 import json
-from pathlib import Path
+import logging
 from typing import Any, Dict, List, Optional, Tuple, Union
 import joblib
 import numpy as np
@@ -16,6 +22,12 @@ from backend.app.schemas.prediction import (
 )
 from backend.app.services.risk_scoring_service import RiskScoringEngine
 from backend.app.services.explanation_composer import ExplanationComposer
+from ml.explainability.shap_explainer import FraudShapExplainer
+from ml.explainability.counterfactual_engine import CounterfactualEngine
+from ml.anomaly.isolation_forest_service import AnomalyIntelligenceService
+from ml.evaluation.uncertainty_service import UncertaintyEstimationService
+
+logger = logging.getLogger("fraudlens.prediction_service")
 
 
 class FraudPredictionService:
@@ -24,7 +36,8 @@ class FraudPredictionService:
     _instance: Optional["FraudPredictionService"] = None
 
     def __init__(self, artifact_dir: Union[str, Path] = "ml/artifacts") -> None:
-        self.artifact_dir = Path(artifact_dir)
+        p = Path(artifact_dir)
+        self.artifact_dir = p if p.is_absolute() else (_REPO_ROOT / p).resolve()
         self.preprocessor: Optional[Any] = None
         self.model: Optional[Any] = None
         self.candidate_models: Dict[str, Any] = {}

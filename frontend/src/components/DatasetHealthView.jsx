@@ -16,6 +16,8 @@ import {
   FileCheck,
   Check,
   AlertTriangle,
+  FileSpreadsheet,
+  FileText,
 } from 'lucide-react'
 import { adminDatabaseApi } from '../services/api'
 import ContextualModuleHelp from './common/ContextualModuleHelp'
@@ -50,16 +52,24 @@ export default function DatasetHealthView() {
     fetchDatabaseHealth()
   }, [])
 
-  const handleDownloadDatabase = async () => {
-    setActionLoading('download')
+  const handleDownloadDatabase = async (format = 'excel') => {
+    setActionLoading(`download-${format}`)
     setError(null)
     setDownloadSuccessMsg(null)
     try {
-      const res = await adminDatabaseApi.downloadDatabase()
-      setDownloadSuccessMsg(`Active production database downloaded successfully: ${res.filename} (${(res.size / (1024 * 1024)).toFixed(2)} MB)`)
-      setTimeout(() => setDownloadSuccessMsg(null), 7000)
+      const res = await adminDatabaseApi.downloadDatabase(format)
+      const formatLabels = {
+        excel: 'Excel Multi-Sheet Workbook (.xlsx)',
+        text: 'Readable Structured Text & SQL Dump (.sql)',
+        sqlite: 'Production SQLite Binary (.db)',
+      }
+      const label = formatLabels[format] || format.toUpperCase()
+      const sizeMb = (res.size / (1024 * 1024)).toFixed(2)
+      const sizeStr = res.size >= 1024 * 1024 ? `${sizeMb} MB` : `${(res.size / 1024).toFixed(1)} KB`
+      setDownloadSuccessMsg(`Database exported & downloaded successfully in ${label}: ${res.filename} (${sizeStr})`)
+      setTimeout(() => setDownloadSuccessMsg(null), 8000)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to download database')
+      setError(err instanceof Error ? err.message : `Failed to download database in ${format} format`)
     } finally {
       setActionLoading(null)
     }
@@ -228,15 +238,37 @@ export default function DatasetHealthView() {
                 <span>{actionLoading === 'backup' ? 'Backing Up...' : 'Instant DB Backup'}</span>
               </button>
 
-              {/* Action 4: Real Database File Download */}
+              {/* Action 4: Excel Export (.xlsx) */}
               <button
-                onClick={handleDownloadDatabase}
+                onClick={() => handleDownloadDatabase('excel')}
+                disabled={actionLoading !== null}
+                className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold transition flex items-center gap-2 disabled:opacity-50 cursor-pointer shadow-lg shadow-emerald-950/40"
+                title="Download the entire database formatted into a multi-sheet Microsoft Excel workbook (.xlsx)"
+              >
+                <FileSpreadsheet className={`w-3.5 h-3.5 ${actionLoading === 'download-excel' ? 'animate-bounce text-white' : 'text-white'}`} />
+                <span>{actionLoading === 'download-excel' ? 'Exporting Excel...' : 'Download Excel (.xlsx)'}</span>
+              </button>
+
+              {/* Action 5: Clean Structured Text & SQL Dump (.sql) */}
+              <button
+                onClick={() => handleDownloadDatabase('text')}
                 disabled={actionLoading !== null}
                 className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-bold transition flex items-center gap-2 disabled:opacity-50 cursor-pointer shadow-lg shadow-cyan-950/40"
-                title="Download the actual live SQLite database file (fraud_detection.db) directly to your machine"
+                title="Download readable structured Text & SQL dump with full schema and table records (.sql)"
               >
-                <Download className={`w-3.5 h-3.5 ${actionLoading === 'download' ? 'animate-bounce text-white' : 'text-white'}`} />
-                <span>{actionLoading === 'download' ? 'Preparing Download...' : 'Download Database'}</span>
+                <FileText className={`w-3.5 h-3.5 ${actionLoading === 'download-text' ? 'animate-bounce text-white' : 'text-white'}`} />
+                <span>{actionLoading === 'download-text' ? 'Generating Text...' : 'Download Text / SQL'}</span>
+              </button>
+
+              {/* Action 6: Raw SQLite Binary (.db) */}
+              <button
+                onClick={() => handleDownloadDatabase('sqlite')}
+                disabled={actionLoading !== null}
+                className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-slate-600 text-slate-300 hover:text-white text-xs font-semibold transition flex items-center gap-1.5 disabled:opacity-50 cursor-pointer shadow-sm"
+                title="Download raw active SQLite binary engine database file (fraud_detection.db)"
+              >
+                <Database className={`w-3.5 h-3.5 ${actionLoading === 'download-sqlite' ? 'animate-spin text-cyan-400' : 'text-slate-400'}`} />
+                <span>{actionLoading === 'download-sqlite' ? 'Downloading...' : 'SQLite (.db)'}</span>
               </button>
 
               {/* Refresh */}

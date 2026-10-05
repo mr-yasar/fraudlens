@@ -20,8 +20,8 @@ import GlobalCenterModal from './common/GlobalCenterModal'
 import ContextualModuleHelp from './common/ContextualModuleHelp'
 
 export default function TransactionsView({ onViewExplanation, user, isAdmin }) {
-  const customerPersona = getCustomerPersona(user)
-  const isCustomer = customerPersona.isCustomer
+  const customerPersona = getCustomerPersona(user) || {}
+  const isCustomer = !isAdmin && Boolean(customerPersona.isCustomer)
 
   const [transactions, setTransactions] = useState([])
   const [total, setTotal] = useState(0)

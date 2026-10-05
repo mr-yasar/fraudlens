@@ -169,19 +169,40 @@ export function getCustomerPersona(user, selectedPersonaId = null) {
     }
   }
 
+  // If Admin is logged in and no persona simulation was selected, they have NO customer persona
+  if (isAdmin) {
+    return {
+      customerId: null,
+      name: user?.name || 'Administrator',
+      customerName: user?.name || 'Administrator',
+      email: user?.email || 'admin@fraudlens.ai',
+      tier: 'ADMIN',
+      fraudRate: '0.0%',
+      baselineType: 'System Administrator Mode (Full Enterprise Access)',
+      badgeColor: 'bg-purple-950/80 text-purple-300 border-purple-700/60',
+      color: 'purple',
+      defaultPresetId: null,
+      isCustomer: false,
+      isAdmin: true,
+      isPremium: false,
+    }
+  }
+
   // 3. Fallback when not authenticated
   return {
-    customerId: 'CUST_MONISHA_001',
-    name: 'Monisha',
-    customerName: 'Monisha',
-    email: 'monisha@fraudlens.ai',
-    tier: 'STANDARD',
-    fraudRate: '3.0%',
-    baselineType: 'Safe Habitual (Auto-Approved)',
-    badgeColor: 'bg-emerald-950/80 text-emerald-300 border-emerald-700/60',
-    color: 'emerald',
-    defaultPresetId: 'scenario_monisha_safe',
+    customerId: null,
+    name: 'Guest',
+    customerName: 'Guest',
+    email: '',
+    tier: 'GUEST',
+    fraudRate: '0.0%',
+    baselineType: 'Unauthenticated Guest',
+    badgeColor: 'bg-slate-950/80 text-slate-300 border-slate-700/60',
+    color: 'slate',
+    defaultPresetId: null,
     isCustomer: false,
+    isAdmin: false,
+    isPremium: false,
   }
 }
 

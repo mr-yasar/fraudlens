@@ -56,7 +56,7 @@ const TOPICS = [
 
 export default function HowItWorksModal({ isOpen, onClose, user, isAdmin }) {
   const isCustomer = !isAdmin && (user?.role?.toLowerCase() === 'customer' || user?.role?.toLowerCase() === 'user')
-  const customerPersona = getCustomerPersona(user)
+  const customerPersona = getCustomerPersona(user) || {}
   const isPremium = user?.account_tier === 'PREMIUM' || customerPersona?.isPremium || (customerPersona?.customerId || '').includes('PREMIUM') || (customerPersona?.name || '').toLowerCase().includes('ajay')
 
   // Main Tabs

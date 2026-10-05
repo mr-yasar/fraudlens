@@ -27,7 +27,7 @@ import { getCustomerPersona } from '../utils/customerHelper'
 import ContextualModuleHelp from './common/ContextualModuleHelp'
 
 export default function FleetSecurityView({ user, isAdmin }) {
-  const customerPersona = getCustomerPersona(user)
+  const customerPersona = getCustomerPersona(user) || {}
   const isPremium = user?.account_tier === 'PREMIUM' || customerPersona?.isPremium || (customerPersona?.name || '').toLowerCase().includes('ajay')
 
   const [activeTab, setActiveTab] = useState('devices') // 'devices' | 'sessions'

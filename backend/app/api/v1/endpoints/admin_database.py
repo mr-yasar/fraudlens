@@ -7,7 +7,7 @@ import logging
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from fastapi.responses import FileResponse
 from sqlalchemy import text
 from sqlalchemy.orm import Session
@@ -21,6 +21,29 @@ from backend.app.api.deps import require_admin
 logger = logging.getLogger("fraudlens.admin_database")
 
 router = APIRouter()
+
+FRIENDLY_NAMES = {
+    "transactions": "Financial Transactions & Real-Time Evaluations",
+    "audit_logs": "Cryptographic Compliance & Action Ledger",
+    "investigations": "Fraud Investigation Cases & Forensics",
+    "alerts": "In-App Security Incident Alerts & Beacons",
+    "users": "Authorized Admin & Customer Identities",
+    "customers": "Customer Profiles & Behavioral Baselines",
+    "merchants": "Commercial Merchants & Merchant Category Codes",
+    "customer_devices": "Bound Hardware Passkeys & Mobile Devices",
+    "beneficiaries": "Whitelisted P2P Beneficiaries & Accounts",
+    "payment_intents": "Initiated Payment Authorizations",
+    "payment_attempts": "Pre-Authorization Payment Simulation Attempts",
+    "transaction_approvals": "Step-Up Verification & Challenge Records",
+    "user_sessions": "Active Multi-Factor Hardware Sessions",
+    "risk_events": "Sub-Millisecond Behavioral Risk Signals",
+    "verification_events": "Cryptographic Challenge Audit Log",
+    "behavioral_profiles": "Dynamic Spending Deviation Vectors",
+    "model_versions": "Registered Production & Candidate ML Models",
+    "shap_explanations": "TreeSHAP Local Mathematical Attribution Vectors",
+    "idempotency_records": "Replay-Attack Prevention Token Enclave",
+    "webhook_event_records": "Secured Webhook Callback Log",
+}
 
 
 def _format_bytes(size: int) -> str:
@@ -89,28 +112,6 @@ def get_database_health(
     tables_info = []
     total_records = 0
 
-    FRIENDLY_NAMES = {
-        "transactions": "Financial Transactions & Real-Time Evaluations",
-        "audit_logs": "Cryptographic Compliance & Action Ledger",
-        "investigations": "Fraud Investigation Cases & Forensics",
-        "alerts": "In-App Security Incident Alerts & Beacons",
-        "users": "Authorized Admin & Customer Identities",
-        "customers": "Customer Profiles & Behavioral Baselines",
-        "merchants": "Commercial Merchants & Merchant Category Codes",
-        "customer_devices": "Bound Hardware Passkeys & Mobile Devices",
-        "beneficiaries": "Whitelisted P2P Beneficiaries & Accounts",
-        "payment_intents": "Initiated Payment Authorizations",
-        "payment_attempts": "Pre-Authorization Payment Simulation Attempts",
-        "transaction_approvals": "Step-Up Verification & Challenge Records",
-        "user_sessions": "Active Multi-Factor Hardware Sessions",
-        "risk_events": "Sub-Millisecond Behavioral Risk Signals",
-        "verification_events": "Cryptographic Challenge Audit Log",
-        "behavioral_profiles": "Dynamic Spending Deviation Vectors",
-        "model_versions": "Registered Production & Candidate ML Models",
-        "shap_explanations": "TreeSHAP Local Mathematical Attribution Vectors",
-        "idempotency_records": "Replay-Attack Prevention Token Enclave",
-        "webhook_event_records": "Secured Webhook Callback Log",
-    }
 
     try:
         if is_sqlite:
@@ -349,16 +350,148 @@ def create_database_backup(
         raise HTTPException(status_code=500, detail=f"Database backup failed: {str(e)}")
 
 
+def _generate_excel_export(db_path: Path, dest_path: Path) -> None:
+    """Generate a clean, multi-sheet Excel workbook containing complete database telemetry and records."""
+    conn = sqlite3.connect(str(db_path))
+    try:
+        import pandas as pd
+        with pd.ExcelWriter(str(dest_path), engine="xlsxwriter") as writer:
+            workbook = writer.book
+            header_fmt = workbook.add_format({
+                "bold": True,
+                "text_wrap": False,
+                "valign": "top",
+                "fg_color": "#0F172A",
+                "font_color": "#38BDF8",
+                "border": 1,
+            })
+
+            cur = conn.cursor()
+            cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name")
+            tables = [r[0] for r in cur.fetchall()]
+
+            summary_data = []
+            total_records = 0
+            for t in tables:
+                try:
+                    cur.execute(f"SELECT COUNT(*) FROM {t}")
+                    cnt = cur.fetchone()[0]
+                    total_records += cnt
+                    summary_data.append({
+                        "Table Name": t,
+                        "Record Count": cnt,
+                        "Category & Description": FRIENDLY_NAMES.get(t, t),
+                    })
+                except Exception:
+                    pass
+
+            # 1. System Overview Sheet
+            meta_rows = [
+                {"Metric / Attribute": "System Name", "Value": "FraudLens AI — Financial Fraud & Risk Detection"},
+                {"Metric / Attribute": "Export Timestamp (UTC)", "Value": datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")},
+                {"Metric / Attribute": "Database Engine", "Value": "SQLite 3.x (High-Performance WAL Mode)"},
+                {"Metric / Attribute": "Total System Tables", "Value": str(len(tables))},
+                {"Metric / Attribute": "Total Live Records", "Value": f"{total_records:,}"},
+                {"Metric / Attribute": "Source Database File Size", "Value": _format_bytes(db_path.stat().st_size)},
+            ]
+            df_meta = pd.DataFrame(meta_rows)
+            df_meta.to_excel(writer, sheet_name="Overview & System Stats", index=False)
+            ws_meta = writer.sheets["Overview & System Stats"]
+            for c_idx, col in enumerate(df_meta.columns):
+                ws_meta.write(0, c_idx, col, header_fmt)
+                ws_meta.set_column(c_idx, c_idx, 35)
+
+            # 2. Table Inventory Sheet
+            df_tables = pd.DataFrame(summary_data)
+            df_tables.to_excel(writer, sheet_name="Table Inventory", index=False)
+            ws_inv = writer.sheets["Table Inventory"]
+            for c_idx, col in enumerate(df_tables.columns):
+                ws_inv.write(0, c_idx, col, header_fmt)
+                ws_inv.set_column(c_idx, c_idx, 32)
+
+            # 3. Export key operational tables with readable tabs
+            priority_tables = [
+                "transactions", "audit_logs", "customers", "alerts", "investigations",
+                "payment_intents", "merchants", "customer_devices", "beneficiaries",
+                "risk_events", "verification_events"
+            ]
+            ordered_tables = [t for t in priority_tables if t in tables] + [t for t in tables if t not in priority_tables]
+
+            for t in ordered_tables:
+                try:
+                    df = pd.read_sql_query(f"SELECT * FROM {t} ORDER BY rowid DESC LIMIT 10000", conn)
+                    clean_sheet_name = t.replace("_", " ").title()[:31]
+                    df.to_excel(writer, sheet_name=clean_sheet_name, index=False)
+                    ws = writer.sheets[clean_sheet_name]
+                    for col_num, value in enumerate(df.columns.values):
+                        ws.write(0, col_num, value, header_fmt)
+                        val_lens = [len(str(x)) for x in df[value].dropna().head(50)] if len(df) > 0 else []
+                        max_len = max(val_lens + [len(str(value))]) + 3
+                        ws.set_column(col_num, col_num, min(max(max_len, 12), 45))
+                except Exception as e:
+                    logger.warning("Could not export table %s to Excel: %s", t, e)
+    finally:
+        conn.close()
+
+
+def _generate_text_sql_dump(db_path: Path, dest_path: Path) -> None:
+    """Generate a clean, human-readable Text & SQL dump of the complete database."""
+    conn = sqlite3.connect(str(db_path))
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name")
+        tables = [r[0] for r in cur.fetchall()]
+        total_records = 0
+        table_counts = {}
+        for t in tables:
+            try:
+                cur.execute(f"SELECT COUNT(*) FROM {t}")
+                cnt = cur.fetchone()[0]
+                table_counts[t] = cnt
+                total_records += cnt
+            except Exception:
+                pass
+
+        header = [
+            "-- " + "=" * 76,
+            "-- FRAUDLENS AI — FINANCIAL FRAUD DETECTION & RISK INTELLIGENCE",
+            "-- DATABASE TEXT & SQL DUMP EXPORT",
+            f"-- Generated: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S UTC')}",
+            f"-- Source Database: {db_path.name} ({_format_bytes(db_path.stat().st_size)})",
+            f"-- Total Tables: {len(tables)} | Total Database Records: {total_records:,}",
+            "-- " + "=" * 76,
+            "-- TABLE INVENTORY & RECORD SUMMARY:",
+        ]
+        for t, cnt in table_counts.items():
+            header.append(f"--   * {t:<28}: {cnt:,} records ({FRIENDLY_NAMES.get(t, t)})")
+        header.extend([
+            "-- " + "=" * 76,
+            "\nBEGIN TRANSACTION;\n",
+        ])
+
+        with open(dest_path, "w", encoding="utf-8") as f:
+            f.write("\n".join(header) + "\n")
+            for line in conn.iterdump():
+                if line in ("BEGIN TRANSACTION;", "COMMIT;"):
+                    continue
+                f.write(f"{line}\n")
+            f.write("\nCOMMIT;\n")
+            f.write(f"\n-- [SUCCESS] End of FraudLens AI Database Export ({total_records:,} total records).\n")
+    finally:
+        conn.close()
+
+
 @router.get(
     "/download",
     summary="Download Actual Live Database (Admin Only)",
-    description="Safely streams the actual current SQLite database file (fraud_detection.db) used by FraudLens.",
+    description="Safely streams the actual current database file in SQLite (.db), Excel (.xlsx), or Text/SQL (.sql) format.",
 )
 def download_database(
+    format: str = Query("sqlite", description="Download format: 'sqlite', 'excel', 'xlsx', 'text', 'sql', 'json'"),
     db: Session = Depends(get_db),
     admin: User = Depends(require_admin),
 ):
-    """Download the actual current active SQLite database."""
+    """Download the actual current active SQLite database in requested format."""
     is_sqlite = "sqlite" in str(engine.url)
     if not is_sqlite:
         raise HTTPException(
@@ -380,6 +513,44 @@ def download_database(
     except Exception as e:
         logger.warning("Could not flush WAL before download: %s", e)
 
+    norm_format = format.lower().strip()
+    timestamp_str = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+    export_dir = Path("backend/backups/exports").resolve()
+    export_dir.mkdir(parents=True, exist_ok=True)
+
+    if norm_format in ("excel", "xlsx"):
+        export_file = export_dir / f"fraudlens_database_{timestamp_str}.xlsx"
+        try:
+            _generate_excel_export(db_path, export_file)
+        except Exception as e:
+            logger.error("Excel export error: %s", e, exc_info=True)
+            raise HTTPException(status_code=500, detail=f"Failed to generate Excel export: {str(e)}")
+
+        file_to_send = export_file
+        download_filename = export_file.name
+        media_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        format_label = "Excel Workbook (.xlsx)"
+
+    elif norm_format in ("text", "sql", "txt"):
+        export_file = export_dir / f"fraudlens_database_{timestamp_str}.sql"
+        try:
+            _generate_text_sql_dump(db_path, export_file)
+        except Exception as e:
+            logger.error("Text/SQL dump error: %s", e, exc_info=True)
+            raise HTTPException(status_code=500, detail=f"Failed to generate Text/SQL export: {str(e)}")
+
+        file_to_send = export_file
+        download_filename = export_file.name
+        media_type = "text/plain; charset=utf-8"
+        format_label = "Structured Text / SQL Dump (.sql)"
+
+    else:
+        # Default raw SQLite database binary
+        file_to_send = db_path
+        download_filename = f"fraudlens_database_{timestamp_str}.db"
+        media_type = "application/x-sqlite3"
+        format_label = "Raw SQLite Engine Binary (.db)"
+
     # Record audit log
     try:
         db.add(
@@ -388,20 +559,17 @@ def download_database(
                 action="DATABASE_DOWNLOADED",
                 resource_type="database",
                 resource_id=db_path.name,
-                details=f"Production database file downloaded ({_format_bytes(db_path.stat().st_size)}).",
+                details=f"Production database downloaded in {format_label} format ({_format_bytes(file_to_send.stat().st_size)}).",
             )
         )
         db.commit()
     except Exception as e:
         logger.warning("Could not record audit log for database download: %s", e)
 
-    timestamp_str = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-    download_filename = f"fraudlens_database_{timestamp_str}.db"
-
     return FileResponse(
-        path=str(db_path),
+        path=str(file_to_send),
         filename=download_filename,
-        media_type="application/x-sqlite3",
+        media_type=media_type,
         headers={
             "Content-Disposition": f'attachment; filename="{download_filename}"',
             "Cache-Control": "no-cache, no-store, must-revalidate",

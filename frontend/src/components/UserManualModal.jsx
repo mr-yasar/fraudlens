@@ -35,7 +35,7 @@ import { getCustomerPersona } from '../utils/customerHelper'
 
 export default function UserManualModal({ isOpen, onClose, onOpenVoiceHelp, user, isAdmin }) {
   const isCustomer = !isAdmin && (user?.role?.toLowerCase() === 'customer' || user?.role?.toLowerCase() === 'user')
-  const customerPersona = getCustomerPersona(user)
+  const customerPersona = getCustomerPersona(user) || {}
 
   // Default active tab based on role
   const [activeTab, setActiveTab] = useState(isCustomer ? 'cust_security' : 'quickstart')

@@ -42,8 +42,8 @@ import ContextualModuleHelp from './common/ContextualModuleHelp'
 import { formatINR } from '../utils/formatters'
 
 export default function DashboardView({ onSelectTransaction, onOpenCase, onOpenPayment, user, isAdmin }) {
-  const customerPersona = getCustomerPersona(user)
-  const isCustomer = customerPersona.isCustomer
+  const customerPersona = getCustomerPersona(user) || {}
+  const isCustomer = !isAdmin && Boolean(customerPersona.isCustomer)
 
   // DEDICATED CUSTOMER DASHBOARD
   if (isCustomer) {

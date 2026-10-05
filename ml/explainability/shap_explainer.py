@@ -199,6 +199,12 @@ class FraudShapExplainer:
         increasing = [a for a in attributions if a.shap_value > 0][:top_k]
         decreasing = [a for a in attributions if a.shap_value < 0][:top_k]
 
+        # Graceful fallback: ensure at least one prominent factor is shown in each category if attributions exist
+        if not increasing and attributions:
+            increasing = sorted(attributions, key=lambda x: x.shap_value, reverse=True)[:min(top_k, 1)]
+        if not decreasing and attributions:
+            decreasing = sorted(attributions, key=lambda x: x.shap_value)[:min(top_k, 1)]
+
         return LocalExplanation(
             base_value=base_val,
             fraud_probability=fraud_prob,

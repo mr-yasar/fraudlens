@@ -51,8 +51,8 @@ export default function LiveMonitorAndInvestigationHub({
   initialCaseId = null,
   onViewExplanation = null,
 }) {
-  const customerPersona = getCustomerPersona(user)
-  const isCustomer = !isAdmin && customerPersona.isCustomer
+  const customerPersona = getCustomerPersona(user) || {}
+  const isCustomer = !isAdmin && Boolean(customerPersona.isCustomer)
 
   // Master Data State
   const [transactions, setTransactions] = useState([])

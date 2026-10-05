@@ -21,8 +21,8 @@ import { formatINR } from '../utils/formatters'
 import { getCustomerPersona } from '../utils/customerHelper'
 
 export default function LiveTransactionMonitorView({ onInvestigate, onRaiseComplaint, onViewExplanation, user, isAdmin }) {
-  const customerPersona = getCustomerPersona(user)
-  const isCustomer = customerPersona.isCustomer
+  const customerPersona = getCustomerPersona(user) || {}
+  const isCustomer = !isAdmin && Boolean(customerPersona.isCustomer)
 
   const [transactions, setTransactions] = useState([])
   const [loading, setLoading] = useState(true)

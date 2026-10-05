@@ -30,8 +30,8 @@ export default function InvestigationsView({
   user = null,
   isAdmin = false,
 }) {
-  const customerPersona = getCustomerPersona(user)
-  const isCustomer = customerPersona.isCustomer
+  const customerPersona = getCustomerPersona(user) || {}
+  const isCustomer = !isAdmin && Boolean(customerPersona.isCustomer)
 
   const [cases, setCases] = useState([])
   const [total, setTotal] = useState(0)

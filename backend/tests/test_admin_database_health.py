@@ -37,10 +37,30 @@ def test_database_health_live_count(client):
     assert "SQLite" in data["engine"]
 
 def test_database_download_endpoint(client):
-    res = client.get("/api/v1/admin/database/download")
+    res = client.get("/api/v1/admin/database/download?format=sqlite")
     assert res.status_code == 200, res.text
     assert "application/octet-stream" in res.headers["content-type"] or "application/x-sqlite3" in res.headers["content-type"]
     assert "content-disposition" in res.headers
     assert len(res.content) > 0
     # SQLite files begin with "SQLite format 3\x00"
     assert res.content.startswith(b"SQLite format 3\x00")
+
+def test_database_download_excel(client):
+    res = client.get("/api/v1/admin/database/download?format=excel")
+    assert res.status_code == 200, res.text
+    assert "openxmlformats" in res.headers["content-type"]
+    assert "attachment" in res.headers["content-disposition"]
+    assert res.headers["content-disposition"].endswith('.xlsx"')
+    # Zip / xlsx magic number is PK\x03\x04
+    assert res.content.startswith(b"PK\x03\x04")
+    assert len(res.content) > 1000
+
+def test_database_download_text(client):
+    res = client.get("/api/v1/admin/database/download?format=text")
+    assert res.status_code == 200, res.text
+    assert "text/plain" in res.headers["content-type"]
+    assert "attachment" in res.headers["content-disposition"]
+    assert res.headers["content-disposition"].endswith('.sql"')
+    assert b"FRAUDLENS AI" in res.content
+    assert b"CREATE TABLE" in res.content
+    assert b"COMMIT;" in res.content

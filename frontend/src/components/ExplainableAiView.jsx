@@ -37,7 +37,7 @@ const AVAILABLE_AI_MODELS = [
 
 export default function ExplainableAiView({ user, isAdmin, initialTransactionId }) {
   const isCustomer = !isAdmin && (user?.role?.toLowerCase() === 'customer' || user?.role?.toLowerCase() === 'user')
-  const customerPersona = getCustomerPersona(user)
+  const customerPersona = getCustomerPersona(user) || {}
 
   const [transactionId, setTransactionId] = useState(initialTransactionId || '')
   const [selectedModel, setSelectedModel] = useState('xgboost')

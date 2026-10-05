@@ -15,15 +15,17 @@ if "sklearn.decomposition._online_lda_fast" not in sys.modules:
         _m.mean_change = None
         sys.modules["sklearn.decomposition._online_lda_fast"] = _m
 
-# Mock additional C-extensions blocked by AppLocker
+# Fallback for optional C-extensions blocked by AppLocker if import fails
 for mod_name in [
     "sklearn.svm._liblinear",
     "sklearn.svm._libsvm",
     "sklearn.svm._libsvm_sparse",
-    "sklearn.cluster._k_means_common",
 ]:
     if mod_name not in sys.modules:
-        sys.modules[mod_name] = types.ModuleType(mod_name)
+        try:
+            __import__(mod_name)
+        except (ImportError, OSError):
+            sys.modules[mod_name] = types.ModuleType(mod_name)
 
 from contextlib import asynccontextmanager
 import logging

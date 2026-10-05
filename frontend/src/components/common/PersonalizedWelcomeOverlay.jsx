@@ -83,18 +83,18 @@ const USER_THEMES = {
 }
 
 function resolveUserTheme(user) {
-  if (!user) return USER_THEMES.monisha
+  if (!user) return USER_THEMES.admin
   const email = (user.email || '').toLowerCase()
   const name = (user.name || '').toLowerCase()
   const role = (user.role || '').toLowerCase()
 
-  if (email.includes('admin') || role.includes('admin')) return USER_THEMES.admin
+  if (email.includes('admin') || role.includes('admin') || role.includes('investigator')) return USER_THEMES.admin
   if (email.includes('ajay') || name.includes('ajay')) return USER_THEMES.ajay
   if (email.includes('soumya') || name.includes('soumya') || email.includes('sowmiya') || name.includes('sowmiya')) return USER_THEMES.soumya
   if (email.includes('mohana') || name.includes('mohana')) return USER_THEMES.mohana
   if (email.includes('monisha') || name.includes('monisha')) return USER_THEMES.monisha
 
-  return USER_THEMES.ajay
+  return USER_THEMES.admin
 }
 
 export default function PersonalizedWelcomeOverlay({ user, onComplete }) {

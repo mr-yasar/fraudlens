@@ -351,8 +351,8 @@ export const adminDatabaseApi = {
     })
     return handleResponse(res)
   },
-  downloadDatabase: async () => {
-    const res = await fetch(`${BASE_URL}/admin/database/download`, {
+  downloadDatabase: async (format = 'sqlite') => {
+    const res = await fetch(`${BASE_URL}/admin/database/download?format=${encodeURIComponent(format)}`, {
       headers: getAuthHeaders(),
     })
     if (!res.ok) {
@@ -368,7 +368,8 @@ export const adminDatabaseApi = {
     const a = document.createElement('a')
     a.href = url
     const disposition = res.headers.get('content-disposition')
-    let filename = `fraudlens_database_${new Date().toISOString().slice(0, 10)}.db`
+    const ext = (format === 'excel' || format === 'xlsx') ? 'xlsx' : ((format === 'text' || format === 'sql') ? 'sql' : 'db')
+    let filename = `fraudlens_database_${new Date().toISOString().slice(0, 10)}.${ext}`
     if (disposition && disposition.includes('filename=')) {
       const match = disposition.match(/filename="?([^"]+)"?/)
       if (match && match[1]) filename = match[1]
@@ -378,7 +379,7 @@ export const adminDatabaseApi = {
     a.click()
     window.URL.revokeObjectURL(url)
     document.body.removeChild(a)
-    return { filename, size: blob.size }
+    return { filename, size: blob.size, format }
   },
 }
 

@@ -58,7 +58,7 @@ import { getCustomerPersona } from './utils/customerHelper'
 function CommandCenterApp() {
   const { user, isAuthenticated, isAdmin, login, register, logout, loading: authLoading, error: authError } = useAuth()
   const isCustomer = user?.role?.toLowerCase() === 'customer' || user?.role?.toLowerCase() === 'user'
-  const customerPersona = getCustomerPersona(user)
+  const customerPersona = getCustomerPersona(user) || {}
   const isPremium = user?.account_tier === 'PREMIUM' || customerPersona?.isPremium
 
   // Navigation State
@@ -105,9 +105,9 @@ function CommandCenterApp() {
     setAiAssistantOpen(true)
   }, [previousViewBeforeCopilot, navHistory, navigateTo])
 
-  // Guard payment gateway: Admin never accesses Payment Gateway
+  // Guard payment gateway & analyzer: Admin never accesses Payment Gateway or Customer Analyzer
   useEffect(() => {
-    if (isAdmin && activeView === 'payment') {
+    if (isAdmin && (activeView === 'payment' || activeView === 'analyzer')) {
       setActiveView('dashboard')
     }
   }, [isAdmin, activeView])
@@ -409,11 +409,11 @@ function CommandCenterApp() {
               {/* User Profile Pill */}
               <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-slate-900/80 border border-slate-800 text-xs">
                 <div className="w-6 h-6 rounded-full bg-gradient-to-br from-cyan-500 to-indigo-600 text-white flex items-center justify-center font-bold text-[10px] shrink-0 uppercase shadow-inner">
-                  {customerPersona?.name ? customerPersona.name.charAt(0) : (user?.name ? user.name.charAt(0) : (user?.email ? user.email.charAt(0) : 'U'))}
+                  {isAdmin ? (user?.name ? user.name.charAt(0) : 'A') : (customerPersona?.name ? customerPersona.name.charAt(0) : (user?.name ? user.name.charAt(0) : 'U'))}
                 </div>
                 <div className="hidden sm:flex flex-col text-left leading-tight">
-                  <span className="font-bold text-slate-200 text-xs truncate max-w-[110px]">
-                    {customerPersona?.name || user?.name || user?.email?.split('@')[0] || 'User'}
+                  <span className="font-bold text-slate-200 text-xs truncate max-w-[120px]">
+                    {isAdmin ? (user?.name || 'Administrator') : (customerPersona?.name || user?.name || user?.email?.split('@')[0] || 'User')}
                   </span>
                   <span className="text-[10px] font-mono text-slate-400">
                     {isAdmin ? 'System Admin' : (customerPersona?.name === 'Ajay' ? 'Enterprise' : 'User')}
@@ -505,7 +505,7 @@ function CommandCenterApp() {
                 />
               )}
 
-              {activeView === 'analyzer' && (
+              {activeView === 'analyzer' && !isAdmin && (
                 <TransactionRiskAnalyzerView
                   user={user}
                   isAdmin={isAdmin}

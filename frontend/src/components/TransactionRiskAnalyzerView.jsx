@@ -30,19 +30,26 @@ import CANONICAL_MASTER_MERCHANTS from '../data/canonicalMerchants'
 import { getCustomerPersona } from '../utils/customerHelper'
 
 export default function TransactionRiskAnalyzerView({ user, isAdmin, onViewExplanation }) {
-  const customerPersona = getCustomerPersona(user)
-  const isCustomer = customerPersona.isCustomer
+  const customerPersona = getCustomerPersona(user) || {}
+  const isCustomer = Boolean(customerPersona.isCustomer)
 
   const [merchants, setMerchants] = useState(CANONICAL_MASTER_MERCHANTS || [])
   const [loadingMerchants, setLoadingMerchants] = useState(false)
 
   // Active persona dataset mode (for Admin to toggle, or locked to customer for logged-in customer)
-  const isAjay = (customerPersona.customerId || '').includes('PREMIUM') || (customerPersona.customerId || '').includes('AJAY') || customerPersona.isPremium || (customerPersona.name || '').toLowerCase().includes('ajay') || (user?.email || '').toLowerCase().includes('ajay') || (user?.name || '').toLowerCase().includes('ajay')
-  const isMonisha = !isAjay && (customerPersona.customerId || '').includes('MONISHA')
-  const isMohana = !isAjay && (customerPersona.customerId || '').includes('MOHANA')
-  const isSowmiya = !isAjay && (customerPersona.customerId || '').includes('SOWMIYA')
+  const isAjay = Boolean(
+    (customerPersona.customerId || '').includes('PREMIUM') ||
+    (customerPersona.customerId || '').includes('AJAY') ||
+    customerPersona.isPremium ||
+    (customerPersona.name || '').toLowerCase().includes('ajay') ||
+    (user?.email || '').toLowerCase().includes('ajay') ||
+    (user?.name || '').toLowerCase().includes('ajay')
+  )
+  const isMonisha = !isAdmin && !isAjay && (customerPersona.customerId || '').includes('MONISHA')
+  const isMohana = !isAdmin && !isAjay && (customerPersona.customerId || '').includes('MOHANA')
+  const isSowmiya = !isAdmin && !isAjay && (customerPersona.customerId || '').includes('SOWMIYA')
 
-  const initialCustomerAvg = isAjay ? '45000' : isMonisha ? '1950' : isMohana ? '8500' : isSowmiya ? '28500' : '1450'
+  const initialCustomerAvg = isAjay ? '45000' : isMonisha ? '1950' : isMohana ? '8500' : isSowmiya ? '28500' : '1500'
   const initialDevice = isAjay ? 'desktop_macos' : isMonisha ? 'mobile_ios' : 'mobile_android'
 
   // Form State
