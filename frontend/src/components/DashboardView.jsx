@@ -24,6 +24,10 @@ import {
   Lock,
   Building2,
   Info,
+  Bot,
+  Search,
+  Globe,
+  ShieldCheck,
 } from 'lucide-react'
 import CyberHeroShield from './CyberHeroShield'
 import { dashboardApi, alertsApi } from '../services/api'
@@ -40,6 +44,39 @@ import CustomerDashboardView from './CustomerDashboardView'
 import GlobalCenterModal from './common/GlobalCenterModal'
 import ContextualModuleHelp from './common/ContextualModuleHelp'
 import { formatINR } from '../utils/formatters'
+
+function getChannelIcon(type) {
+  const t = String(type || '').toUpperCase()
+  if (t.includes('UPI')) return Smartphone
+  if (t.includes('CARD') || t.includes('POS')) return CreditCard
+  if (t.includes('NETBANKING') || t.includes('ONLINE')) return Laptop
+  if (t.includes('INSTANT') || t.includes('WIRE') || t.includes('TRANSFER')) return Zap
+  if (t.includes('WALLET')) return Layers
+  return Activity
+}
+
+function getDeviceIcon(name) {
+  const d = String(name || '').toLowerCase()
+  if (d.includes('bot')) return Bot
+  if (d.includes('mobile') || d.includes('android') || d.includes('ios')) return Smartphone
+  if (d.includes('desktop') || d.includes('windows') || d.includes('mac')) return Laptop
+  return Globe
+}
+
+function formatDeviceName(name) {
+  const d = String(name || '').toLowerCase()
+  if (d === 'unknown_bot') return 'Unknown Automated Botnet'
+  if (d === 'unknown_linux_bot') return 'Linux Scraper / Exploit Bot'
+  if (d === 'web_browser') return 'Synthetic Web Browser (Headless)'
+  if (d === 'mobile_android') return 'Mobile Banking (Android)'
+  if (d === 'mobile_ios') return 'Mobile Banking (Apple iOS)'
+  if (d === 'desktop_windows') return 'Enterprise Desktop (Windows)'
+  if (d === 'desktop_macos') return 'Enterprise Desktop (macOS)'
+  if (d === 'dedicated_clean_device') return 'Dedicated POS / Hardware Token'
+  if (d === 'web') return 'Standard Web Session'
+  if (d === 'mac') return 'macOS Terminal Session'
+  return name.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+}
 
 export default function DashboardView({ onSelectTransaction, onOpenCase, onOpenPayment, user, isAdmin }) {
   const customerPersona = getCustomerPersona(user) || {}
@@ -68,7 +105,9 @@ export default function DashboardView({ onSelectTransaction, onOpenCase, onOpenP
 
   // Centered Modal Inspection States (Feature: CLICK -> CENTERED MODAL -> FULL CONTENT)
   const [activeModal, setActiveModal] = useState(null)
-  // activeModal can be: { type: 'METRIC', data: ... } | { type: 'ALERT', data: ... } | { type: 'TX', data: ... } | { type: 'SHAP', data: ... } | { type: 'MODEL', data: ... } | { type: 'CHANNEL', data: ... }
+  // activeModal can be: { type: 'METRIC', data: ... } | { type: 'ALERT', data: ... } | { type: 'TX', data: ... } | { type: 'SHAP', data: ... } | { type: 'MODEL', data: ... } | { type: 'CHANNEL', data: ... } | { type: 'DONUT', data: ... }
+  const [modalSubTab, setModalSubTab] = useState('channels')
+  const [modalSearch, setModalSearch] = useState('')
 
   const fetchStats = async () => {
     setLoading(true)
@@ -775,12 +814,13 @@ export default function DashboardView({ onSelectTransaction, onOpenCase, onOpenP
 
         {/* CHART B: Risk Level Distribution & Classification Donut */}
         <div
-          onClick={() =>
+          onClick={() => {
             setActiveModal({
               type: 'DONUT',
               title: 'Risk Tier Classification Matrix',
               badge: `${totalRiskCount} ASSESSED`,
               icon: Target,
+              maxWidth: 'max-w-4xl',
               subtitle: 'Comprehensive breakdown of Low, Medium, and High risk classifications',
               data: {
                 totalAssessed: totalRiskCount,
@@ -790,9 +830,15 @@ export default function DashboardView({ onSelectTransaction, onOpenCase, onOpenP
                 medPct,
                 highCount,
                 highPct,
+                fraudCount: stats?.fraud_transactions ?? highCount,
+                genuineCount: stats?.genuine_transactions ?? (lowCount + medCount),
+                fraudRatio: stats?.fraud_ratio ?? ((highCount / totalRiskCount) * 100).toFixed(2),
+                avgRiskScore: stats?.average_risk_score ?? 21.4,
+                avgFraudProb: stats?.average_fraud_probability ?? 0.082,
+                riskDistribution: riskDist,
               },
             })
-          }
+          }}
           className="p-5 sm:p-6 rounded-3xl bg-slate-900/60 border border-slate-800 hover:border-cyan-500/50 shadow-xl backdrop-blur-md flex flex-col justify-between cursor-pointer group transition"
         >
           <div>
@@ -1055,16 +1101,23 @@ export default function DashboardView({ onSelectTransaction, onOpenCase, onOpenP
 
         {/* CHART E & F: Transaction Channel & Device Risk Matrix */}
         <div
-          onClick={() =>
+          onClick={() => {
+            setModalSubTab('channels')
+            setModalSearch('')
             setActiveModal({
               type: 'CHANNEL',
               title: 'Channel & Device Anomaly Matrix',
-              badge: `${typeRisks.length} CHANNELS`,
+              badge: `${typeRisks.length} CHANNELS • ${(stats?.device_risk || []).length} SIGNATURES`,
               icon: CreditCard,
+              maxWidth: 'max-w-4xl',
               subtitle: 'Detailed fraud breakdown across Web, UPI Mobile, POS, and Bot Signatures',
-              data: typeRisks,
+              data: {
+                channels: typeRisks,
+                devices: stats?.device_risk || [],
+                totalTransactions: stats?.total_transactions || totalRiskCount,
+              },
             })
-          }
+          }}
           className="p-5 sm:p-6 rounded-3xl bg-slate-900/60 border border-slate-800 hover:border-emerald-500/50 shadow-xl backdrop-blur-md flex flex-col justify-between cursor-pointer group transition"
         >
           <div>
@@ -1309,7 +1362,7 @@ export default function DashboardView({ onSelectTransaction, onOpenCase, onOpenP
           badge={activeModal.badge}
           badgeColor={activeModal.badgeColor}
           icon={activeModal.icon || Sparkles}
-          maxWidth="max-w-2xl"
+          maxWidth={activeModal.maxWidth || 'max-w-3xl'}
           footer={
             <div className="w-full flex items-center justify-between">
               <span className="text-[10px] font-mono text-slate-500">
@@ -1317,13 +1370,511 @@ export default function DashboardView({ onSelectTransaction, onOpenCase, onOpenP
               </span>
               <button
                 onClick={() => setActiveModal(null)}
-                className="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold transition shadow"
+                className="px-4 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-bold transition shadow cursor-pointer"
               >
                 Close (Done)
               </button>
             </div>
           }
         >
+          {/* MODAL BODY: RISK TIER CLASSIFICATION MATRIX */}
+          {(activeModal.type === 'DONUT' || activeModal.type === 'RISK_TIER') && (
+            <div className="space-y-5 text-xs">
+              {/* 1. Top 4 Metric KPI Cards */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                <div className="p-3.5 rounded-2xl bg-slate-900/90 border border-slate-800 shadow">
+                  <span className="text-[10px] uppercase font-mono text-slate-400 block mb-1">Total Assessed</span>
+                  <div className="text-lg font-bold text-white font-mono">
+                    {Number(activeModal.data.totalAssessed || 0).toLocaleString()}
+                  </div>
+                  <span className="text-[10px] text-cyan-400 font-mono">100% evaluated</span>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-slate-900/90 border border-emerald-900/50 shadow">
+                  <span className="text-[10px] uppercase font-mono text-emerald-400 block mb-1">Low Risk (Safe)</span>
+                  <div className="text-lg font-bold text-emerald-300 font-mono">
+                    {Number(activeModal.data.lowCount || 0).toLocaleString()}
+                  </div>
+                  <span className="text-[10px] text-emerald-400 font-mono">
+                    {activeModal.data.lowPct}% • Score 0–30
+                  </span>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-slate-900/90 border border-amber-900/50 shadow">
+                  <span className="text-[10px] uppercase font-mono text-amber-400 block mb-1">Medium Risk (Review)</span>
+                  <div className="text-lg font-bold text-amber-300 font-mono">
+                    {Number(activeModal.data.medCount || 0).toLocaleString()}
+                  </div>
+                  <span className="text-[10px] text-amber-400 font-mono">
+                    {activeModal.data.medPct}% • Score 31–70
+                  </span>
+                </div>
+
+                <div className="p-3.5 rounded-2xl bg-slate-900/90 border border-rose-900/50 shadow">
+                  <span className="text-[10px] uppercase font-mono text-rose-400 block mb-1">High Risk (Critical)</span>
+                  <div className="text-lg font-bold text-rose-300 font-mono">
+                    {Number(activeModal.data.highCount || 0).toLocaleString()}
+                  </div>
+                  <span className="text-[10px] text-rose-400 font-mono">
+                    {activeModal.data.highPct}% • Score 71–100
+                  </span>
+                </div>
+              </div>
+
+              {/* 2. Visual Segmented Distribution Bar */}
+              <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-bold text-white uppercase tracking-wider text-[11px]">
+                    Multi-Tier Population Distribution
+                  </span>
+                  <span className="font-mono text-[10px] text-slate-400">
+                    Ensemble TreeSHAP Classification Boundaries
+                  </span>
+                </div>
+                <div className="h-4 w-full bg-slate-950 rounded-full overflow-hidden flex p-0.5 border border-slate-800">
+                  <div
+                    style={{ width: `${Math.max(activeModal.data.lowPct || 0, 1)}%` }}
+                    className="h-full bg-emerald-500 rounded-l-full transition-all duration-500"
+                    title={`Low Risk: ${activeModal.data.lowPct}%`}
+                  />
+                  <div
+                    style={{ width: `${Math.max(activeModal.data.medPct || 0, 1)}%` }}
+                    className="h-full bg-amber-500 transition-all duration-500"
+                    title={`Medium Risk: ${activeModal.data.medPct}%`}
+                  />
+                  <div
+                    style={{ width: `${Math.max(activeModal.data.highPct || 0, 1)}%` }}
+                    className="h-full bg-rose-500 rounded-r-full transition-all duration-500"
+                    title={`High Risk: ${activeModal.data.highPct}%`}
+                  />
+                </div>
+                <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono pt-1 text-slate-400">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" />
+                    <span>Low: {Number(activeModal.data.lowCount || 0).toLocaleString()} ({activeModal.data.lowPct}%)</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block" />
+                    <span>Medium: {Number(activeModal.data.medCount || 0).toLocaleString()} ({activeModal.data.medPct}%)</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block" />
+                    <span>High: {Number(activeModal.data.highCount || 0).toLocaleString()} ({activeModal.data.highPct}%)</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 3. Detailed Classification Matrix Table */}
+              <div className="rounded-2xl border border-slate-800 overflow-hidden bg-slate-950/70">
+                <div className="px-4 py-2.5 bg-slate-900 border-b border-slate-800 flex items-center justify-between">
+                  <h4 className="font-bold text-white text-xs uppercase tracking-wider flex items-center gap-2">
+                    <Target className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>Risk Classification Matrix & Policy Enforcement</span>
+                  </h4>
+                  <span className="text-[10px] font-mono text-cyan-400">Real-Time Decision Boundaries</span>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead>
+                      <tr className="border-b border-slate-800 bg-slate-900/60 font-mono text-[10px] text-slate-400 uppercase">
+                        <th className="py-2.5 px-3">Classification Tier</th>
+                        <th className="py-2.5 px-3">Score Range</th>
+                        <th className="py-2.5 px-3 text-right">Volume</th>
+                        <th className="py-2.5 px-3 text-right">Share</th>
+                        <th className="py-2.5 px-3">Pre-Auth Action</th>
+                        <th className="py-2.5 px-3">Behavioral Profile & Attack Vectors</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/60 font-mono text-[11px]">
+                      {/* ROW 1: LOW RISK */}
+                      <tr className="hover:bg-slate-900/40 transition">
+                        <td className="py-3 px-3">
+                          <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]" />
+                            <strong className="text-emerald-300 font-sans text-xs">Low Risk</strong>
+                          </div>
+                        </td>
+                        <td className="py-3 px-3 text-slate-300">0 – 30 / 100</td>
+                        <td className="py-3 px-3 text-right font-bold text-white">
+                          {Number(activeModal.data.lowCount || 0).toLocaleString()}
+                        </td>
+                        <td className="py-3 px-3 text-right text-emerald-400 font-bold">
+                          {activeModal.data.lowPct}%
+                        </td>
+                        <td className="py-3 px-3">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-950 text-emerald-300 border border-emerald-800">
+                            ALLOW (Auto-Approved)
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 font-sans text-slate-300 leading-relaxed text-[11px]">
+                          Habitual grocery & utility profile, registered hardware tokens, familiar merchant velocity, and clean device fingerprint.
+                        </td>
+                      </tr>
+
+                      {/* ROW 2: MEDIUM RISK */}
+                      <tr className="hover:bg-slate-900/40 transition">
+                        <td className="py-3 px-3">
+                          <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.6)]" />
+                            <strong className="text-amber-300 font-sans text-xs">Medium Risk</strong>
+                          </div>
+                        </td>
+                        <td className="py-3 px-3 text-slate-300">31 – 70 / 100</td>
+                        <td className="py-3 px-3 text-right font-bold text-white">
+                          {Number(activeModal.data.medCount || 0).toLocaleString()}
+                        </td>
+                        <td className="py-3 px-3 text-right text-amber-400 font-bold">
+                          {activeModal.data.medPct}%
+                        </td>
+                        <td className="py-3 px-3">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-950 text-amber-300 border border-amber-800">
+                            CHALLENGE (Step-Up OTP)
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 font-sans text-slate-300 leading-relaxed text-[11px]">
+                          Elevated velocity surge, high-value electronics purchase, off-peak night window, or unrecognized proxy connection.
+                        </td>
+                      </tr>
+
+                      {/* ROW 3: HIGH RISK */}
+                      <tr className="hover:bg-slate-900/40 transition">
+                        <td className="py-3 px-3">
+                          <div className="flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-rose-400 shadow-[0_0_8px_rgba(244,63,94,0.6)]" />
+                            <strong className="text-rose-300 font-sans text-xs">High Risk</strong>
+                          </div>
+                        </td>
+                        <td className="py-3 px-3 text-slate-300">71 – 100 / 100</td>
+                        <td className="py-3 px-3 text-right font-bold text-white">
+                          {Number(activeModal.data.highCount || 0).toLocaleString()}
+                        </td>
+                        <td className="py-3 px-3 text-right text-rose-400 font-bold">
+                          {activeModal.data.highPct}%
+                        </td>
+                        <td className="py-3 px-3">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-950 text-rose-300 border border-rose-800">
+                            BLOCK (Pre-Auth Terminated)
+                          </span>
+                        </td>
+                        <td className="py-3 px-3 font-sans text-slate-300 leading-relaxed text-[11px]">
+                          Botnet signature, rapid credential-stuffing ATO attack, impossible geo-travel velocity, or automated balance draining.
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* 4. Fraud & Intelligence Summary Callout */}
+              <div className="p-3.5 rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 border border-indigo-900/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs font-mono">
+                <div className="space-y-0.5">
+                  <span className="text-indigo-300 font-bold block text-[11px]">
+                    Operational Fraud Detection Summary
+                  </span>
+                  <span className="text-slate-400 text-[10px]">
+                    Total Confirmed / Flagged Fraud: <strong className="text-rose-400">{Number(activeModal.data.fraudCount || 0).toLocaleString()}</strong> transactions ({activeModal.data.fraudRatio}% population rate)
+                  </span>
+                </div>
+                <div className="flex items-center gap-4 text-[11px]">
+                  <div>
+                    <span className="text-slate-500 block text-[9px] uppercase">Mean Risk</span>
+                    <span className="font-bold text-cyan-300">{activeModal.data.avgRiskScore} / 100</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block text-[9px] uppercase">Mean Probability</span>
+                    <span className="font-bold text-purple-300">{(Number(activeModal.data.avgFraudProb || 0) * 100).toFixed(2)}%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* MODAL BODY: CHANNEL & DEVICE ANOMALY MATRIX */}
+          {(activeModal.type === 'CHANNEL' || activeModal.type === 'CHANNEL_DEVICE') && (() => {
+            const channels = activeModal.data?.channels || []
+            const devices = activeModal.data?.devices || []
+
+            // Identify highest risk channel & device
+            const highestRiskChannel = [...channels].sort((a, b) => (b.fraud_rate || 0) - (a.fraud_rate || 0))[0] || null
+            const highestRiskDevice = [...devices].sort((a, b) => (b.fraud_rate || 0) - (a.fraud_rate || 0))[0] || null
+
+            const filteredChannels = channels.filter((c) =>
+              !modalSearch || String(c.transaction_type || '').toLowerCase().includes(modalSearch.toLowerCase())
+            )
+            const filteredDevices = devices.filter((d) =>
+              !modalSearch || String(d.device || '').toLowerCase().includes(modalSearch.toLowerCase())
+            )
+
+            return (
+              <div className="space-y-4 text-xs font-sans">
+                {/* 1. Top Anomalous Indicators Callouts */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {highestRiskChannel && (
+                    <div className="p-3.5 rounded-2xl bg-gradient-to-br from-rose-950/80 to-slate-900 border border-rose-800/80 shadow-md">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px] font-mono uppercase text-rose-400 font-bold flex items-center gap-1.5">
+                          <AlertTriangle className="w-3.5 h-3.5 text-rose-400" />
+                          Highest Risk Channel
+                        </span>
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-900 text-rose-200">
+                          {highestRiskChannel.fraud_rate}% FRAUD
+                        </span>
+                      </div>
+                      <div className="flex items-baseline justify-between mt-1">
+                        <strong className="text-white text-sm font-mono">{highestRiskChannel.transaction_type}</strong>
+                        <span className="text-[11px] font-mono text-slate-300">
+                          {highestRiskChannel.fraud_count} / {highestRiskChannel.total_count} tx
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-rose-200/80 mt-1 leading-relaxed">
+                        Targeted by automated rapid transfer and balance-drain attempts (Avg Risk: {highestRiskChannel.avg_risk_score}/100).
+                      </p>
+                    </div>
+                  )}
+
+                  {highestRiskDevice && (
+                    <div className="p-3.5 rounded-2xl bg-gradient-to-br from-purple-950/80 to-slate-900 border border-purple-800/80 shadow-md">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px] font-mono uppercase text-purple-300 font-bold flex items-center gap-1.5">
+                          <Bot className="w-3.5 h-3.5 text-purple-400" />
+                          Highest Risk Signature
+                        </span>
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-purple-900 text-purple-200">
+                          {highestRiskDevice.fraud_rate}% ANOMALY
+                        </span>
+                      </div>
+                      <div className="flex items-baseline justify-between mt-1">
+                        <strong className="text-white text-sm font-mono">{formatDeviceName(highestRiskDevice.device)}</strong>
+                        <span className="text-[11px] font-mono text-slate-300">
+                          {highestRiskDevice.fraud_count} / {highestRiskDevice.total_count} tx
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-purple-200/80 mt-1 leading-relaxed">
+                        Headless scraper & credential-stuffing botnet pattern (Avg Risk: {highestRiskDevice.avg_risk_score}/100).
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* 2. Sub-Tabs Header & Search Filter */}
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-1">
+                  <div className="flex items-center gap-1.5 p-1 bg-slate-950 rounded-xl border border-slate-800">
+                    <button
+                      onClick={() => setModalSubTab('channels')}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                        modalSubTab === 'channels'
+                          ? 'bg-cyan-600 text-white shadow-sm'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      <CreditCard className="w-3.5 h-3.5" />
+                      <span>Payment Channels ({channels.length})</span>
+                    </button>
+                    <button
+                      onClick={() => setModalSubTab('devices')}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                        modalSubTab === 'devices'
+                          ? 'bg-cyan-600 text-white shadow-sm'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      <Bot className="w-3.5 h-3.5" />
+                      <span>Device & Bot Signatures ({devices.length})</span>
+                    </button>
+                  </div>
+
+                  {/* Quick Search */}
+                  <div className="relative flex-1 sm:max-w-xs">
+                    <Search className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={modalSearch}
+                      onChange={(e) => setModalSearch(e.target.value)}
+                      placeholder={`Filter ${modalSubTab}...`}
+                      className="w-full pl-8 pr-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500 font-mono"
+                    />
+                  </div>
+                </div>
+
+                {/* 3. TAB A: PAYMENT CHANNELS MATRIX */}
+                {modalSubTab === 'channels' && (
+                  <div className="rounded-2xl border border-slate-800 overflow-hidden bg-slate-950/70">
+                    <div className="overflow-x-auto max-h-[380px] overflow-y-auto">
+                      <table className="w-full text-left text-xs">
+                        <thead className="sticky top-0 z-10 bg-slate-900 border-b border-slate-800">
+                          <tr className="font-mono text-[10px] text-slate-400 uppercase">
+                            <th className="py-2.5 px-3">Channel / Payment Rail</th>
+                            <th className="py-2.5 px-3 text-right">Transactions</th>
+                            <th className="py-2.5 px-3 text-right">Fraud Count</th>
+                            <th className="py-2.5 px-3 text-right">Anomaly Rate</th>
+                            <th className="py-2.5 px-3 text-center">Avg Risk Score</th>
+                            <th className="py-2.5 px-3 text-right">Total Financial Volume</th>
+                            <th className="py-2.5 px-3 text-center">Threat Status</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-800/60 font-mono text-[11px]">
+                          {filteredChannels.length === 0 ? (
+                            <tr>
+                              <td colSpan="7" className="py-8 text-center text-slate-500">
+                                No channels matching "{modalSearch}"
+                              </td>
+                            </tr>
+                          ) : (
+                            filteredChannels.map((c) => {
+                              const IconComp = getChannelIcon(c.transaction_type)
+                              const isHigh = (c.fraud_rate || 0) >= 20
+                              const isMed = (c.fraud_rate || 0) >= 5 && (c.fraud_rate || 0) < 20
+                              return (
+                                <tr key={c.transaction_type} className="hover:bg-slate-900/50 transition">
+                                  <td className="py-2.5 px-3">
+                                    <div className="flex items-center gap-2">
+                                      <div className={`p-1.5 rounded-lg ${isHigh ? 'bg-rose-950 text-rose-400' : isMed ? 'bg-amber-950 text-amber-400' : 'bg-slate-800 text-cyan-400'}`}>
+                                        <IconComp className="w-3.5 h-3.5" />
+                                      </div>
+                                      <strong className="text-white font-mono text-xs">{c.transaction_type}</strong>
+                                    </div>
+                                  </td>
+                                  <td className="py-2.5 px-3 text-right text-slate-200 font-bold">
+                                    {Number(c.total_count || 0).toLocaleString()}
+                                  </td>
+                                  <td className="py-2.5 px-3 text-right font-bold text-rose-400">
+                                    {Number(c.fraud_count || 0).toLocaleString()}
+                                  </td>
+                                  <td className="py-2.5 px-3 text-right">
+                                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                                      isHigh
+                                        ? 'bg-rose-950 text-rose-300 border border-rose-800'
+                                        : isMed
+                                        ? 'bg-amber-950 text-amber-300 border border-amber-800'
+                                        : 'bg-emerald-950 text-emerald-300 border border-emerald-800'
+                                    }`}>
+                                      {c.fraud_rate}%
+                                    </span>
+                                  </td>
+                                  <td className="py-2.5 px-3 text-center">
+                                    <span className={`font-bold ${
+                                      c.avg_risk_score >= 70 ? 'text-rose-400' : c.avg_risk_score >= 30 ? 'text-amber-400' : 'text-emerald-400'
+                                    }`}>
+                                      {c.avg_risk_score} / 100
+                                    </span>
+                                  </td>
+                                  <td className="py-2.5 px-3 text-right text-emerald-400">
+                                    {formatINR(c.total_volume || 0)}
+                                  </td>
+                                  <td className="py-2.5 px-3 text-center">
+                                    <span className={`px-2 py-0.5 rounded text-[9px] font-bold ${
+                                      isHigh
+                                        ? 'bg-rose-950/80 text-rose-400 border border-rose-800'
+                                        : isMed
+                                        ? 'bg-amber-950/80 text-amber-400 border border-amber-800'
+                                        : 'bg-emerald-950/80 text-emerald-400 border border-emerald-800'
+                                    }`}>
+                                      {isHigh ? 'CRITICAL' : isMed ? 'ELEVATED' : 'CLEAN'}
+                                    </span>
+                                  </td>
+                                </tr>
+                              )
+                            })
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* 4. TAB B: DEVICE & BOT SIGNATURES MATRIX */}
+                {modalSubTab === 'devices' && (
+                  <div className="rounded-2xl border border-slate-800 overflow-hidden bg-slate-950/70">
+                    <div className="overflow-x-auto max-h-[380px] overflow-y-auto">
+                      <table className="w-full text-left text-xs">
+                        <thead className="sticky top-0 z-10 bg-slate-900 border-b border-slate-800">
+                          <tr className="font-mono text-[10px] text-slate-400 uppercase">
+                            <th className="py-2.5 px-3">Device / Hardware Signature</th>
+                            <th className="py-2.5 px-3 text-right">Total Assessed</th>
+                            <th className="py-2.5 px-3 text-right">Confirmed Fraud</th>
+                            <th className="py-2.5 px-3 text-right">Anomaly Rate</th>
+                            <th className="py-2.5 px-3 text-center">Avg Risk Score</th>
+                            <th className="py-2.5 px-3">Threat Profile & Telemetry</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-800/60 font-mono text-[11px]">
+                          {filteredDevices.length === 0 ? (
+                            <tr>
+                              <td colSpan="6" className="py-8 text-center text-slate-500">
+                                No device signatures matching "{modalSearch}"
+                              </td>
+                            </tr>
+                          ) : (
+                            filteredDevices.map((d) => {
+                              const IconComp = getDeviceIcon(d.device)
+                              const isHigh = (d.fraud_rate || 0) >= 50
+                              const isMed = (d.fraud_rate || 0) >= 5 && (d.fraud_rate || 0) < 50
+                              const isBot = String(d.device).toLowerCase().includes('bot')
+                              return (
+                                <tr key={d.device} className="hover:bg-slate-900/50 transition">
+                                  <td className="py-2.5 px-3">
+                                    <div className="flex items-center gap-2">
+                                      <div className={`p-1.5 rounded-lg ${isBot ? 'bg-purple-950 text-purple-400' : isHigh ? 'bg-rose-950 text-rose-400' : 'bg-slate-800 text-cyan-400'}`}>
+                                        <IconComp className="w-3.5 h-3.5" />
+                                      </div>
+                                      <div>
+                                        <strong className="text-white font-sans text-xs block">{formatDeviceName(d.device)}</strong>
+                                        <span className="text-[10px] text-slate-500 font-mono">{d.device}</span>
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="py-2.5 px-3 text-right text-slate-200 font-bold">
+                                    {Number(d.total_count || 0).toLocaleString()}
+                                  </td>
+                                  <td className="py-2.5 px-3 text-right font-bold text-rose-400">
+                                    {Number(d.fraud_count || 0).toLocaleString()}
+                                  </td>
+                                  <td className="py-2.5 px-3 text-right">
+                                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                                      isHigh
+                                        ? 'bg-rose-950 text-rose-300 border border-rose-800'
+                                        : isMed
+                                        ? 'bg-amber-950 text-amber-300 border border-amber-800'
+                                        : 'bg-emerald-950 text-emerald-300 border border-emerald-800'
+                                    }`}>
+                                      {d.fraud_rate}%
+                                    </span>
+                                  </td>
+                                  <td className="py-2.5 px-3 text-center">
+                                    <span className={`font-bold ${
+                                      d.avg_risk_score >= 70 ? 'text-rose-400' : d.avg_risk_score >= 30 ? 'text-amber-400' : 'text-emerald-400'
+                                    }`}>
+                                      {d.avg_risk_score} / 100
+                                    </span>
+                                  </td>
+                                  <td className="py-2.5 px-3 font-sans text-slate-300 text-[11px]">
+                                    {isBot ? (
+                                      <span className="text-purple-300 font-medium">Headless automation / Rapid credential stuffing</span>
+                                    ) : isHigh ? (
+                                      <span className="text-rose-300 font-medium">Synthetic browser session / Proxy rotation</span>
+                                    ) : (
+                                      <span className="text-slate-400">Verified biometric hardware / Consumer banking device</span>
+                                    )}
+                                  </td>
+                                </tr>
+                              )
+                            })
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* 5. Summary Footer */}
+                <div className="p-3 rounded-xl bg-slate-950 border border-slate-800/80 text-[11px] font-mono text-slate-400 flex items-center justify-between">
+                  <span>Channel &amp; hardware anomalies monitored by FraudLens real-time pre-auth heuristics.</span>
+                  <span className="text-cyan-400 font-bold">{channels.length} Rails • {devices.length} Signatures</span>
+                </div>
+              </div>
+            )
+          })()}
+
           {/* MODAL BODY 1: PERSONA DETAILS */}
           {activeModal.type === 'PERSONA' && (
             <div className="space-y-4 text-xs font-mono">
