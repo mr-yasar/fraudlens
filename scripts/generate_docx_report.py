@@ -257,7 +257,7 @@ def build_docx_tree(page_map=None):
     """
     doc = Document()
 
-    # SECTION 1: FRONT MATTER (Cover, Certs, Abstract, TOC, LOT, LOF)
+    # SECTION 1: FRONT MATTER (Cover, Bonafide Cert, Abstract, Ack, TOC, LOT, LOF)
     section1 = doc.sections[0]
     section1.top_margin = Inches(1.0)
     section1.bottom_margin = Inches(1.0)
@@ -267,47 +267,45 @@ def build_docx_tree(page_map=None):
     section1.page_height = Inches(11.69)
     add_page_number_to_section(section1, is_roman=True, start_at_1=True, start_num=1)
 
-    # 1. COVER PAGE (APPENDIX 1)
-    p_app = doc.add_paragraph()
-    style_paragraph(p_app, space_before=0, space_after=10, align=WD_ALIGN_PARAGRAPH.CENTER)
-    r = p_app.add_run("APPENDIX 1\n(A typical Specimen of Cover Page & Title Page)")
-    r.font.name = "Times New Roman"
-    r.font.size = Pt(11)
-
+    # 1. COVER PAGE (Page i)
     p_title = doc.add_paragraph()
-    style_paragraph(p_title, space_before=20, space_after=16, align=WD_ALIGN_PARAGRAPH.CENTER)
+    style_paragraph(p_title, space_before=40, space_after=18, align=WD_ALIGN_PARAGRAPH.CENTER)
     r = p_title.add_run(rd.FRONT_MATTER["project_title"])
     r.font.name = "Times New Roman"
     r.font.size = Pt(18)
     r.font.bold = True
 
     p_rep = doc.add_paragraph()
-    style_paragraph(p_rep, space_before=10, space_after=10, align=WD_ALIGN_PARAGRAPH.CENTER)
+    style_paragraph(p_rep, space_before=14, space_after=14, align=WD_ALIGN_PARAGRAPH.CENTER)
     r = p_rep.add_run("A PROJECT REPORT")
     r.font.name = "Times New Roman"
     r.font.size = Pt(14)
     r.font.bold = True
 
     p_sub = doc.add_paragraph()
-    style_paragraph(p_sub, space_before=6, space_after=10, align=WD_ALIGN_PARAGRAPH.CENTER)
+    style_paragraph(p_sub, space_before=10, space_after=12, align=WD_ALIGN_PARAGRAPH.CENTER)
     r = p_sub.add_run("Submitted by")
     r.font.name = "Times New Roman"
     r.font.size = Pt(14)
     r.font.italic = True
 
+    # Candidate 1 & Candidate 2
     p_cand = doc.add_paragraph()
     style_paragraph(p_cand, space_before=10, space_after=16, align=WD_ALIGN_PARAGRAPH.CENTER)
-    r = p_cand.add_run(f"{rd.FRONT_MATTER['candidate_name']}\n")
-    r.font.name = "Times New Roman"
-    r.font.size = Pt(16)
-    r.font.bold = True
-    r_reg = p_cand.add_run(f"(Reg. No.: {rd.FRONT_MATTER['reg_no']})")
-    r_reg.font.name = "Times New Roman"
-    r_reg.font.size = Pt(14)
+    cands = rd.FRONT_MATTER.get("candidates", [])
+    for idx, c in enumerate(cands):
+        r_name = p_cand.add_run(f"{c['name']}\n")
+        r_name.font.name = "Times New Roman"
+        r_name.font.size = Pt(15)
+        r_name.font.bold = True
+        sep = "\n\n" if idx < len(cands) - 1 else ""
+        r_reg = p_cand.add_run(f"Reg.No.: {c['reg_no']}{sep}")
+        r_reg.font.name = "Times New Roman"
+        r_reg.font.size = Pt(13)
 
     p_part = doc.add_paragraph()
-    style_paragraph(p_part, space_before=10, space_after=14, align=WD_ALIGN_PARAGRAPH.CENTER)
-    r = p_part.add_run("in partial fulfillment for the award of the degree\nof")
+    style_paragraph(p_part, space_before=12, space_after=14, align=WD_ALIGN_PARAGRAPH.CENTER)
+    r = p_part.add_run("in partial fulfillment for the award of the degree of")
     r.font.name = "Times New Roman"
     r.font.size = Pt(14)
     r.font.italic = True
@@ -320,8 +318,8 @@ def build_docx_tree(page_map=None):
     r.font.bold = True
 
     p_col = doc.add_paragraph()
-    style_paragraph(p_col, space_before=20, space_after=4, align=WD_ALIGN_PARAGRAPH.CENTER)
-    r = p_col.add_run(rd.FRONT_MATTER["college_name"])
+    style_paragraph(p_col, space_before=24, space_after=4, align=WD_ALIGN_PARAGRAPH.CENTER)
+    r = p_col.add_run(rd.FRONT_MATTER["college_autonomous"])
     r.font.name = "Times New Roman"
     r.font.size = Pt(16)
     r.font.bold = True
@@ -333,146 +331,24 @@ def build_docx_tree(page_map=None):
     r.font.size = Pt(14)
     r.font.bold = True
 
-    # 2. TITLE PAGE (APPENDIX 1 DUPLICATE)
+    # 2. BONAFIDE CERTIFICATE (Page ii)
     doc.add_page_break()
-    p_title2 = doc.add_paragraph()
-    style_paragraph(p_title2, space_before=24, space_after=16, align=WD_ALIGN_PARAGRAPH.CENTER)
-    r = p_title2.add_run(rd.FRONT_MATTER["project_title"])
-    r.font.name = "Times New Roman"
-    r.font.size = Pt(18)
-    r.font.bold = True
-
-    p_rep2 = doc.add_paragraph()
-    style_paragraph(p_rep2, space_before=10, space_after=10, align=WD_ALIGN_PARAGRAPH.CENTER)
-    r = p_rep2.add_run("A PROJECT REPORT")
-    r.font.name = "Times New Roman"
-    r.font.size = Pt(14)
-    r.font.bold = True
-
-    p_sub2 = doc.add_paragraph()
-    style_paragraph(p_sub2, space_before=6, space_after=10, align=WD_ALIGN_PARAGRAPH.CENTER)
-    r = p_sub2.add_run("Submitted by")
-    r.font.name = "Times New Roman"
-    r.font.size = Pt(14)
-    r.font.italic = True
-
-    p_cand2 = doc.add_paragraph()
-    style_paragraph(p_cand2, space_before=10, space_after=16, align=WD_ALIGN_PARAGRAPH.CENTER)
-    r = p_cand2.add_run(f"{rd.FRONT_MATTER['candidate_name']}\n")
-    r.font.name = "Times New Roman"
-    r.font.size = Pt(16)
-    r.font.bold = True
-    r_reg2 = p_cand2.add_run(f"(Reg. No.: {rd.FRONT_MATTER['reg_no']})")
-    r_reg2.font.name = "Times New Roman"
-    r_reg2.font.size = Pt(14)
-
-    p_part2 = doc.add_paragraph()
-    style_paragraph(p_part2, space_before=10, space_after=14, align=WD_ALIGN_PARAGRAPH.CENTER)
-    r = p_part2.add_run("in partial fulfillment for the award of the degree\nof")
-    r.font.name = "Times New Roman"
-    r.font.size = Pt(14)
-    r.font.italic = True
-
-    p_deg2 = doc.add_paragraph()
-    style_paragraph(p_deg2, space_before=10, space_after=20, align=WD_ALIGN_PARAGRAPH.CENTER)
-    r = p_deg2.add_run(f"{rd.FRONT_MATTER['degree']}\nIN\n{rd.FRONT_MATTER['branch']}")
-    r.font.name = "Times New Roman"
-    r.font.size = Pt(16)
-    r.font.bold = True
-
-    p_col2 = doc.add_paragraph()
-    style_paragraph(p_col2, space_before=20, space_after=4, align=WD_ALIGN_PARAGRAPH.CENTER)
-    r = p_col2.add_run(rd.FRONT_MATTER["college_name"])
-    r.font.name = "Times New Roman"
-    r.font.size = Pt(16)
-    r.font.bold = True
-
-    p_uni2 = doc.add_paragraph()
-    style_paragraph(p_uni2, space_before=4, space_after=16, align=WD_ALIGN_PARAGRAPH.CENTER)
-    r = p_uni2.add_run(f"{rd.FRONT_MATTER['university']}\n{rd.FRONT_MATTER['month_year']}")
-    r.font.name = "Times New Roman"
-    r.font.size = Pt(14)
-    r.font.bold = True
-
-    # 3. COMPLETION CERTIFICATE (APPENDIX 2)
-    doc.add_page_break()
-    p_app2 = doc.add_paragraph()
-    style_paragraph(p_app2, space_before=0, space_after=16, align=WD_ALIGN_PARAGRAPH.CENTER)
-    r = p_app2.add_run("APPENDIX 2\nSAMPLE SHEET FOR COMPLETION CERTIFICATE")
-    r.font.name = "Times New Roman"
-    r.font.size = Pt(11)
-
-    p_cname = doc.add_paragraph()
-    style_paragraph(p_cname, space_before=16, space_after=4, align=WD_ALIGN_PARAGRAPH.CENTER)
-    r = p_cname.add_run(rd.FRONT_MATTER["college_name"])
-    r.font.name = "Times New Roman"
-    r.font.size = Pt(16)
-    r.font.bold = True
-
-    p_dname = doc.add_paragraph()
-    style_paragraph(p_dname, space_before=4, space_after=30, align=WD_ALIGN_PARAGRAPH.CENTER)
-    r = p_dname.add_run(rd.FRONT_MATTER["department"])
-    r.font.name = "Times New Roman"
-    r.font.size = Pt(14)
-    r.font.bold = True
-
-    p_cert = doc.add_paragraph()
-    style_paragraph(p_cert, space_before=20, space_after=60, align=WD_ALIGN_PARAGRAPH.JUSTIFY)
-    r1 = p_cert.add_run('The project report entitled "')
-    r1.font.name = "Times New Roman"
-    r1.font.size = Pt(13)
-    r2 = p_cert.add_run(rd.FRONT_MATTER["project_title"])
-    r2.font.name = "Times New Roman"
-    r2.font.size = Pt(13)
-    r2.font.bold = True
-    r3 = p_cert.add_run(f'" submitted by {rd.FRONT_MATTER["candidate_name"]} (Reg. No. {rd.FRONT_MATTER["reg_no"]}) is completed and may be accepted for being evaluated.')
-    r3.font.name = "Times New Roman"
-    r3.font.size = Pt(13)
-
-    table_sig = doc.add_table(rows=1, cols=2)
-    table_sig.alignment = WD_TABLE_ALIGNMENT.CENTER
-    c_left = table_sig.rows[0].cells[0]
-    c_right = table_sig.rows[0].cells[1]
-    c_left.width = Inches(3.2)
-    c_right.width = Inches(3.2)
-    
-    p_dt = c_left.paragraphs[0]
-    style_paragraph(p_dt, align=WD_ALIGN_PARAGRAPH.LEFT)
-    r = p_dt.add_run("Date: 03-10-2026\nPlace: Salem")
-    r.font.name = "Times New Roman"
-    r.font.size = Pt(12)
-    r.font.bold = True
-
-    p_sg = c_right.paragraphs[0]
-    style_paragraph(p_sg, align=WD_ALIGN_PARAGRAPH.RIGHT)
-    r = p_sg.add_run(f"Signature of the Supervisor\n\n({rd.FRONT_MATTER['supervisor_name']})\n{rd.FRONT_MATTER['supervisor_designation']}")
-    r.font.name = "Times New Roman"
-    r.font.size = Pt(11.5)
-
-    # 4. BONAFIDE CERTIFICATE (APPENDIX 3)
-    doc.add_page_break()
-    p_app3 = doc.add_paragraph()
-    style_paragraph(p_app3, space_before=0, space_after=12, align=WD_ALIGN_PARAGRAPH.CENTER)
-    r = p_app3.add_run("APPENDIX 3\n(A typical specimen of Bonafide Certificate)")
-    r.font.name = "Times New Roman"
-    r.font.size = Pt(11)
-
     p_bcol = doc.add_paragraph()
-    style_paragraph(p_bcol, space_before=12, space_after=4, align=WD_ALIGN_PARAGRAPH.CENTER)
-    r = p_bcol.add_run(f"{rd.FRONT_MATTER['college_autonomous']}")
+    style_paragraph(p_bcol, space_before=30, space_after=4, align=WD_ALIGN_PARAGRAPH.CENTER)
+    r = p_bcol.add_run(rd.FRONT_MATTER["college_autonomous"])
     r.font.name = "Times New Roman"
     r.font.size = Pt(16)
     r.font.bold = True
 
     p_buni = doc.add_paragraph()
-    style_paragraph(p_buni, space_before=4, space_after=20, align=WD_ALIGN_PARAGRAPH.CENTER)
+    style_paragraph(p_buni, space_before=4, space_after=30, align=WD_ALIGN_PARAGRAPH.CENTER)
     r = p_buni.add_run(f"AFFILIATED TO {rd.FRONT_MATTER['university']}")
     r.font.name = "Times New Roman"
     r.font.size = Pt(13)
     r.font.bold = True
 
     p_bcert = doc.add_paragraph()
-    style_paragraph(p_bcert, space_before=16, space_after=50, align=WD_ALIGN_PARAGRAPH.JUSTIFY)
+    style_paragraph(p_bcert, space_before=20, space_after=60, align=WD_ALIGN_PARAGRAPH.JUSTIFY)
     r1 = p_bcert.add_run('Certified that this project report "')
     r1.font.name = "Times New Roman"
     r1.font.size = Pt(12)
@@ -480,7 +356,8 @@ def build_docx_tree(page_map=None):
     r2.font.name = "Times New Roman"
     r2.font.size = Pt(12)
     r2.font.bold = True
-    r3 = p_bcert.add_run(f'" is the bonafide work of "{rd.FRONT_MATTER["candidate_name"]} (Reg. No. {rd.FRONT_MATTER["reg_no"]})" who carried out the project work under my supervision.')
+    cands_str = f"{cands[0]['name']} , {cands[1]['name']} (Reg. No. {cands[0]['reg_no']},{cands[1]['reg_no']})"
+    r3 = p_bcert.add_run(f'" is the bonafide work of "{cands_str}" who carried out the project work under my supervision.')
     r3.font.name = "Times New Roman"
     r3.font.size = Pt(12)
 
@@ -503,7 +380,7 @@ def build_docx_tree(page_map=None):
     r.font.name = "Times New Roman"
     r.font.size = Pt(11)
 
-    # 5. ABSTRACT
+    # 3. ABSTRACT (Page iii & iv)
     doc.add_page_break()
     p_abs_title = doc.add_paragraph()
     style_paragraph(p_abs_title, space_before=16, space_after=14, align=WD_ALIGN_PARAGRAPH.CENTER)
@@ -519,7 +396,7 @@ def build_docx_tree(page_map=None):
         r.font.name = "Times New Roman"
         r.font.size = Pt(11.5)
 
-    # 6. ACKNOWLEDGEMENT
+    # 4. ACKNOWLEDGEMENT (Page v)
     doc.add_page_break()
     p_ack_title = doc.add_paragraph()
     style_paragraph(p_ack_title, space_before=16, space_after=14, align=WD_ALIGN_PARAGRAPH.CENTER)
@@ -535,7 +412,7 @@ def build_docx_tree(page_map=None):
         r.font.name = "Times New Roman"
         r.font.size = Pt(12)
 
-    # 7. TABLE OF CONTENTS
+    # 5. TABLE OF CONTENTS (Page vi & vii)
     doc.add_page_break()
     p_toc_title = doc.add_paragraph()
     style_paragraph(p_toc_title, space_before=16, space_after=14, align=WD_ALIGN_PARAGRAPH.CENTER)
@@ -544,7 +421,7 @@ def build_docx_tree(page_map=None):
     r.font.size = Pt(16)
     r.font.bold = True
 
-    # TOC master list
+    # Complete TOC schema with 6.1.4 and 6.1.6 included
     toc_schema = [
         ("CHAPTER", "TITLE", "PAGE NO"),
         ("", "ABSTRACT", "abstract"),
@@ -582,7 +459,9 @@ def build_docx_tree(page_map=None):
         ("", "    6.1.1 Dataset Specification & Integrity Audit", "ch6_1_1"),
         ("", "    6.1.2 Preprocessing, Imputation & Scaling", "ch6_1_2"),
         ("", "    6.1.3 Behavioral Feature Engineering", "ch6_1_3"),
+        ("", "    6.1.4 Stratified Data Splitting & Leakage Auditing", "ch6_1_4"),
         ("", "    6.1.5 Class Imbalance Mitigation Strategy", "ch6_1_5"),
+        ("", "    6.1.6 Supervised Machine Learning Architectures", "ch6_1_6"),
         ("", "    6.1.7 Decoupled Multi-Factor Risk Scoring", "ch6_1_7"),
         ("", "    6.1.8 Explainable AI via TreeSHAP", "ch6_1_8"),
         ("", "  6.2 Modules Overview", "ch6_2"),
@@ -627,7 +506,6 @@ def build_docx_tree(page_map=None):
         row = t_toc.rows[idx]
         row.cells[0].text = ch
         row.cells[1].text = tit
-        # Use mapped page if available, else placeholder
         pg_val = str(page_map.get(key, "1")) if page_map else "1"
         row.cells[2].text = pg_val
         row.cells[0].width = Inches(1.1)
@@ -645,7 +523,7 @@ def build_docx_tree(page_map=None):
                 if ch or tit in ["ABSTRACT", "ACKNOWLEDGEMENT", "LIST OF TABLES", "LIST OF FIGURES", "APPENDIX", "REFERENCES"]:
                     r.font.bold = True
 
-    # 8. LIST OF TABLES
+    # 6. LIST OF TABLES (Page viii)
     doc.add_page_break()
     p_lot_title = doc.add_paragraph()
     style_paragraph(p_lot_title, space_before=16, space_after=14, align=WD_ALIGN_PARAGRAPH.CENTER)
@@ -706,7 +584,7 @@ def build_docx_tree(page_map=None):
                 r.font.name = "Times New Roman"
                 r.font.size = Pt(9.5)
 
-    # 9. LIST OF FIGURES
+    # 7. LIST OF FIGURES (Page ix)
     doc.add_page_break()
     p_lof_title = doc.add_paragraph()
     style_paragraph(p_lof_title, space_before=16, space_after=14, align=WD_ALIGN_PARAGRAPH.CENTER)
@@ -950,7 +828,7 @@ def build_docx_tree(page_map=None):
         "Table 7.1: Comprehensive Machine Learning Model Performance Comparison (Test Split)",
         ["Model Architecture", "Accuracy", "Precision", "Recall", "F1-Score", "F2-Score", "ROC-AUC", "PR-AUC", "FPR", "FNR", "Status"],
         rd.TABLE_7_1_DATA,
-        [Inches(1.5), Inches(0.5), Inches(0.5), Inches(0.5), Inches(0.5), Inches(0.5), Inches(0.55), Inches(0.55), Inches(0.4), Inches(0.4), Inches(0.6)]
+        [Inches(1.3), Inches(0.5), Inches(0.5), Inches(0.5), Inches(0.5), Inches(0.5), Inches(0.6), Inches(0.6), Inches(0.4), Inches(0.4), Inches(1.1)]
     )
 
     add_image_figure(doc, "fig_7_1_roc_pr_curves.png", "Figure 7.1: ROC and Precision-Recall Curves on Test Split")
@@ -961,11 +839,11 @@ def build_docx_tree(page_map=None):
         "Table 7.2: Confusion Matrix Metrics across Master Test & Active Validation Splits",
         ["Evaluation Corpus Partition", "True Neg (TN)", "False Pos (FP)", "False Neg (FN)", "True Pos (TP)", "Precision", "Recall", "F1-Score", "Accuracy"],
         rd.TABLE_7_2_DATA,
-        [Inches(2.1), Inches(0.6), Inches(0.6), Inches(0.6), Inches(0.6), Inches(0.65), Inches(0.65), Inches(0.65), Inches(0.65)]
+        [Inches(2.0), Inches(0.6), Inches(0.6), Inches(0.6), Inches(0.6), Inches(0.7), Inches(0.7), Inches(0.6), Inches(0.6)]
     )
 
     add_image_figure(doc, "fig_7_2_confusion_matrices.png", "Figure 7.2: Confusion Matrix Heatmaps across Test & Active Validation Splits")
-    add_image_figure(doc, "fig_7_3_global_shap_ranking.png", "Figure 7.3: Global Top-15 Feature Importance Ranking via TreeSHAP")
+    add_image_figure(doc, "fig_7_3_feature_importance.png", "Figure 7.3: Global Top-15 Feature Importance Ranking via TreeSHAP")
 
     # Table 7.3
     create_styled_table(
@@ -973,10 +851,10 @@ def build_docx_tree(page_map=None):
         "Table 7.3: Sub-5 Millisecond Pre-Authorization Latency Breakdown Profile",
         ["Pre-Authorization Architectural Phase", "Execution Latency", "Implementation Details"],
         rd.TABLE_7_3_DATA,
-        [Inches(2.5), Inches(1.3), Inches(2.7)]
+        [Inches(2.3), Inches(1.1), Inches(3.2)]
     )
 
-    add_image_figure(doc, "fig_7_4_latency_distribution.png", "Figure 7.4: Sub-5 Millisecond Pre-Authorization Latency Breakdown Profile")
+    add_image_figure(doc, "fig_7_4_latency_profile.png", "Figure 7.4: Sub-5 Millisecond Pre-Authorization Latency Breakdown Profile")
 
     # CHAPTER 8: SYSTEM TESTING
     doc.add_page_break()
@@ -989,153 +867,49 @@ def build_docx_tree(page_map=None):
         "Table 8.1: Formal Software Verification & Validation Test Report (30 Representative Cases)",
         ["Test Case ID", "Module", "Input Condition / Test Stimulus", "Expected System Response", "Observed Result", "Status"],
         rd.TABLE_8_1_DATA,
-        [Inches(1.1), Inches(1.0), Inches(1.6), Inches(1.4), Inches(1.0), Inches(0.5)]
+        [Inches(1.0), Inches(1.0), Inches(1.6), Inches(1.4), Inches(1.1), Inches(0.6)]
     )
 
-    # CHAPTER 9: CONCLUSION & FUTURE ENHANCEMENT
+    # CHAPTER 9: CONCLUSION AND FUTURE ENHANCEMENT
     doc.add_page_break()
     add_chapter_title(doc, "9", "CONCLUSION AND FUTURE ENHANCEMENT")
     add_academic_text(doc, rd.CH9_TEXT)
 
     # APPENDIX
     doc.add_page_break()
-    p_app_title = doc.add_paragraph()
-    style_paragraph(p_app_title, space_before=20, space_after=14, align=WD_ALIGN_PARAGRAPH.CENTER)
-    r = p_app_title.add_run("APPENDIX")
-    r.font.name = "Times New Roman"
-    r.font.size = Pt(16)
-    r.font.bold = True
-
-    add_section_title(doc, "A.1 SELECTED CORE SOURCE CODE EXCERPTS")
-    p_app_intro = doc.add_paragraph()
-    style_paragraph(p_app_intro)
-    r = p_app_intro.add_run("The following concise, commented code excerpts highlight the architectural implementation of the core components in FraudLens AI:")
-    r.font.name = "Times New Roman"
-    r.font.size = Pt(12)
-
-    code_snippets = [
-        ("1. Preprocessing & Feature Engineering Pipeline (ml/preprocessing/pipeline.py)", """class FullFraudPreprocessor(BaseEstimator, TransformerMixin):
-    def __init__(self):
-        self.feature_engineer = FraudFeatureEngineer()
-        self.column_transformer = None
-
-    def fit(self, X, y=None):
-        df_eng = self.feature_engineer.fit_transform(X)
-        num_cols, cat_cols = self._infer_feature_types(df_eng)
-        
-        num_pipeline = Pipeline([
-            ("imputer", SimpleImputer(strategy="median")),
-            ("scaler", StandardScaler()),
-        ])
-        cat_pipeline = Pipeline([
-            ("imputer", SimpleImputer(strategy="constant", fill_value="unknown")),
-            ("encoder", OneHotEncoder(handle_unknown="ignore", sparse_output=False)),
-        ])
-        self.column_transformer = ColumnTransformer([
-            ("num", num_pipeline, num_cols),
-            ("cat", cat_pipeline, cat_cols),
-        ])
-        self.column_transformer.fit(df_eng)
-        return self
-
-    def transform(self, X):
-        df_eng = self.feature_engineer.transform(X)
-        return self.column_transformer.transform(df_eng)"""),
-
-        ("2. Imbalance-Aware Model Training Engine (ml/training/trainer.py)", """def train_all_models(self, X_train: np.ndarray, y_train: np.ndarray):
-    n_neg = int(np.sum(y_train == 0))
-    n_pos = int(np.sum(y_train == 1))
-    scale_pos_weight = float(n_neg / max(1, n_pos))
-
-    # Tuned Regularized XGBoost with Imbalance Compensation
-    xgb = XGBClassifier(
-        n_estimators=250, max_depth=5, learning_rate=0.035,
-        subsample=0.85, colsample_bytree=0.85, reg_alpha=0.1, reg_lambda=1.0,
-        scale_pos_weight=scale_pos_weight, eval_metric="logloss", random_state=42
-    )
-    xgb.fit(X_train, y_train)
-    self.models["xgboost"] = xgb
-    return self.models"""),
-
-        ("3. Deterministic Multi-Factor Risk Scoring Engine (backend/app/services/risk_scoring_service.py)", """def compute_risk_score(self, fraud_probability: float, transaction_data: dict) -> RiskScoreResult:
-    factors = []
-    total_score = 0.0
-    p = max(0.0, min(1.0, float(fraud_probability)))
-    
-    # 1. Model Baseline Probability Signal (Max 60 pts)
-    if p >= 0.70:
-        model_pts = min(60.0, 45.0 + (p - 0.70) * 50.0)
-    elif p >= 0.35:
-        model_pts = 25.0 + (p - 0.35) * (20.0 / 0.35)
-    else:
-        model_pts = p * 80.0
-    total_score += model_pts
-
-    # 2. Amount Abnormality Signal vs 30-Day Customer Baseline (Max 25 pts)
-    amount_ratio = amount / (avg_amount_30d + 1e-5)
-    if amount_ratio >= 8.0:
-        total_score += 18.0
-    elif 0.5 <= amount_ratio <= 1.4:
-        total_score -= 4.0 # Consistent spending rebate
-
-    # 3. Velocity Bursts (Max 20 pts) & 4. Environmental Novelty (Max 25 pts)
-    if vel_1h >= 5.0: total_score += 20.0
-    if is_new_device: total_score += 8.0
-    if is_unusual_loc: total_score += 8.0
-    
-    final_score = int(round(min(100.0, max(0.0, total_score))))
-    if p >= 0.70 and final_score < 75: final_score = max(final_score, int(75.0 + p * 20.0))
-    risk_level = self.classify_risk_level(final_score)
-    return RiskScoreResult(risk_score=final_score, risk_level=risk_level, risk_factors=factors)""")
-    ]
-
-    for title, code in code_snippets:
-        add_subsection_title(doc, title)
-        p_c = doc.add_paragraph()
-        style_paragraph(p_c, space_before=2, space_after=6, align=WD_ALIGN_PARAGRAPH.LEFT)
-        p_c_pr = p_c._p.get_or_add_pPr()
-        shd = parse_xml(f'<w:shd {nsdecls("w")} w:fill="F8FAFC"/>')
-        p_c_pr.append(shd)
-        r = p_c.add_run(code)
-        r.font.name = "Courier New"
-        r.font.size = Pt(8.5)
-
-    add_section_title(doc, "A.2 APPLICATION INTERFACE ECOSYSTEM")
-    add_image_figure(doc, "fig_app_screenshots.png", "Figure A.1: FraudLens AI Application Interface Ecosystem (Command Center, Payment Gateway, SMS OTP Modal, AI Dossier)")
+    add_chapter_title(doc, "A", "APPENDIX")
+    add_academic_text(doc, rd.APPENDIX_TEXT)
+    add_image_figure(doc, "fig_app_screenshots.png", "Figure A.1: FraudLens AI Application Interface Ecosystem (4 Panels)")
 
     # REFERENCES
     doc.add_page_break()
     p_ref_title = doc.add_paragraph()
-    style_paragraph(p_ref_title, space_before=16, space_after=14, align=WD_ALIGN_PARAGRAPH.CENTER)
+    style_paragraph(p_ref_title, space_before=20, space_after=14, align=WD_ALIGN_PARAGRAPH.CENTER)
     r = p_ref_title.add_run("REFERENCES")
     r.font.name = "Times New Roman"
     r.font.size = Pt(16)
     r.font.bold = True
 
     for ref in rd.REFERENCES_DATA:
-        p_r = doc.add_paragraph()
-        style_paragraph(p_r, space_before=2, space_after=5, line_spacing=1.2, align=WD_ALIGN_PARAGRAPH.JUSTIFY)
-        p_r.paragraph_format.left_indent = Inches(0.3)
-        p_r.paragraph_format.first_line_indent = Inches(-0.3)
-        r = p_r.add_run(clean_xml_string(ref))
+        p = doc.add_paragraph()
+        style_paragraph(p, space_before=0, space_after=2, line_spacing=1.18, align=WD_ALIGN_PARAGRAPH.JUSTIFY)
+        p.paragraph_format.left_indent = Inches(0.3)
+        p.paragraph_format.first_line_indent = Inches(-0.3)
+        r = p.add_run(clean_xml_string(ref))
         r.font.name = "Times New Roman"
-        r.font.size = Pt(10)
+        r.font.size = Pt(10.5)
 
     return doc
 
 def measure_pages_with_word():
     """
-    Opens the temporary DOCX with Word COM, extracts exact page numbers for TOC/LOT/LOF,
-    and returns a mapping dictionary.
+    Open the initial document in Microsoft Word via COM,
+    measures exact page numbers for all sections, tables, figures,
+    and returns a precise mapping.
     """
     pythoncom.CoInitialize()
     word = None
-    page_map = {
-        "abstract": "iv",
-        "ack": "vi",
-        "lot": "viii",
-        "lof": "ix",
-    }
+    page_map = {}
     try:
         word = win32com.client.Dispatch("Word.Application")
         word.Visible = False
@@ -1173,11 +947,13 @@ def measure_pages_with_word():
             ("5.6.2 ER Diagrams", "ch5_6_2"),
             ("5.6.3 Data Flow Diagrams", "ch5_6_3"),
             ("CHAPTER 6\nPROPOSED ALGORITHM IMPLEMENTATION", "ch6"),
-            ("6.1 Proposed Algorithmic", "ch6_1"),
+            ("6.1 Project Description", "ch6_1"),
             ("6.1.1 Dataset Specification", "ch6_1_1"),
             ("6.1.2 Preprocessing", "ch6_1_2"),
             ("6.1.3 Behavioral", "ch6_1_3"),
+            ("6.1.4 Stratified Data Splitting", "ch6_1_4"),
             ("6.1.5 Class Imbalance", "ch6_1_5"),
+            ("6.1.6 Supervised Machine Learning", "ch6_1_6"),
             ("6.1.7 Decoupled Multi-Factor", "ch6_1_7"),
             ("6.1.8 Explainable AI via TreeSHAP", "ch6_1_8"),
             ("6.2 MODULES OVERVIEW", "ch6_2"),
@@ -1233,14 +1009,33 @@ def measure_pages_with_word():
             ("Figure 7.4", "fig_7_4"),
         ]
 
-        # Scan Section 2 paragraphs only
+        # Scan Section 1 paragraphs (Front matter roman numerals)
+        sec1_paras = doc.Sections(1).Range.Paragraphs
+        for p in sec1_paras:
+            t = p.Range.Text.strip()
+            if not t:
+                continue
+            pg_rom = p.Range.Information(1)
+            roman_numerals = ["i", "ii", "iii", "iv", "v", "vi", "vii", "viii", "ix", "x", "xi", "xii"]
+            rom_str = roman_numerals[pg_rom - 1] if 1 <= pg_rom <= len(roman_numerals) else str(pg_rom)
+            if t == "ABSTRACT" and "abstract" not in page_map:
+                page_map["abstract"] = rom_str
+            elif t == "ACKNOWLEDGEMENT" and "ack" not in page_map:
+                page_map["ack"] = rom_str
+            elif t == "TABLE OF CONTENTS" and "toc" not in page_map:
+                page_map["toc"] = rom_str
+            elif t == "LIST OF TABLES" and "lot" not in page_map:
+                page_map["lot"] = rom_str
+            elif t == "LIST OF FIGURES" and "lof" not in page_map:
+                page_map["lof"] = rom_str
+
+        # Scan Section 2 paragraphs (Body arabic page numbers)
         sec2_paras = doc.Sections(2).Range.Paragraphs
         print(f"Scanning {sec2_paras.Count} paragraphs in Section 2 (Body)...")
         for p in sec2_paras:
             t = p.Range.Text.strip()
             if not t:
                 continue
-            # wdActiveEndAdjustedPageNumber = 1 (Arabic page number in section 2)
             adj_pg = p.Range.Information(1)
             
             # Check for appendix heading
@@ -1276,6 +1071,14 @@ def generate_and_export():
         print(f"  {k:15s} -> Page {v}")
 
     print("\n--- STEP 3: Building Pass 2 Final DOCX with True Synchronized Pages ---")
+    import time as _time
+    _time.sleep(3)  # Let Word COM fully release the file lock from Step 2
+    # Remove the existing file to avoid PermissionError on save
+    if docx_output_path.exists():
+        try:
+            docx_output_path.unlink()
+        except Exception as _e:
+            print(f"Warning: Could not delete existing DOCX: {_e}")
     doc_final = build_docx_tree(page_map=page_map)
     doc_final.save(str(docx_output_path))
     print(f"Final DOCX saved at: {docx_output_path} ({docx_output_path.stat().st_size:,} bytes)")
