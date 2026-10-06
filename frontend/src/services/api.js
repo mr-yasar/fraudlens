@@ -320,6 +320,17 @@ export const auditLogsApi = {
     })
     return handleResponse(res)
   },
+  export: async ({ format = 'json', action = '', resource_type = '', search = '' } = {}) => {
+    const params = new URLSearchParams({ format })
+    if (action) params.append('action', action)
+    if (resource_type) params.append('resource_type', resource_type)
+    if (search) params.append('search', search)
+
+    const res = await fetch(`${BASE_URL}/audit-logs/export?${params.toString()}`, {
+      headers: getAuthHeaders(),
+    })
+    return res
+  },
 }
 
 // 5b. Admin Database Management & Storage Integrity API

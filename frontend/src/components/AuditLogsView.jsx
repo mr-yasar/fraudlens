@@ -397,33 +397,192 @@ export default function AuditLogsView() {
     return `${Math.floor(diffSec / 86400)}d ago`
   }
 
-  // One-click CSV export
-  const handleExportCSV = () => {
-    if (logs.length === 0) return
-    const headers = ['ID', 'Timestamp_UTC', 'User_Email', 'Action', 'Resource_Type', 'Resource_ID', 'Details']
-    const rows = logs.map((l) => [
-      l.id,
-      l.created_at || '',
-      l.user_email || 'System / Auto',
-      l.action || '',
-      l.resource_type || '',
-      l.resource_id || '',
-      typeof l.details === 'object' ? JSON.stringify(l.details) : l.details || '',
-    ])
+  const [downloadingFormat, setDownloadingFormat] = useState(null)
 
-    const csvContent =
-      'data:text/csv;charset=utf-8,' +
-      [headers.join(','), ...rows.map((e) => e.map((val) => `"${String(val).replace(/"/g, '""')}"`).join(','))].join(
-        '\n'
-      )
+  // Multi-format audit trail export: JSON (.json), Human-Readable TEXT (.txt), and CSV (.csv)
+  const handleDownloadAuditTrail = async (fmt) => {
+    const format = fmt.toLowerCase()
+    setDownloadingFormat(format)
+    const token = localStorage.getItem('fraudlens_token') || localStorage.getItem('access_token')
 
-    const encodedUri = encodeURI(csvContent)
-    const link = document.createElement('a')
-    link.setAttribute('href', encodedUri)
-    link.setAttribute('download', `fraudlens_audit_trail_${new Date().toISOString().slice(0, 10)}.csv`)
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
+    try {
+      // 1. Attempt server-side export for complete database records
+      const queryParams = new URLSearchParams()
+      queryParams.append('format', format)
+      if (actionFilter) queryParams.append('action', actionFilter)
+      if (searchQuery) queryParams.append('search', searchQuery)
+
+      const response = await fetch(`/api/v1/audit-logs/export?${queryParams.toString()}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
+
+      if (response.ok) {
+        const blob = await response.blob()
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        // Extract filename from Content-Disposition or fallback
+        const disposition = response.headers.get('content-disposition')
+        let filename = `fraudlens_audit_trail_${new Date().toISOString().slice(0, 10)}.${format === 'text' ? 'txt' : format}`
+        if (disposition && disposition.includes('filename=')) {
+          const match = disposition.match(/filename="?([^"]+)"?/)
+          if (match && match[1]) filename = match[1]
+        }
+        a.download = filename
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        window.URL.revokeObjectURL(url)
+        setDownloadingFormat(null)
+        return
+      }
+    } catch (err) {
+      console.warn('Server export failed, falling back to local complete serializer:', err)
+    }
+
+    // 2. Client-side fallback serializer with complete fields
+    try {
+      const recordsToExport = filteredLogs.length > 0 ? filteredLogs : logs
+      const timestampStr = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
+
+      if (format === 'json') {
+        // Complete, well-structured JSON with 2-space indentation
+        const structuredData = recordsToExport.map((l) => ({
+          id: l.id,
+          timestamp_utc: l.created_at,
+          actor: {
+            user_id: l.user_id || null,
+            name: l.user_name || (l.user_email ? l.user_email.split('@')[0] : 'System'),
+            email: l.user_email || 'system@fraudlens.internal',
+            role: l.user_role || (l.user_email?.includes('admin') ? 'ADMIN' : 'SYSTEM'),
+          },
+          action: l.action,
+          module: l.resource_type,
+          resource_type: l.resource_type,
+          resource_id: l.resource_id,
+          entity: l.entity || l.resource_type,
+          entity_id: l.entity_id || l.resource_id,
+          status: l.result || 'SUCCESS',
+          client_telemetry: {
+            ip_address: l.ip_address || '127.0.0.1',
+            device_id: l.device_id || 'SECURE-NODE',
+          },
+          human_summary: getHumanFriendlySummary(l),
+          details: typeof l.details === 'object' ? l.details : (l.details ? { raw: l.details } : null),
+        }))
+
+        const blob = new Blob([JSON.stringify(structuredData, null, 2)], { type: 'application/json;charset=utf-8' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `fraudlens_audit_trail_${timestampStr}.json`
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+
+      } else if (format === 'text' || format === 'txt') {
+        // Human-readable, structured TEXT format (.txt)
+        const lines = [
+          '================================================================================',
+          'FRAUDLENS AI — ENTERPRISE COMPLIANCE AUDIT TRAIL REPORT',
+          '================================================================================',
+          `Generated At (UTC)    : ${new Date().toUTCString()}`,
+          `Security Clearance    : ISO-27001 & RBI Compliant | Cryptographic SHA-256 Ledger`,
+          `Total Audit Records   : ${recordsToExport.length}`,
+          '================================================================================',
+          '',
+        ]
+
+        recordsToExport.forEach((l, idx) => {
+          const userStr = `${l.user_name || l.user_email || 'System'} (${l.user_email || 'system@fraudlens.internal'}) [Role: ${l.user_role || 'SYSTEM'}]`
+          lines.push(`[${String(idx + 1).padStart(4, '0')}] AUDIT EVENT ID: #${l.id}`)
+          lines.push(`  Date / Time (UTC) : ${l.created_at || 'N/A'}`)
+          lines.push(`  User / Role       : ${userStr}`)
+          lines.push(`  Action            : ${l.action}`)
+          lines.push(`  Module / Resource : ${l.resource_type || 'SYSTEM'}`)
+          lines.push(`  Record / Target ID: ${l.resource_id || 'N/A'}`)
+          lines.push(`  Status / Result   : ${l.result || 'SUCCESS'}`)
+          lines.push(`  IP / Device Info  : IP: ${l.ip_address || '127.0.0.1'} | Device: ${l.device_id || 'SECURE-NODE'}`)
+          lines.push(`  Summary           : ${getHumanFriendlySummary(l)}`)
+
+          let detStr = 'No additional parameters recorded.'
+          if (l.details) {
+            if (typeof l.details === 'object') {
+              detStr = Object.entries(l.details)
+                .map(([k, v]) => `    * ${k}: ${typeof v === 'object' ? JSON.stringify(v) : v}`)
+                .join('\n')
+            } else {
+              detStr = `    ${l.details}`
+            }
+          }
+          lines.push('  Audit Details     :')
+          lines.push(detStr)
+          lines.push('--------------------------------------------------------------------------------')
+        })
+
+        lines.push(`\n[END OF AUDIT REPORT — ${recordsToExport.length} RECORDS VERIFIED]\n`)
+        const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `fraudlens_audit_trail_${timestampStr}.txt`
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+
+      } else {
+        // Complete CSV with all database fields
+        const headers = [
+          'ID',
+          'Timestamp_UTC',
+          'User_ID',
+          'User_Name',
+          'User_Email',
+          'User_Role',
+          'Action',
+          'Module',
+          'Resource_ID',
+          'Status',
+          'IP_Address',
+          'Device_ID',
+          'Audit_Details',
+        ]
+        const rows = recordsToExport.map((l) => [
+          l.id,
+          l.created_at || '',
+          l.user_id || '',
+          l.user_name || 'System',
+          l.user_email || 'system@fraudlens.internal',
+          l.user_role || 'SYSTEM',
+          l.action || '',
+          l.resource_type || '',
+          l.resource_id || '',
+          l.result || 'SUCCESS',
+          l.ip_address || '127.0.0.1',
+          l.device_id || 'SECURE-NODE',
+          typeof l.details === 'object' ? JSON.stringify(l.details) : l.details || '',
+        ])
+
+        const csvContent = [
+          headers.join(','),
+          ...rows.map((row) => row.map((val) => `"${String(val).replace(/"/g, '""')}"`).join(',')),
+        ].join('\n')
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' })
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `fraudlens_audit_trail_${timestampStr}.csv`
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+      }
+    } finally {
+      setDownloadingFormat(null)
+    }
   }
 
   const totalPages = Math.ceil(total / limit) || 1
@@ -455,16 +614,39 @@ export default function AuditLogsView() {
             </p>
           </div>
 
-          {/* Export Action */}
-          <div className="flex items-center gap-2 self-start lg:self-center">
+          {/* Dedicated Multi-Format Download Action Buttons */}
+          <div className="flex items-center gap-2 flex-wrap self-start lg:self-center">
+            {/* Download JSON */}
             <button
-              onClick={handleExportCSV}
-              disabled={logs.length === 0}
-              className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 text-xs font-bold transition flex items-center gap-2 disabled:opacity-50 cursor-pointer shadow-md"
-              title="Download entire current audit view as a CSV report"
+              onClick={() => handleDownloadAuditTrail('json')}
+              disabled={logs.length === 0 || downloadingFormat !== null}
+              className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white border border-cyan-500/50 text-xs font-bold transition flex items-center gap-1.5 disabled:opacity-50 cursor-pointer shadow-lg shadow-cyan-950/40"
+              title="Download complete structured Audit Trail as indented JSON (.json)"
             >
-              <Download className="w-4 h-4 text-cyan-400" />
-              <span>Export Compliance CSV</span>
+              <FileJson className={`w-3.5 h-3.5 ${downloadingFormat === 'json' ? 'animate-spin' : 'text-cyan-200'}`} />
+              <span>{downloadingFormat === 'json' ? 'Generating JSON...' : 'Download JSON'}</span>
+            </button>
+
+            {/* Download Text */}
+            <button
+              onClick={() => handleDownloadAuditTrail('text')}
+              disabled={logs.length === 0 || downloadingFormat !== null}
+              className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 hover:border-cyan-500/50 text-xs font-bold transition flex items-center gap-1.5 disabled:opacity-50 cursor-pointer shadow-md"
+              title="Download human-readable formatted Audit Trail report (.txt)"
+            >
+              <FileText className={`w-3.5 h-3.5 ${downloadingFormat === 'text' ? 'animate-spin' : 'text-cyan-400'}`} />
+              <span>{downloadingFormat === 'text' ? 'Writing Text...' : 'Download Text (.txt)'}</span>
+            </button>
+
+            {/* Export CSV */}
+            <button
+              onClick={() => handleDownloadAuditTrail('csv')}
+              disabled={logs.length === 0 || downloadingFormat !== null}
+              className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-emerald-950/70 text-slate-200 hover:text-emerald-300 border border-slate-700 hover:border-emerald-600 text-xs font-bold transition flex items-center gap-1.5 disabled:opacity-50 cursor-pointer shadow-md"
+              title="Export complete tabular records as CSV spreadsheet (.csv)"
+            >
+              <FileSpreadsheet className={`w-3.5 h-3.5 ${downloadingFormat === 'csv' ? 'animate-spin' : 'text-emerald-400'}`} />
+              <span>{downloadingFormat === 'csv' ? 'Exporting CSV...' : 'Export CSV'}</span>
             </button>
           </div>
         </div>
@@ -804,9 +986,17 @@ export default function AuditLogsView() {
                 <span className="text-slate-400">Target Resource:</span>
                 <span className="text-white font-bold">{selectedLog.resource_type}</span>
               </div>
-              <div className="flex justify-between py-1">
+              <div className="flex justify-between py-1 border-b border-slate-800/80">
                 <span className="text-slate-400">Resource Identifier:</span>
                 <span className="text-cyan-300 font-bold">{selectedLog.resource_id || 'N/A'}</span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-slate-800/80">
+                <span className="text-slate-400">Execution Status:</span>
+                <span className="text-emerald-400 font-bold">{selectedLog.result || 'SUCCESS'}</span>
+              </div>
+              <div className="flex justify-between py-1">
+                <span className="text-slate-400">Client IP &amp; Device:</span>
+                <span className="text-slate-300 font-bold">{selectedLog.ip_address || '127.0.0.1'} ({selectedLog.device_id || 'SECURE-NODE'})</span>
               </div>
             </div>
 

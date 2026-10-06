@@ -1,6 +1,7 @@
 """Admin Database Management & Integrity Verification Endpoints."""
 
 import os
+import json
 import sqlite3
 import shutil
 import logging
@@ -481,6 +482,41 @@ def _generate_text_sql_dump(db_path: Path, dest_path: Path) -> None:
         conn.close()
 
 
+def _generate_json_export(db_path: Path, dest_path: Path) -> None:
+    """Generate structured, complete JSON dump of all tables with proper indentation and key names."""
+    import sqlite3
+    conn = sqlite3.connect(str(db_path))
+    try:
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+        cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name")
+        tables = [r["name"] for r in cur.fetchall()]
+        db_dump = {
+            "metadata": {
+                "system": "FraudLens AI",
+                "export_type": "Full Relational Database JSON Dump",
+                "generated_at": datetime.now(timezone.utc).isoformat(),
+                "source_file": db_path.name,
+                "total_tables": len(tables),
+            },
+            "tables": {},
+        }
+        for t in tables:
+            try:
+                cur.execute(f"SELECT * FROM {t}")
+                rows = [dict(r) for r in cur.fetchall()]
+                db_dump["tables"][t] = {
+                    "record_count": len(rows),
+                    "records": rows,
+                }
+            except Exception as e:
+                logger.warning("Could not dump table %s to JSON: %s", t, e)
+        with open(dest_path, "w", encoding="utf-8") as f:
+            json.dump(db_dump, f, indent=2, ensure_ascii=False, default=str)
+    finally:
+        conn.close()
+
+
 @router.get(
     "/download",
     summary="Download Actual Live Database (Admin Only)",
@@ -543,6 +579,19 @@ def download_database(
         download_filename = export_file.name
         media_type = "text/plain; charset=utf-8"
         format_label = "Structured Text / SQL Dump (.sql)"
+
+    elif norm_format in ("json",):
+        export_file = export_dir / f"fraudlens_database_{timestamp_str}.json"
+        try:
+            _generate_json_export(db_path, export_file)
+        except Exception as e:
+            logger.error("JSON export error: %s", e, exc_info=True)
+            raise HTTPException(status_code=500, detail=f"Failed to generate JSON export: {str(e)}")
+
+        file_to_send = export_file
+        download_filename = export_file.name
+        media_type = "application/json; charset=utf-8"
+        format_label = "Structured Database JSON Export (.json)"
 
     else:
         # Default raw SQLite database binary

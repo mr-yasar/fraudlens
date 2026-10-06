@@ -14,9 +14,15 @@ class AuditLogResponse(BaseModel):
     user_id: Optional[int] = None
     user_email: Optional[str] = None
     user_name: Optional[str] = None
+    user_role: Optional[str] = None
     action: str
     resource_type: str
     resource_id: Optional[str] = None
+    entity: Optional[str] = None
+    entity_id: Optional[str] = None
+    ip_address: Optional[str] = None
+    device_id: Optional[str] = None
+    result: Optional[str] = "SUCCESS"
     details: Optional[Dict[str, Any]] = None
     created_at: datetime
 

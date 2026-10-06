@@ -35,6 +35,9 @@ class TransactionSummaryResponse(BaseModel):
     prediction: Optional[str] = None
     risk_score: Optional[float] = None
     risk_level: Optional[str] = None
+    account_tier: Optional[str] = None
+    risk_segment: Optional[str] = None
+    customer_name: Optional[str] = None
     created_at: datetime
 
 

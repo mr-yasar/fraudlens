@@ -31,7 +31,7 @@ import {
 } from 'lucide-react'
 import { investigationsApi, alertsApi } from '../services/api'
 import { formatINR } from '../utils/formatters'
-import { getCustomerPersona, resolveCustomerName, getCustomerMeta } from '../utils/customerHelper'
+import { getCustomerPersona, resolveCustomerName, getCustomerMeta, resolveAccountProfile } from '../utils/customerHelper'
 import ContextualModuleHelp from './common/ContextualModuleHelp'
 import GlobalCenterModal from './common/GlobalCenterModal'
 
@@ -481,10 +481,10 @@ export default function LiveMonitorAndInvestigationHub({
 
           <div className="h-6 w-px bg-slate-800 hidden sm:block" />
 
-          {/* Admin 4-Persona Filter */}
+          {/* Admin Risk Profile & Account Segment Filter */}
           {isAdmin ? (
             <div className="flex flex-wrap items-center gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800 text-[11px] font-mono">
-              <span className="text-slate-500 px-1 text-[10px] uppercase font-bold hidden sm:inline">Persona:</span>
+              <span className="text-slate-500 px-1 text-[10px] uppercase font-bold hidden sm:inline">Profile:</span>
               <button
                 onClick={() => setCustomerFilter('ALL')}
                 className={`px-2 py-1 rounded-lg font-bold transition cursor-pointer ${
@@ -493,7 +493,7 @@ export default function LiveMonitorAndInvestigationHub({
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
-                All 4
+                All Profiles
               </button>
               <button
                 onClick={() => setCustomerFilter('CUST_MONISHA_001')}
@@ -502,8 +502,9 @@ export default function LiveMonitorAndInvestigationHub({
                     ? 'bg-emerald-950 text-emerald-300 border border-emerald-700'
                     : 'text-slate-400 hover:text-emerald-400'
                 }`}
+                title="Standard Habitual / Low Risk (3% baseline)"
               >
-                Monisha (3%)
+                Standard Safe (3%)
               </button>
               <button
                 onClick={() => setCustomerFilter('CUST_MOHANA_002')}
@@ -512,8 +513,9 @@ export default function LiveMonitorAndInvestigationHub({
                     ? 'bg-amber-950 text-amber-300 border border-amber-700'
                     : 'text-slate-400 hover:text-amber-400'
                 }`}
+                title="Elevated Velocity / Step-Up OTP (12% baseline)"
               >
-                Mogana (12%)
+                Elevated Velocity (12%)
               </button>
               <button
                 onClick={() => setCustomerFilter('CUST_SOWMIYA_003')}
@@ -522,8 +524,9 @@ export default function LiveMonitorAndInvestigationHub({
                     ? 'bg-rose-950 text-rose-300 border border-rose-700'
                     : 'text-slate-400 hover:text-rose-400'
                 }`}
+                title="Botnet ATO Attack / Pre-Auth Block (26% baseline)"
               >
-                Sowmiya (26%)
+                Suspicious ATO (26%)
               </button>
               <button
                 onClick={() => setCustomerFilter('CUST_AJAY_004')}
@@ -532,8 +535,9 @@ export default function LiveMonitorAndInvestigationHub({
                     ? 'bg-indigo-950 text-indigo-300 border border-indigo-700'
                     : 'text-slate-400 hover:text-indigo-400'
                 }`}
+                title="Enterprise Security Tier / Adaptive AI (0.2% baseline)"
               >
-                Ajay (0.2%)
+                Enterprise Tier (0.2%)
               </button>
             </div>
           ) : (
@@ -567,7 +571,7 @@ export default function LiveMonitorAndInvestigationHub({
               <tr>
                 <th className="py-3.5 px-4">Transaction ID</th>
                 <th className="py-3.5 px-4">Customer ID</th>
-                <th className="py-3.5 px-4">Customer</th>
+                <th className="py-3.5 px-4">{isAdmin ? 'Account Profile' : 'Customer'}</th>
                 <th className="py-3.5 px-4">Amount</th>
                 <th className="py-3.5 px-4">Merchant</th>
                 <th className="py-3.5 px-4">Device &amp; Type</th>
@@ -594,8 +598,8 @@ export default function LiveMonitorAndInvestigationHub({
                 </tr>
               ) : (
                 filteredTransactions.map((tx) => {
-                  const custName = resolveCustomerName(tx.customer_id)
-                  const meta = getCustomerMeta(tx.customer_id)
+                  const custName = resolveCustomerName(tx.customer_id, 'Customer', tx.customer_name)
+                  const meta = getCustomerMeta(tx.customer_id, isAdmin)
                   const isHigh = tx.risk_level === 'HIGH' || tx.is_fraud === 1
                   const isMedium = tx.risk_level === 'MEDIUM'
                   const linkedCase = getLinkedCase(tx.transaction_id)
@@ -669,10 +673,10 @@ export default function LiveMonitorAndInvestigationHub({
                         </span>
                       </td>
 
-                      {/* 3. Customer Name */}
+                      {/* 3. Customer / Account Profile */}
                       <td className="py-3.5 px-4">
                         <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${meta.bgBadge}`}>
-                          {custName}
+                          {isAdmin ? (meta.name || tx.account_tier || 'Standard Profile') : custName}
                         </span>
                       </td>
 
@@ -779,7 +783,7 @@ export default function LiveMonitorAndInvestigationHub({
           isOpen={Boolean(selectedTx)}
           onClose={handleCloseInvestigation}
           title={`Investigation Panel: ${selectedTx.transaction_id}`}
-          subtitle={`Customer: ${resolveCustomerName(selectedTx.customer_id)} (${selectedTx.customer_id})`}
+          subtitle={isAdmin ? `Account: ${selectedTx.customer_id} • Profile: ${resolveAccountProfile(selectedTx.customer_id)}` : `Customer: ${resolveCustomerName(selectedTx.customer_id, 'Customer', selectedTx.customer_name)} (${selectedTx.customer_id})`}
           icon={ShieldAlert}
           badge={activeCase?.decision || activeCase?.status || (selectedTx.risk_level === 'HIGH' ? 'HIGH RISK' : 'FLAGGED')}
           badgeType={
@@ -827,8 +831,10 @@ export default function LiveMonitorAndInvestigationHub({
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 font-mono text-xs">
                 <div className="p-2.5 bg-slate-900/90 rounded-xl border border-slate-800">
-                  <span className="text-[10px] text-slate-500 block uppercase">Customer</span>
-                  <strong className="text-emerald-300">{resolveCustomerName(selectedTx.customer_id)}</strong>
+                  <span className="text-[10px] text-slate-500 block uppercase">{isAdmin ? 'Account Profile' : 'Customer'}</span>
+                  <strong className="text-emerald-300">
+                    {isAdmin ? resolveAccountProfile(selectedTx.customer_id) : resolveCustomerName(selectedTx.customer_id, 'Customer', selectedTx.customer_name)}
+                  </strong>
                   <div className="text-[9px] text-slate-500 truncate">{selectedTx.customer_id}</div>
                 </div>
 

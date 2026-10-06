@@ -203,7 +203,7 @@ export default function LiveTransactionMonitorView({ onInvestigate, onRaiseCompl
             </div>
           ) : (
             <div className="flex items-center gap-1.5">
-              <span className="text-[10px] font-mono uppercase text-slate-400 font-bold hidden sm:inline">Persona:</span>
+              <span className="text-[10px] font-mono uppercase text-slate-400 font-bold hidden sm:inline">Profile:</span>
               <button
                 onClick={() => setCustomerFilter('ALL')}
                 className={`px-2 py-1.5 rounded-lg text-xs font-mono font-bold border transition ${
@@ -212,7 +212,7 @@ export default function LiveTransactionMonitorView({ onInvestigate, onRaiseCompl
                     : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-white'
                 }`}
               >
-                All
+                All Profiles
               </button>
               <button
                 onClick={() => setCustomerFilter('CUST_MONISHA_001')}
@@ -221,8 +221,9 @@ export default function LiveTransactionMonitorView({ onInvestigate, onRaiseCompl
                     ? 'bg-emerald-950 border-emerald-600 text-emerald-300'
                     : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-emerald-400'
                 }`}
+                title="Standard Habitual / Low Risk (3% baseline)"
               >
-                Monisha (3%)
+                Standard Safe (3%)
               </button>
               <button
                 onClick={() => setCustomerFilter('CUST_MOHANA_002')}
@@ -231,8 +232,9 @@ export default function LiveTransactionMonitorView({ onInvestigate, onRaiseCompl
                     ? 'bg-amber-950 border-amber-600 text-amber-300'
                     : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-amber-400'
                 }`}
+                title="Elevated Velocity / Step-Up OTP (12% baseline)"
               >
-                Mohana (12%)
+                Elevated Velocity (12%)
               </button>
               <button
                 onClick={() => setCustomerFilter('CUST_SOWMIYA_003')}
@@ -241,8 +243,9 @@ export default function LiveTransactionMonitorView({ onInvestigate, onRaiseCompl
                     ? 'bg-rose-950 border-rose-600 text-rose-300'
                     : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-rose-400'
                 }`}
+                title="Botnet ATO Attack / Pre-Auth Block (26% baseline)"
               >
-                Sowmiya (26%)
+                Suspicious ATO (26%)
               </button>
               <button
                 onClick={() => setCustomerFilter('CUST_AJAY_004')}
@@ -251,8 +254,9 @@ export default function LiveTransactionMonitorView({ onInvestigate, onRaiseCompl
                     ? 'bg-indigo-950 border-indigo-600 text-indigo-300'
                     : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-indigo-400'
                 }`}
+                title="Enterprise Security Tier / Adaptive AI (0.2% baseline)"
               >
-                Ajay (0.2%)
+                Enterprise Tier (0.2%)
               </button>
             </div>
           )}

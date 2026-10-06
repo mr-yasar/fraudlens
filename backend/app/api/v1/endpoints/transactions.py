@@ -442,6 +442,9 @@ def list_transactions(
             prediction="FRAUD" if t.prediction == 1 else "GENUINE",
             risk_score=t.risk_score,
             risk_level=t.risk_level,
+            account_tier="ENTERPRISE" if (t.customer_id and "AJAY" in t.customer_id.upper()) else (t.customer.risk_segment if t.customer and t.customer.risk_segment else "STANDARD"),
+            risk_segment=t.customer.risk_segment if t.customer and t.customer.risk_segment else None,
+            customer_name=t.customer.name if t.customer and t.customer.name else None,
             created_at=t.created_at,
         )
         for t in tx_records
