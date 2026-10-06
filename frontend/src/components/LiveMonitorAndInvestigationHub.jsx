@@ -571,26 +571,25 @@ export default function LiveMonitorAndInvestigationHub({
               <tr>
                 <th className="py-3.5 px-4">Transaction ID</th>
                 <th className="py-3.5 px-4">Customer ID</th>
-                <th className="py-3.5 px-4">{isAdmin ? 'Account Profile' : 'Customer'}</th>
                 <th className="py-3.5 px-4">Amount</th>
                 <th className="py-3.5 px-4">Merchant</th>
                 <th className="py-3.5 px-4">Device &amp; Type</th>
                 <th className="py-3.5 px-4">Risk &amp; Prob</th>
-                <th className="py-3.5 px-4">Current Status</th>
+                <th className="py-3.5 px-4 min-w-[140px] whitespace-nowrap">Current Status</th>
                 <th className="py-3.5 px-4 text-right">Investigation Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/60 font-sans">
               {loading ? (
                 <tr>
-                  <td colSpan={9} className="p-12 text-center text-slate-400">
+                  <td colSpan={8} className="p-12 text-center text-slate-400">
                     <RefreshCw className="w-6 h-6 animate-spin text-cyan-400 mx-auto mb-2" />
                     <span>Loading real-time radar telemetry...</span>
                   </td>
                 </tr>
               ) : filteredTransactions.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="p-12 text-center text-slate-400 space-y-2">
+                  <td colSpan={8} className="p-12 text-center text-slate-400 space-y-2">
                     <Radio className="w-8 h-8 text-slate-600 mx-auto" />
                     <div className="font-bold text-slate-300">No matching transactions in stream</div>
                     <p className="text-xs text-slate-500">Adjust filters or search query to inspect incoming activity.</p>
@@ -605,17 +604,18 @@ export default function LiveMonitorAndInvestigationHub({
                   const linkedCase = getLinkedCase(tx.transaction_id)
                   const isDisputed = Boolean(linkedCase || tx.fraud_scenario)
 
-                  // Determine display status
+                  // Determine display status with clean, spacious badge
                   let statusBadge = (
                     <span
-                      className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${
+                      className={`text-[11px] font-mono font-bold px-3 py-1 rounded-full border whitespace-nowrap inline-flex items-center gap-1.5 shadow-sm ${
                         isHigh
-                          ? 'bg-rose-950 text-rose-300 border-rose-800'
+                          ? 'bg-rose-950/90 text-rose-300 border-rose-800'
                           : isMedium
-                          ? 'bg-amber-950 text-amber-300 border-amber-800'
-                          : 'bg-emerald-950 text-emerald-300 border-emerald-800'
+                          ? 'bg-amber-950/90 text-amber-300 border-amber-800'
+                          : 'bg-emerald-950/90 text-emerald-300 border-emerald-800'
                       }`}
                     >
+                      <span className={`w-1.5 h-1.5 rounded-full ${isHigh ? 'bg-rose-400' : isMedium ? 'bg-amber-400' : 'bg-emerald-400'}`} />
                       {isHigh ? 'PRE-AUTH BLOCK' : isMedium ? 'STEP-UP OTP' : 'AUTO APPROVED'}
                     </span>
                   )
@@ -627,16 +627,17 @@ export default function LiveMonitorAndInvestigationHub({
 
                     statusBadge = (
                       <span
-                        className={`text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full border uppercase flex items-center gap-1 w-fit ${
+                        className={`text-[11px] font-mono font-bold px-3 py-1 rounded-full border uppercase whitespace-nowrap inline-flex items-center gap-1.5 shadow-sm ${
                           isConfirmedFraud
-                            ? 'bg-rose-950 text-rose-300 border-rose-700 shadow-[0_0_10px_rgba(244,63,94,0.3)]'
+                            ? 'bg-rose-950/90 text-rose-300 border-rose-700 shadow-[0_0_10px_rgba(244,63,94,0.3)]'
                             : isNotFraud
-                            ? 'bg-emerald-950 text-emerald-300 border-emerald-700'
+                            ? 'bg-emerald-950/90 text-emerald-300 border-emerald-700'
                             : isUnderReview
-                            ? 'bg-amber-950 text-amber-300 border-amber-700 animate-pulse'
-                            : 'bg-cyan-950 text-cyan-300 border-cyan-700'
+                            ? 'bg-amber-950/90 text-amber-300 border-amber-700 animate-pulse'
+                            : 'bg-cyan-950/90 text-cyan-300 border-cyan-700'
                         }`}
                       >
+                        <span className={`w-1.5 h-1.5 rounded-full ${isConfirmedFraud ? 'bg-rose-400' : isNotFraud ? 'bg-emerald-400' : 'bg-cyan-400'}`} />
                         {isConfirmedFraud ? 'FRAUD CONFIRMED' : isNotFraud ? 'NOT FRAUD' : linkedCase.status}
                       </span>
                     )
@@ -666,22 +667,18 @@ export default function LiveMonitorAndInvestigationHub({
                         </div>
                       </td>
 
-                      {/* 2. Customer ID */}
-                      <td className="py-3.5 px-4 font-mono text-slate-300 text-xs">
-                        <span className="bg-slate-950 px-2 py-0.5 rounded border border-slate-800">
+                      {/* 2. Customer ID with clean non-sensitive profile underneath */}
+                      <td className="py-3.5 px-4 font-mono text-xs">
+                        <span className="bg-slate-950 px-2 py-0.5 rounded border border-slate-800 font-semibold text-slate-200">
                           {tx.customer_id}
                         </span>
+                        <div className="text-[10px] text-slate-400 font-sans mt-0.5 font-medium">
+                          {isAdmin ? resolveAccountProfile(tx.customer_id) : custName}
+                        </div>
                       </td>
 
-                      {/* 3. Customer / Account Profile */}
-                      <td className="py-3.5 px-4">
-                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${meta.bgBadge}`}>
-                          {isAdmin ? (meta.name || tx.account_tier || 'Standard Profile') : custName}
-                        </span>
-                      </td>
-
-                      {/* 4. Amount */}
-                      <td className="py-3.5 px-4 font-mono font-bold text-white text-xs">
+                      {/* 3. Amount */}
+                      <td className="py-3.5 px-4 font-mono font-bold text-white text-xs whitespace-nowrap">
                         {formatINR(tx.amount)}
                       </td>
 

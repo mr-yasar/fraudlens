@@ -25,6 +25,7 @@ import {
   Code,
   List,
   FileJson,
+  FileText,
 } from 'lucide-react'
 import { auditLogsApi } from '../services/api'
 import GlobalCenterModal from './common/GlobalCenterModal'
