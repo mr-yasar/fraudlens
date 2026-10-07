@@ -35,10 +35,10 @@ router = APIRouter()
 )
 def get_dashboard_stats(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_investigator),
 ) -> DashboardStatsResponse:
-    """Compute and return live dashboard telemetry."""
-    user_cust_id = get_customer_id_for_user(current_user, db)
+    """Compute and return live dashboard telemetry for fraud investigators and admins."""
+    user_cust_id = None
 
     tx_q = db.query(Transaction)
     if user_cust_id is not None:

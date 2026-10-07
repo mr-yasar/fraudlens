@@ -365,53 +365,14 @@ class RiskDecisionOrchestrator:
         why_otp_explanation = None
 
         # Unified Risk-Based Decision Classification for all users
-        if final_risk_score > 70 or rule_result.hard_block or dev_assessment.is_spoofed_environment:
-            # HIGH RISK: Pause/freeze transaction, generate OTP, require explicit verification + Allow/Approve
-            decision = PaymentDecision.REVIEW
+        if rule_result.hard_block or dev_assessment.is_spoofed_environment or final_risk_score >= 88:
+            # HIGH RISK / CRITICAL THREAT: Immediately block payment and escalate to fraud investigation
+            decision = PaymentDecision.BLOCK
             risk_level = RiskLevelEnum.HIGH
-            lifecycle_status = PaymentLifecycleStatus.REVIEW_REQUIRED
-            status_message = "High-risk transaction paused/frozen for secure OTP verification and approval."
-            verification_required = True
-            balance_after = balance_before  # No deduction until user verifies OTP and explicitly approves
-            
-            if is_rapid_activity:
-                security_trigger = "RAPID_TRANSACTION_ACTIVITY"
-                why_otp_reason = "Multiple transactions were detected within a short period. For your account's protection, additional verification is required before this payment can be completed."
-                why_otp_explanation = "Rapid transaction activity may indicate unusual or unauthorized activity."
-            else:
-                security_trigger = "HIGH_RISK_ANOMALY"
-                why_otp_reason = "Elevated risk signals detected for this transaction. Security verification is required to safeguard your funds."
-                why_otp_explanation = "Unusual parameters or transaction characteristics were detected by our fraud protection system."
-
-            approval_id = f"APP-{uuid.uuid4().hex[:10].upper()}"
-            generated_otp = f"{random.randint(100000, 999999)}"
-            approval_rec = TransactionApproval(
-                approval_id=approval_id,
-                payment_id=tx_id,
-                transaction_id=tx_id,
-                customer_id=request.customer_id,
-                user_id=current_user.id if current_user else None,
-                status=ApprovalStatus.PENDING.value,
-                amount=request.amount,
-                currency=request.currency,
-                risk_score=final_risk_score,
-                risk_level=risk_level.value,
-                fraud_probability=round(ml_prob, 4),
-                challenge_type="SMS_OTP",
-                verification_token=generated_otp,
-                notes=json.dumps({
-                    "reason": why_otp_reason,
-                    "explanation": why_otp_explanation,
-                    "security_trigger": security_trigger,
-                    "rapid_activity_detected": is_rapid_activity,
-                    "rapid_activity_count": rapid_activity_count,
-                    "recent_transaction_amounts": recent_transaction_amounts,
-                    "window_minutes": window_minutes,
-                    "otp_code": generated_otp,
-                }),
-                expires_at=datetime.now(timezone.utc) + timedelta(minutes=15),
-            )
-            db.add(approval_rec)
+            lifecycle_status = PaymentLifecycleStatus.BLOCKED
+            status_message = "Payment blocked due to critical fraud risk indicators and security policy violations."
+            verification_required = False
+            balance_after = balance_before  # No deduction; funds preserved
 
             case_id = f"CASE-{uuid.uuid4().hex[:8].upper()}"
             investigation = Investigation(
@@ -421,8 +382,8 @@ class RiskDecisionOrchestrator:
                 status="open",
                 decision=None,
                 notes=(
-                    f"Auto-flagged High-Risk transaction review. Risk Score: {final_risk_score}/100, "
-                    f"ML Probability: {ml_prob:.4f}. Triggered: {', '.join(rule_result.rule_summary_reasons) or 'Elevated Risk Score'}."
+                    f"Auto-flagged High-Risk transaction block. Risk Score: {final_risk_score}/100, "
+                    f"ML Probability: {ml_prob:.4f}. Triggered: {', '.join(rule_result.rule_summary_reasons) or 'Critical Risk Threshold Exceeded'}."
                 ),
             )
             db.add(investigation)
@@ -488,6 +449,7 @@ class RiskDecisionOrchestrator:
                 ),
             )
             db.add(investigation)
+
 
         elif is_rapid_activity:
             # LOW BASE FRAUD SCORE + RAPID ACTIVITY = OTP REQUIRED!

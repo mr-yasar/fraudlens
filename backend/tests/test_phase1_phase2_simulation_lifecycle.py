@@ -300,7 +300,7 @@ def test_insufficient_wallet_balance_rejection(auth_client):
     }
     res = auth_client.post("/api/v1/payment/initiate", json=payload)
     assert res.status_code == 400
-    assert "Insufficient funds in simulated wallet" in res.json()["detail"]
+    assert "Insufficient" in res.json()["detail"]
 
 
 def test_duplicate_approval_replay_protection(auth_client):

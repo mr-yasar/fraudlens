@@ -98,9 +98,9 @@ class TransactionPredictionInput(BaseModel):
             try:
                 hour_val = int(hour)
                 if not (0 <= hour_val <= 23):
-                    hour_val = 12
-            except (TypeError, ValueError):
-                hour_val = 12
+                    raise ValueError("Transaction hour must be between 0 and 23.")
+            except (TypeError, ValueError) as e:
+                raise ValueError(f"Invalid transaction hour: {e}")
         d["Transaction_Hour"] = hour_val
         d["transaction_hour"] = hour_val
 

@@ -224,7 +224,7 @@ def list_investigations(
     sort_by: str = Query("created_at", description="Sort field: created_at, updated_at, case_id, status"),
     sort_order: str = Query("desc", description="Sort order: asc or desc"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_active_user),
+    current_user: User = Depends(require_investigator),
 ) -> InvestigationListResponse:
     """List investigation cases with comprehensive search and filtering."""
     query = db.query(Investigation).join(Transaction, Investigation.transaction_id == Transaction.transaction_id)

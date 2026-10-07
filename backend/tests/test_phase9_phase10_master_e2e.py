@@ -96,6 +96,7 @@ def setup_master_e2e_database():
     db.close()
     yield
     Base.metadata.drop_all(bind=test_engine)
+    app.dependency_overrides.clear()
 
 
 @pytest.fixture

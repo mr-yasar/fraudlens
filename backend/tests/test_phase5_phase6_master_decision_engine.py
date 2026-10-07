@@ -305,7 +305,7 @@ def test_transaction_explanation_api_security(client, alice_auth_headers, bob_au
 # PHASE 6 TESTS: CENTRAL DECISION ENGINE & APPROVAL LIFECYCLE
 # =========================================================================
 
-def test_central_decision_low_risk_allow_immediate_deduction(client, alice_auth_headers):
+def test_central_decision_low_risk_allow_immediate_deduction(client, investigator_auth_headers):
     """Verify LOW risk transaction results in ALLOW, status SUCCEEDED, and immediate wallet balance deduction."""
     db = TestingSessionLocal()
     cust = db.query(Customer).filter(Customer.customer_id == "CUST-P56-LOW").first()
@@ -325,7 +325,7 @@ def test_central_decision_low_risk_allow_immediate_deduction(client, alice_auth_
         "failed_attempts": 0,
     }
 
-    response = client.post("/api/v1/payment/initiate", json=payload, headers=alice_auth_headers)
+    response = client.post("/api/v1/payment/initiate", json=payload, headers=investigator_auth_headers)
     assert response.status_code == 200
     data = response.json()
 
@@ -344,7 +344,7 @@ def test_central_decision_low_risk_allow_immediate_deduction(client, alice_auth_
     db.close()
 
 
-def test_central_decision_medium_risk_review_payment_hold(client, alice_auth_headers):
+def test_central_decision_medium_risk_review_payment_hold(client, investigator_auth_headers):
     """Verify MEDIUM risk transaction creates an Approval, holds wallet balance, and requires step-up verification."""
     db = TestingSessionLocal()
     cust = db.query(Customer).filter(Customer.customer_id == "CUST-P56-MED").first()
@@ -364,7 +364,7 @@ def test_central_decision_medium_risk_review_payment_hold(client, alice_auth_hea
         "failed_attempts": 1,
     }
 
-    response = client.post("/api/v1/payment/initiate", json=payload, headers=alice_auth_headers)
+    response = client.post("/api/v1/payment/initiate", json=payload, headers=investigator_auth_headers)
     assert response.status_code == 200
     data = response.json()
 

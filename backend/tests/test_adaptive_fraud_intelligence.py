@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 from backend.app.main import app
 from backend.app.core.database import SessionLocal, get_db
 from backend.app.models.transaction import Transaction
+from backend.app.models.customer import Customer
 from backend.app.models.investigation import Investigation
 from backend.app.models.user import User
 from backend.app.core.security import get_password_hash, create_access_token
@@ -58,6 +59,8 @@ def test_threat_intelligence_service_scan(db_session: Session):
     import uuid
     uid = uuid.uuid4().hex[:6]
     now = datetime.now(timezone.utc)
+    c1 = Customer(customer_id=f"CUST-9901-{uid}", account_age_days=100, simulated_balance=10000.0)
+    c2 = Customer(customer_id=f"CUST-9902-{uid}", account_age_days=100, simulated_balance=10000.0)
     t1 = Transaction(
         transaction_id=f"TX-THREAT-DEV-1-{uid}",
         customer_id=f"CUST-9901-{uid}",
@@ -80,7 +83,7 @@ def test_threat_intelligence_service_scan(db_session: Session):
         prediction=1,
         created_at=now,
     )
-    db_session.add_all([t1, t2])
+    db_session.add_all([c1, c2, t1, t2])
     db_session.commit()
 
     summary = FraudThreatIntelligenceService.scan_emerging_threats(db=db_session, limit=100)

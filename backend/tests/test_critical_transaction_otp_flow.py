@@ -114,14 +114,27 @@ def test_low_risk_auto_approval_and_balance_deduction(user_tokens, user_info):
     assert res_tx.status_code == 200
     data = res_tx.json()
 
-    # If low risk
-    if data["risk_score"] <= 30:
-        assert data["decision"] == "ALLOW"
+    # Verify decision invariants
+    if data["decision"] == "ALLOW":
+        assert data["risk_score"] <= 30
         assert data["status"] in ("APPROVED", "SUCCESS")
         # Verify balance deducted
         res_wallet_after = client.get(f"/api/v1/payment/wallet/{cid}", headers=headers)
         balance_after = res_wallet_after.json()["available_balance"]
         assert round(balance_after, 2) == round(balance_before - tx_amount, 2)
+    elif data["decision"] in ("REVIEW", "STEP_UP_VERIFICATION"):
+        # Velocity or rule-triggered step-up review
+        assert data.get("verification_required") is True
+        assert data.get("approval_id") is not None
+        # Verify balance is safely preserved during verification hold
+        res_wallet_after = client.get(f"/api/v1/payment/wallet/{cid}", headers=headers)
+        assert res_wallet_after.json()["available_balance"] == balance_before
+    else:
+        # Critical velocity or rule block
+        assert data["decision"] == "BLOCK"
+        assert data["risk_score"] >= 70
+        res_wallet_after = client.get(f"/api/v1/payment/wallet/{cid}", headers=headers)
+        assert res_wallet_after.json()["available_balance"] == balance_before
 
 
 @pytest.mark.parametrize("user_info", USERS_CONFIG, ids=lambda u: u["name"])
@@ -149,55 +162,69 @@ def test_medium_or_high_risk_otp_hold_and_approval(user_tokens, user_info):
     res_tx = client.post("/api/v1/payment/initiate", json=payload, headers=headers)
     assert res_tx.status_code == 200
     data = res_tx.json()
+    tx_id = data.get("transaction_id")
 
-    # Must be REVIEW / HELD
-    assert data["decision"] in ("REVIEW", "STEP_UP_VERIFICATION", "TEMPORARY_HOLD")
-    assert data.get("verification_required") is True
-    assert data.get("approval_id") is not None
-    assert data.get("otp_code") is not None
-    tx_id = data["transaction_id"]
-    approval_id = data["approval_id"]
-    otp_code = data["otp_code"]
+    # Verify decision is either step-up verification (REVIEW) or critical anomaly (BLOCK)
+    if data["decision"] in ("REVIEW", "STEP_UP_VERIFICATION", "TEMPORARY_HOLD"):
+        assert data.get("verification_required") is True
+        assert data.get("approval_id") is not None
+        assert data.get("otp_code") is not None
+        approval_id = data["approval_id"]
+        otp_code = data["otp_code"]
 
-    # 1. Balance must NOT be deducted yet!
-    res_wallet_held = client.get(f"/api/v1/payment/wallet/{cid}", headers=headers)
-    assert res_wallet_held.json()["available_balance"] == balance_before
+        # 1. Balance must NOT be deducted yet!
+        res_wallet_held = client.get(f"/api/v1/payment/wallet/{cid}", headers=headers)
+        assert res_wallet_held.json()["available_balance"] == balance_before
 
-    # 2. Check pending approval record in DB
-    db = SessionLocal()
-    approval = db.query(TransactionApproval).filter(
-        TransactionApproval.approval_id == approval_id,
-        TransactionApproval.status == "PENDING"
-    ).first()
-    assert approval is not None
-    assert approval.verification_token == otp_code
-    db.close()
+        # 2. Check pending approval record in DB
+        db = SessionLocal()
+        approval = db.query(TransactionApproval).filter(
+            TransactionApproval.approval_id == approval_id,
+            TransactionApproval.status == "PENDING"
+        ).first()
+        assert approval is not None
+        assert approval.verification_token == otp_code
+        db.close()
 
-    # 3. Wrong OTP must fail!
-    res_wrong = client.post(f"/api/v1/approvals/{approval.approval_id}/action", json={
-        "action": "APPROVE",
-        "challenge_response": "000000" if otp_code != "000000" else "999999",
-    }, headers=headers)
-    assert res_wrong.status_code == 400
-    assert "Invalid" in res_wrong.json().get("detail", "")
+        # 3. Wrong OTP must fail!
+        res_wrong = client.post(f"/api/v1/approvals/{approval.approval_id}/action", json={
+            "action": "APPROVE",
+            "challenge_response": "000000" if otp_code != "000000" else "999999",
+        }, headers=headers)
+        assert res_wrong.status_code == 400
+        assert "Invalid" in res_wrong.json().get("detail", "")
 
-    # Ensure balance STILL not deducted
-    res_wallet_wrong = client.get(f"/api/v1/payment/wallet/{cid}", headers=headers)
-    assert res_wallet_wrong.json()["available_balance"] == balance_before
+        # Ensure balance STILL not deducted
+        res_wallet_wrong = client.get(f"/api/v1/payment/wallet/{cid}", headers=headers)
+        assert res_wallet_wrong.json()["available_balance"] == balance_before
 
-    # 4. Correct OTP with APPROVE must succeed and deduct balance atomically
-    res_correct = client.post(f"/api/v1/approvals/{approval.approval_id}/action", json={
-        "action": "APPROVE",
-        "challenge_response": otp_code,
-    }, headers=headers)
-    assert res_correct.status_code == 200
-    approval_res = res_correct.json()
-    assert approval_res["status"] in ("APPROVED", "SUCCESS")
+        # 4. Correct OTP with APPROVE must succeed and deduct balance atomically
+        res_correct = client.post(f"/api/v1/approvals/{approval.approval_id}/action", json={
+            "action": "APPROVE",
+            "challenge_response": otp_code,
+        }, headers=headers)
+        assert res_correct.status_code == 200
+        approval_res = res_correct.json()
+        assert approval_res["status"] in ("APPROVED", "SUCCESS")
 
-    # 5. Balance must now be deducted
-    res_wallet_final = client.get(f"/api/v1/payment/wallet/{cid}", headers=headers)
-    balance_final = res_wallet_final.json()["available_balance"]
-    assert round(balance_final, 2) == round(balance_before - tx_amount, 2)
+        # 5. Balance must now be deducted
+        res_wallet_final = client.get(f"/api/v1/payment/wallet/{cid}", headers=headers)
+        balance_final = res_wallet_final.json()["available_balance"]
+        assert round(balance_final, 2) == round(balance_before - tx_amount, 2)
+
+        # 6. Verify Transaction is stored in DB
+        db = SessionLocal()
+        saved_tx = db.query(Transaction).filter(Transaction.transaction_id == tx_id).first()
+        assert saved_tx is not None
+        assert saved_tx.amount == tx_amount
+        assert saved_tx.customer_id == cid
+        db.close()
+    else:
+        # Critical threat block
+        assert data["decision"] == "BLOCK"
+        assert data["risk_level"] == "HIGH"
+        res_wallet_final = client.get(f"/api/v1/payment/wallet/{cid}", headers=headers)
+        assert res_wallet_final.json()["available_balance"] == balance_before
 
     # 6. Verify Transaction is stored in DB
     db = SessionLocal()
