@@ -62,6 +62,7 @@ import GlobalCenterModal from '../common/GlobalCenterModal'
 import CaseWorkspacePanel from './CaseWorkspacePanel'
 import EvidenceDashboard from './EvidenceDashboard'
 import AdminInvestigationChatbot from '../admin/AdminInvestigationChatbot'
+import CustomerSecurityCopilot from '../customer/CustomerSecurityCopilot'
 import {
   ProviderTelemetryBadge,
   TransactionAnalysisCard,
@@ -907,11 +908,27 @@ function InvestigatorCommandCenter({
 export default function AiInvestigationCommandCenter(props) {
   const userRoleStr = (props.user?.role || '').toLowerCase()
   const isDetectedAdmin = props.isAdmin || userRoleStr === 'admin'
+  const isDetectedCustomer =
+    userRoleStr === 'customer' ||
+    userRoleStr === 'user' ||
+    (!props.isAdmin && userRoleStr !== 'investigator' && userRoleStr !== 'fraud_investigator' && userRoleStr !== 'analyst')
 
   if (isDetectedAdmin) {
     return (
       <div className="min-h-screen bg-slate-100 flex flex-col">
         <AdminInvestigationChatbot
+          user={props.user}
+          isInitiallyMaximized={true}
+          onMinimizeExternal={props.onMinimize || (() => props.onNavigate?.('dashboard'))}
+        />
+      </div>
+    )
+  }
+
+  if (isDetectedCustomer) {
+    return (
+      <div className="min-h-screen bg-slate-100 flex flex-col">
+        <CustomerSecurityCopilot
           user={props.user}
           isInitiallyMaximized={true}
           onMinimizeExternal={props.onMinimize || (() => props.onNavigate?.('dashboard'))}

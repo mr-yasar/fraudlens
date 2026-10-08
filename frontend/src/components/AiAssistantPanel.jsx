@@ -58,6 +58,7 @@ import {
 import AIOrb from './ai/AIOrb'
 import { getCustomerPersona } from '../utils/customerHelper'
 import AdminInvestigationChatbot from './admin/AdminInvestigationChatbot'
+import CustomerSecurityCopilot from './customer/CustomerSecurityCopilot'
 
 const BASE_URL = '/api/v1'
 
@@ -1173,6 +1174,18 @@ export default function AiAssistantPanel(props) {
   if (detectedRoleKey === 'admin') {
     return (
       <AdminInvestigationChatbot
+        user={props.user}
+        currentView={props.currentView}
+        currentTransactionId={props.currentTransactionId}
+        isOpenExternal={props.isOpenExternal}
+        onOpenChange={props.onOpenChange}
+      />
+    )
+  }
+
+  if (detectedRoleKey === 'customer') {
+    return (
+      <CustomerSecurityCopilot
         user={props.user}
         currentView={props.currentView}
         currentTransactionId={props.currentTransactionId}
