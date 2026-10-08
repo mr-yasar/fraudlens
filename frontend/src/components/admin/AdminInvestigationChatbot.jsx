@@ -106,6 +106,13 @@ function computeHaversineDistanceKm(lat1, lon1, lat2, lon2) {
   return Math.round(R * c)
 }
 
+function getTimeGreeting() {
+  const hour = new Date().getHours()
+  if (hour < 12) return 'Good morning'
+  if (hour < 17) return 'Good afternoon'
+  return 'Good evening'
+}
+
 const PROVIDER_OPTIONS = [
   { id: 'auto', label: 'Auto', desc: 'Gemini-first with auto-failover to Mistral' },
   { id: 'gemini', label: 'Gemini', desc: 'Google Gemini 3.6 / 3.7 Flash' },
@@ -236,41 +243,23 @@ export default function AdminInvestigationChatbot({
           }
         }
 
-        // Initialize default welcome message if chat history is empty
+        // Initialize dynamic time-aware greeting if chat history is empty
         setMessages((prev) => {
           if (prev.length > 0) return prev
           const custName = detail.customer_id ? detail.customer_id.replace('CUST_', '').replace(/_\d+$/, '') : 'Customer'
           const amtFormatted = detail.amount != null ? `₹${Number(detail.amount).toLocaleString('en-IN')}` : '₹89,450.00'
           const riskVal = detail.risk_score != null ? Math.round(detail.risk_score) : 68
-          const probVal = detail.fraud_probability != null ? `${(Number(detail.fraud_probability) * 100).toFixed(1)}%` : '34.2%'
           const riskLevel = detail.risk_level || (riskVal >= 70 ? 'High' : riskVal >= 30 ? 'Medium-High' : 'Low')
+          const timeGreeting = getTimeGreeting()
+          const adminName = user?.name || user?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Admin'
 
           return [
             {
               id: 1,
-              role: 'user',
-              content: `Why is transaction ${detail.transaction_id || 'TX-2026'} flagged as high risk?`,
-              timestamp: '10:24 AM',
-            },
-            {
-              id: 2,
               role: 'assistant',
-              content: `This transaction is flagged as high risk due to multiple factors. Here's a detailed analysis based on the model prediction, risk scoring, and TreeSHAP explanation:`,
-              timestamp: '10:24 AM',
+              content: `Hi there! ${timeGreeting}, ${adminName}! 👋\n\nI'm your FraudLens AI Forensic Assistant, actively synced with real-time MLOps model telemetry and investigation case management.\n\nCurrently focused on **Case #${detail.case_id || selectedCaseId}** for **${custName}** (Amount: ${amtFormatted}) with risk assessment at **${riskVal}/100** (${riskLevel}).\n\nHow can I assist your investigation today? Click a prompt below or ask anything about this case.`,
+              timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
               provider: 'FraudLens AI (Champion XGBoost)',
-              hasForensicCard: true,
-              cardData: {
-                fraudProbability: probVal,
-                riskScore: `${riskVal} / 100`,
-                riskLevel: riskLevel,
-                amount: amtFormatted,
-                factors: [
-                  `Unusual transaction amount — ${amtFormatted} (deviates from customer baseline).`,
-                  `New payee / merchant pattern — First-time counterparty clearance.`,
-                  `Location deviation — Anomaly detected relative to habitual geofence.`,
-                  `Velocity / Time anomaly — Elevated rapid-clearance frequency window.`,
-                ],
-              },
             },
           ]
         })
@@ -447,13 +436,34 @@ export default function AdminInvestigationChatbot({
 
         if (controller.signal.aborted) return
 
+        const isRiskQuery = /why|high risk|flagged|risk factor|shap|score|probability|analysis/i.test(text)
+        const amtFormatted = caseDetail?.amount != null ? `₹${Number(caseDetail.amount).toLocaleString('en-IN')}` : '₹89,450.00'
+        const riskVal = caseDetail?.risk_score != null ? Math.round(caseDetail.risk_score) : 68
+        const probVal = caseDetail?.fraud_probability != null ? `${(Number(caseDetail.fraud_probability) * 100).toFixed(1)}%` : '34.2%'
+        const riskLevel = caseDetail?.risk_level || (riskVal >= 70 ? 'High' : riskVal >= 30 ? 'Medium-High' : 'Low')
+
         const assistantMsg = {
           id: Date.now() + 1,
           role: 'assistant',
           content: data.response,
-          provider: data.provider,
+          provider: data.provider || 'FraudLens AI (Champion XGBoost)',
           model: data.model,
           used_real_api: data.used_real_api,
+          hasForensicCard: isRiskQuery,
+          cardData: isRiskQuery
+            ? {
+                fraudProbability: probVal,
+                riskScore: `${riskVal} / 100`,
+                riskLevel: riskLevel,
+                amount: amtFormatted,
+                factors: [
+                  `Unusual transaction amount — ${amtFormatted} (deviates from customer baseline).`,
+                  `New payee / merchant pattern — First-time counterparty clearance.`,
+                  `Location deviation — Anomaly detected relative to habitual geofence.`,
+                  `Velocity / Time anomaly — Elevated rapid-clearance frequency window.`,
+                ],
+              }
+            : null,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         }
         setMessages((prev) => [...prev, assistantMsg])
@@ -572,6 +582,7 @@ export default function AdminInvestigationChatbot({
 
   // Quick prompt triggers
   const QUICK_QUESTIONS = [
+    { label: 'Why is this high risk?', query: `Why is transaction ${caseDetail?.transaction_id || 'this transaction'} flagged as high risk?` },
     { label: 'Show SHAP details', query: 'Show detailed TreeSHAP waterfall feature attributions for this transaction.' },
     { label: 'View transaction history', query: 'List recent transaction history and spending deviations for this account.' },
     { label: 'Compare with past activity', query: 'Compare this transaction against the customer historical baseline velocity.' },
@@ -748,7 +759,7 @@ export default function AdminInvestigationChatbot({
 
             {/* ── Quick Questions ── */}
             <div className="px-3 py-1.5 bg-white border-t border-slate-100 flex items-center gap-1.5 overflow-x-auto scrollbar-none text-[10px]">
-              {QUICK_QUESTIONS.slice(0, 2).map((q, idx) => (
+              {QUICK_QUESTIONS.slice(0, 3).map((q, idx) => (
                 <button
                   key={idx}
                   onClick={() => handleSendMessage(q.query)}
