@@ -57,6 +57,7 @@ import {
 } from 'lucide-react'
 import AIOrb from './ai/AIOrb'
 import { getCustomerPersona } from '../utils/customerHelper'
+import AdminInvestigationChatbot from './admin/AdminInvestigationChatbot'
 
 const BASE_URL = '/api/v1'
 
@@ -209,7 +210,7 @@ const PROVIDER_COLORS = {
   },
 }
 
-export default function AiAssistantPanel({
+function LegacyAiAssistantPanel({
   user,
   isAdmin,
   currentView = '',
@@ -1159,4 +1160,27 @@ export default function AiAssistantPanel({
       )}
     </div>
   )
+}
+
+export default function AiAssistantPanel(props) {
+  const userRoleStr = (props.user?.role || '').toLowerCase()
+  const detectedRoleKey = props.isAdmin || userRoleStr === 'admin'
+    ? 'admin'
+    : (userRoleStr === 'fraud_investigator' || userRoleStr === 'investigator' || userRoleStr === 'analyst'
+      ? 'investigator'
+      : 'customer')
+
+  if (detectedRoleKey === 'admin') {
+    return (
+      <AdminInvestigationChatbot
+        user={props.user}
+        currentView={props.currentView}
+        currentTransactionId={props.currentTransactionId}
+        isOpenExternal={props.isOpenExternal}
+        onOpenChange={props.onOpenChange}
+      />
+    )
+  }
+
+  return <LegacyAiAssistantPanel {...props} />
 }

@@ -61,6 +61,7 @@ import AIOrb from './AIOrb'
 import GlobalCenterModal from '../common/GlobalCenterModal'
 import CaseWorkspacePanel from './CaseWorkspacePanel'
 import EvidenceDashboard from './EvidenceDashboard'
+import AdminInvestigationChatbot from '../admin/AdminInvestigationChatbot'
 import {
   ProviderTelemetryBadge,
   TransactionAnalysisCard,
@@ -88,7 +89,7 @@ const PROVIDER_MODES = [
   { id: 'mistral', name: 'MISTRAL', label: 'MISTRAL', subtitle: 'Mistral multi-provider validation' },
 ]
 
-export default function AiInvestigationCommandCenter({
+function InvestigatorCommandCenter({
   user,
   isAdmin,
   onNavigate,
@@ -901,4 +902,23 @@ export default function AiInvestigationCommandCenter({
       )}
     </div>
   )
+}
+
+export default function AiInvestigationCommandCenter(props) {
+  const userRoleStr = (props.user?.role || '').toLowerCase()
+  const isDetectedAdmin = props.isAdmin || userRoleStr === 'admin'
+
+  if (isDetectedAdmin) {
+    return (
+      <div className="min-h-screen bg-slate-100 flex flex-col">
+        <AdminInvestigationChatbot
+          user={props.user}
+          isInitiallyMaximized={true}
+          onMinimizeExternal={props.onMinimize || (() => props.onNavigate?.('dashboard'))}
+        />
+      </div>
+    )
+  }
+
+  return <InvestigatorCommandCenter {...props} />
 }

@@ -249,17 +249,54 @@ def build_safe_context_envelope(
     }
 
     # 2. Specific Transaction Lookup & Risk Explanation
-    #    Only run the regex/DB lookup when there's a transactional keyword
+    #    First check if UI provided a focused transaction or case ID in ui_context:
     specific_tx = None
-    if needs_tx_look or needs_holds or needs_recent:
-        specific_tx = find_specific_transaction(identity.customer_id, user_query, db, is_admin=identity.is_admin)
-        if specific_tx:
-            envelope["focused_transaction"] = specific_tx
-            tx_obj = db.query(Transaction).filter(Transaction.transaction_id == specific_tx["transaction_id"]).first()
+    if ui_context and isinstance(ui_context, dict):
+        ui_tx_id = ui_context.get("transaction_id")
+        ui_case_id = ui_context.get("case_id")
+        if ui_tx_id:
+            tx_obj = db.query(Transaction).filter(Transaction.transaction_id == str(ui_tx_id).strip()).first()
             if tx_obj:
-                from backend.app.services.assistant_explainability_service import explain_transaction_risk
-                shap_records = tx_obj.shap_explanations if hasattr(tx_obj, "shap_explanations") else []
-                envelope["risk_explanation"] = explain_transaction_risk(tx_obj, shap_records, is_admin=identity.is_admin)
+                specific_tx = {
+                    "transaction_id": tx_obj.transaction_id,
+                    "merchant": tx_obj.merchant_name or "Retail Store",
+                    "amount": float(tx_obj.amount),
+                    "currency": tx_obj.currency,
+                    "status": tx_obj.status,
+                    "risk_score": int(tx_obj.risk_score) if tx_obj.risk_score is not None else 15,
+                    "risk_level": tx_obj.risk_level or "LOW",
+                    "fraud_probability": f"{round(tx_obj.fraud_probability * 100, 1)}%" if tx_obj.fraud_probability else "N/A",
+                    "timestamp": tx_obj.created_at.strftime("%Y-%m-%d %H:%M:%S UTC") if tx_obj.created_at else None,
+                }
+        elif ui_case_id:
+            from backend.app.models.investigation import Investigation
+            inv_obj = db.query(Investigation).filter(Investigation.case_id == str(ui_case_id).strip()).first()
+            if inv_obj and inv_obj.transaction:
+                tx_obj = inv_obj.transaction
+                specific_tx = {
+                    "transaction_id": tx_obj.transaction_id,
+                    "case_id": inv_obj.case_id,
+                    "merchant": tx_obj.merchant_name or "Retail Store",
+                    "amount": float(tx_obj.amount),
+                    "currency": tx_obj.currency,
+                    "status": tx_obj.status,
+                    "risk_score": int(tx_obj.risk_score) if tx_obj.risk_score is not None else 15,
+                    "risk_level": tx_obj.risk_level or "LOW",
+                    "fraud_probability": f"{round(tx_obj.fraud_probability * 100, 1)}%" if tx_obj.fraud_probability else "N/A",
+                    "timestamp": tx_obj.created_at.strftime("%Y-%m-%d %H:%M:%S UTC") if tx_obj.created_at else None,
+                }
+
+    # If not resolved from ui_context, run query text extraction:
+    if not specific_tx and (needs_tx_look or needs_holds or needs_recent):
+        specific_tx = find_specific_transaction(identity.customer_id, user_query, db, is_admin=identity.is_admin)
+
+    if specific_tx:
+        envelope["focused_transaction"] = specific_tx
+        tx_obj = db.query(Transaction).filter(Transaction.transaction_id == specific_tx["transaction_id"]).first()
+        if tx_obj:
+            from backend.app.services.assistant_explainability_service import explain_transaction_risk
+            shap_records = tx_obj.shap_explanations if hasattr(tx_obj, "shap_explanations") else []
+            envelope["risk_explanation"] = explain_transaction_risk(tx_obj, shap_records, is_admin=identity.is_admin)
 
     # 3. Recent Transactions — only when the user explicitly asks for transaction history
     if needs_recent:
