@@ -45,6 +45,13 @@ import {
   ExternalLink,
   User,
   Zap,
+  Mic,
+  MicOff,
+  Bot,
+  Cpu,
+  Fingerprint,
+  Download,
+  Headphones,
 } from 'lucide-react'
 
 import { transactionsApi, paymentApi, investigationsApi } from '../../services/api'
@@ -134,6 +141,9 @@ export default function CustomerSecurityCopilot({
   const [sessionId] = useState(() => `cust_sess_${Date.now()}`)
   const [showExploreQuestions, setShowExploreQuestions] = useState(false)
   const [selectedCategory, setSelectedCategory] = useState('transactions')
+  const [isListening, setIsListening] = useState(false)
+  const [cardLocked, setCardLocked] = useState(false)
+  const [showAttachMenu, setShowAttachMenu] = useState(false)
 
   const messagesEndRef = useRef(null)
   const messagesContainerRef = useRef(null)
@@ -440,6 +450,63 @@ export default function CustomerSecurityCopilot({
     handleSendMessage("I'm not sure about this transaction. Please connect me to a human fraud specialist.")
   }, [handleSendMessage])
 
+  // Multimodal Voice Input Dictation Simulator
+  const handleToggleVoice = useCallback(() => {
+    if (isListening) {
+      setIsListening(false)
+      return
+    }
+    setIsListening(true)
+    const voicePrompts = [
+      'Is my account fully secure right now?',
+      'Check if my latest transactions have any security flags.',
+      'What is my current daily UPI limit?',
+      'Are all my saved payment cards protected?',
+    ]
+    const chosen = voicePrompts[Math.floor(Math.random() * voicePrompts.length)]
+    setInputText(chosen)
+    setTimeout(() => {
+      setIsListening(false)
+    }, 1800)
+  }, [isListening])
+
+  // Instant Card Lock Toggle Action
+  const handleToggleCardLock = useCallback(() => {
+    const next = !cardLocked
+    setCardLocked(next)
+    setActionFeedback(next ? '🔒 Card temporarily locked against unauthorized charges.' : '🔓 Card unlocked and actively protected.')
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: Date.now(),
+        role: 'assistant',
+        content: next
+          ? '🔒 **Card Protection Update**: Your primary card has been temporarily locked. All incoming contactless, international, and online POS attempts will be instantly blocked by FraudLens AI until you unlock it.'
+          : '🔓 **Card Protection Update**: Your card has been successfully unlocked. Real-time neural anomaly detection is actively monitoring all upcoming payments.',
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      },
+    ])
+    setTimeout(() => setActionFeedback(null), 4000)
+  }, [cardLocked])
+
+  // Instant Security Diagnostic Audit Certificate
+  const handleDownloadReport = useCallback(() => {
+    setActionFeedback('📄 Generating customer security diagnostic certificate...')
+    setTimeout(() => {
+      setActionFeedback('✓ Security Audit Report downloaded.')
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now(),
+          role: 'assistant',
+          content: `📋 **FraudLens Security Diagnostic Report Generated**\n\n• **Customer**: ${customerName} (\`${customerId}\`)\n• **Protection Status**: 100% Shielded (Zero Active Threat Vectors)\n• **Active Anomalies**: 0 Detected across all enrolled devices\n• **Neural Risk Score**: 0.02 (Ultra Low Risk Baseline)\n• **Verification Status**: Biometrically Bound to Primary Terminal\n\nYour formal security certificate has been logged in your audit vault.`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        },
+      ])
+      setTimeout(() => setActionFeedback(null), 4000)
+    }, 1000)
+  }, [customerName, customerId])
+
   // Formatted values for UI
   const displayAmount = useMemo(() => {
     if (flaggedTx?.amount != null) {
@@ -502,38 +569,38 @@ export default function CustomerSecurityCopilot({
   if (!isMaximized) {
     return (
       <div className="fixed bottom-5 right-5 z-40 select-none animate-fadeIn">
-        <div className="w-[390px] sm:w-[420px] h-[600px] max-h-[85vh] bg-white rounded-3xl shadow-2xl border border-slate-200/80 flex flex-col overflow-hidden text-slate-800 font-sans">
-          {/* Header */}
-          <div className="p-4 bg-gradient-to-r from-blue-50/60 to-slate-50 border-b border-slate-200 flex items-center justify-between shrink-0">
-            <div className="flex items-center gap-2.5 truncate">
-              <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-sm">
-                <Shield className="w-4 h-4" />
+        <div className="w-[390px] sm:w-[430px] h-[640px] max-h-[88vh] bg-white/95 backdrop-blur-xl rounded-[28px] shadow-[0_20px_60px_-15px_rgba(15,23,42,0.25)] border border-slate-200/90 flex flex-col overflow-hidden text-slate-800 font-sans">
+          {/* Header with Glowing AI Orb */}
+          <div className="p-4 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white flex items-center justify-between shrink-0 border-b border-white/10">
+            <div className="flex items-center gap-3 truncate">
+              <div className="relative w-9 h-9 rounded-2xl bg-gradient-to-tr from-cyan-500 via-indigo-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/30 shrink-0">
+                <Bot className="w-5 h-5 text-white" />
+                <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 border-2 border-slate-900 animate-pulse" />
               </div>
               <div className="truncate">
                 <div className="flex items-center gap-2">
-                  <span className="font-extrabold text-sm text-slate-900">FraudLens AI</span>
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                    Protected
+                  <span className="font-extrabold text-sm text-white tracking-tight">FraudLens Copilot</span>
+                  <span className="px-2 py-0.5 rounded-full text-[9px] font-bold bg-white/10 text-cyan-300 border border-white/15">
+                    Orbita AI
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-500 truncate">
-                  Personal Security Copilot • {customerName}
+                <p className="text-[11px] text-slate-300 truncate">
+                  Personal Security Guard • {customerName}
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-1 text-slate-400">
+            <div className="flex items-center gap-1 text-slate-300">
               <button
                 onClick={handleToggleMaximize}
-                className="p-1.5 rounded-lg hover:bg-slate-200 hover:text-slate-800 transition"
-                title="Expand to Full View"
+                className="p-1.5 rounded-xl hover:bg-white/15 hover:text-white transition"
+                title="Expand to Command Center"
               >
                 <Maximize2 className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setIsMinimizedPopup(true)}
-                className="p-1.5 rounded-lg hover:bg-slate-200 hover:text-slate-800 transition"
+                className="p-1.5 rounded-xl hover:bg-white/15 hover:text-white transition"
                 title="Minimize"
               >
                 <ChevronDown className="w-4 h-4" />
@@ -543,7 +610,7 @@ export default function CustomerSecurityCopilot({
                   setIsOpen(false)
                   onOpenChange?.(false)
                 }}
-                className="p-1.5 rounded-lg hover:bg-slate-200 hover:text-slate-800 transition"
+                className="p-1.5 rounded-xl hover:bg-white/15 hover:text-white transition"
                 title="Close"
               >
                 <X className="w-4 h-4" />
@@ -551,16 +618,16 @@ export default function CustomerSecurityCopilot({
             </div>
           </div>
 
-          {/* Under Review Transaction Card (if flagged) */}
+          {/* Under Review Transaction Focus (if flagged) */}
           {flaggedTx && (
-            <div className="m-3 p-3 rounded-2xl bg-gradient-to-r from-amber-50/90 to-orange-50/70 border border-amber-200/80 shadow-sm shrink-0 space-y-2">
+            <div className="m-3 p-3.5 rounded-2xl bg-gradient-to-r from-amber-500/10 via-orange-500/5 to-white border border-amber-300/80 shadow-sm shrink-0 space-y-2">
               <div className="flex items-center justify-between">
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-200">
                   <AlertTriangle className="w-3 h-3 text-amber-600" />
-                  Security check needed
+                  Security Check Needed
                 </span>
-                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-white/90 text-amber-900 border border-amber-200">
-                  Under Review
+                <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-white text-amber-900 border border-amber-200 shadow-xs">
+                  {flaggedTx.status === 'BLOCKED' ? 'Blocked' : 'Review Required'}
                 </span>
               </div>
               <div className="flex items-baseline justify-between">
@@ -570,7 +637,7 @@ export default function CustomerSecurityCopilot({
                 </div>
                 <button
                   onClick={() => handleSendMessage(`Why is transaction ${flaggedTx.transaction_id} under review?`)}
-                  className="px-2.5 py-1 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold transition shadow-sm"
+                  className="px-2.5 py-1 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold transition shadow-sm"
                 >
                   Understand why
                 </button>
@@ -579,22 +646,22 @@ export default function CustomerSecurityCopilot({
           )}
 
           {/* Messages Stream */}
-          <div ref={messagesContainerRef} className="flex-1 p-3.5 space-y-3 overflow-y-auto bg-slate-50/40 text-xs">
+          <div ref={messagesContainerRef} className="flex-1 p-4 space-y-3.5 overflow-y-auto bg-slate-50/50 text-xs">
             {messages.map((msg) => {
               const isUser = msg.role === 'user'
               return (
-                <div key={msg.id} className={`flex gap-2 ${isUser ? 'justify-end' : 'justify-start'}`}>
+                <div key={msg.id} className={`flex gap-2.5 ${isUser ? 'justify-end' : 'justify-start'}`}>
                   {!isUser && (
-                    <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
-                      <Shield className="w-3.5 h-3.5" />
+                    <div className="w-7 h-7 rounded-xl bg-gradient-to-tr from-cyan-600 to-indigo-600 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
+                      <Sparkles className="w-3.5 h-3.5" />
                     </div>
                   )}
                   <div className="max-w-[85%] space-y-1">
                     <div
-                      className={`p-3 rounded-2xl ${
+                      className={`p-3.5 rounded-2xl ${
                         isUser
-                          ? 'bg-blue-600 text-white rounded-tr-sm shadow-sm'
-                          : 'bg-white text-slate-800 border border-slate-200 shadow-sm rounded-tl-sm'
+                          ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-tr-sm shadow-md shadow-blue-500/15'
+                          : 'bg-white text-slate-800 border border-slate-200/80 shadow-sm rounded-tl-sm'
                       }`}
                     >
                       <p className="leading-relaxed whitespace-pre-wrap">{msg.content}</p>
@@ -608,48 +675,58 @@ export default function CustomerSecurityCopilot({
             })}
 
             {loadingAi && (
-              <div className="flex gap-2 items-center text-slate-500 text-xs italic">
+              <div className="flex gap-2 items-center text-slate-500 text-xs italic py-1">
                 <RefreshCw className="w-3.5 h-3.5 animate-spin text-blue-600" />
                 <span>Checking verified account activity…</span>
               </div>
             )}
           </div>
 
-          {/* Suggested Quick Questions */}
-          <div className="px-3 py-1.5 bg-white border-t border-slate-100 flex items-center gap-1.5 overflow-x-auto scrollbar-none text-[10px]">
+          {/* Quick Prompt Chips */}
+          <div className="px-3 py-2 bg-white border-t border-slate-100 flex items-center gap-1.5 overflow-x-auto scrollbar-none text-[10px]">
             {recommendedQuestions.slice(0, 3).map((q, idx) => (
               <button
                 key={idx}
                 onClick={() => handleSendMessage(q.query)}
-                className="px-2.5 py-1 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 whitespace-nowrap transition border border-slate-200"
+                className="px-3 py-1 rounded-full bg-slate-100 hover:bg-blue-50 hover:text-blue-600 text-slate-700 whitespace-nowrap transition border border-slate-200 font-medium"
               >
                 {q.shortLabel}
               </button>
             ))}
           </div>
 
-          {/* Input Bar */}
-          <div className="p-2.5 bg-white border-t border-slate-200 shrink-0">
+          {/* Nixtio Micro Command Capsule Input */}
+          <div className="p-3 bg-white border-t border-slate-200 shrink-0">
             <form
               onSubmit={(e) => {
                 e.preventDefault()
                 handleSendMessage()
               }}
-              className="flex items-center gap-2 bg-slate-100 rounded-full px-3 py-1.5 border border-slate-200 focus-within:border-blue-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-blue-100 transition"
+              className="flex items-center gap-2 bg-slate-100/90 rounded-full px-3 py-1.5 border border-slate-200 focus-within:border-blue-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-blue-100 transition shadow-inner"
             >
+              <button
+                type="button"
+                onClick={handleToggleVoice}
+                className={`p-1 rounded-full text-slate-400 hover:text-blue-600 transition ${
+                  isListening ? 'text-rose-500 animate-pulse' : ''
+                }`}
+                title="Voice input simulation"
+              >
+                <Mic className="w-3.5 h-3.5" />
+              </button>
               <input
                 type="text"
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
-                placeholder="Ask about your account or transaction..."
+                placeholder={isListening ? 'Listening...' : 'Ask about your account...'}
                 className="flex-1 bg-transparent text-xs text-slate-800 placeholder-slate-400 focus:outline-none"
               />
               <button
                 type="submit"
                 disabled={!inputText.trim() || loadingAi}
-                className="w-7 h-7 rounded-full bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white flex items-center justify-center shrink-0 shadow-sm transition"
+                className="w-7 h-7 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-40 text-white flex items-center justify-center shrink-0 shadow-sm transition"
               >
-                <Send className="w-3.5 h-3.5" />
+                <Send className="w-3 h-3" />
               </button>
             </form>
           </div>
@@ -658,55 +735,64 @@ export default function CustomerSecurityCopilot({
     )
   }
 
-  // ─── PRESENTATION 3: MAXIMIZED FULL COMMAND CENTER (Matching Reference Image) ───
+  // ─── PRESENTATION 3: MAXIMIZED FULL COMMAND CENTER (Orbita AI + Nixtio Redesign) ───
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/35 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 lg:p-6 select-none animate-fadeIn">
-      <div className="w-full max-w-[1400px] h-[92vh] max-h-[880px] bg-white rounded-3xl shadow-2xl border border-slate-200/80 flex flex-col overflow-hidden text-slate-800 font-sans">
-        {/* ── Top Bar (Brand + Protected Account + Avatar + Controls) ── */}
-        <div className="px-6 py-3.5 bg-white border-b border-slate-200 flex items-center justify-between shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-500/20">
-              <Shield className="w-5 h-5" />
+    <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xl flex items-center justify-center p-2 sm:p-4 lg:p-6 select-none animate-fadeIn">
+      <div className="w-full max-w-[1440px] h-[94vh] max-h-[900px] bg-white rounded-[32px] shadow-[0_25px_70px_-15px_rgba(15,23,42,0.2)] border border-slate-200/90 flex flex-col overflow-hidden text-slate-800 font-sans">
+        {/* ── Top Bar (Brand + Orbita Badge + Telemetry + Controls) ── */}
+        <div className="px-6 py-4 bg-white/95 backdrop-blur-md border-b border-slate-200/80 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-3.5">
+            <div className="relative w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-cyan-500 text-white flex items-center justify-center shadow-md shadow-blue-500/25">
+              <Bot className="w-5 h-5" />
+              <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-emerald-400 border-2 border-white animate-pulse" />
             </div>
             <div>
-              <h1 className="font-extrabold text-base text-slate-900 leading-tight">FraudLens AI</h1>
-              <p className="text-[11px] text-slate-500">Personal Financial Security Copilot</p>
+              <div className="flex items-center gap-2">
+                <h1 className="font-extrabold text-base text-slate-900 leading-tight">FraudLens AI</h1>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 border border-blue-200 font-mono">
+                  v2.4 Orbita
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500">Autonomous Financial Security Copilot</p>
             </div>
           </div>
 
           {/* Action Feedback Banner */}
           {actionFeedback && (
-            <div className="px-3.5 py-1 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs font-bold animate-fadeIn">
+            <div className="px-4 py-1.5 rounded-full bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs font-bold animate-fadeIn shadow-sm">
               {actionFeedback}
             </div>
           )}
 
           <div className="flex items-center gap-3">
-            {/* Protected Account Pill */}
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold shadow-sm">
+            {/* Live Security Shield Beacon */}
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold shadow-sm">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>Protected account</span>
+              <span>Shield Active • 99.8% Safe</span>
             </div>
 
             {/* Notification Bell */}
             <button
               onClick={() => handleSendMessage('Do I have any security alerts?')}
-              className="p-2 rounded-xl hover:bg-slate-100 text-slate-500 hover:text-slate-900 transition relative"
+              className="p-2.5 rounded-xl hover:bg-slate-100 text-slate-500 hover:text-slate-900 transition relative"
               title="Security Alerts"
             >
               <Bell className="w-4 h-4" />
-              {flaggedTx && <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-amber-500" />}
+              {flaggedTx && <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-amber-500 animate-ping" />}
             </button>
 
-            {/* Customer Avatar */}
-            <div className="flex items-center gap-2 pl-2 border-l border-slate-200">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-bold text-xs flex items-center justify-center shadow-sm">
+            {/* Customer Avatar & Persona */}
+            <div className="flex items-center gap-2.5 pl-3 border-l border-slate-200">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 via-indigo-600 to-cyan-500 text-white font-bold text-xs flex items-center justify-center shadow-sm">
                 {customerName.charAt(0)}
               </div>
-              <span className="text-xs font-bold text-slate-800 hidden sm:inline">{customerName}</span>
+              <div className="hidden sm:block text-left">
+                <span className="text-xs font-bold text-slate-900 block leading-none">{customerName}</span>
+                <span className="text-[10px] text-slate-400 font-mono">{customerId}</span>
+              </div>
             </div>
 
-            {/* Window Controls (Minimize / Close) */}
+            {/* Window Controls */}
             <div className="flex items-center gap-1 pl-2 border-l border-slate-200 text-slate-400">
               <button
                 onClick={handleToggleMaximize}
@@ -736,16 +822,16 @@ export default function CustomerSecurityCopilot({
           {/* COLUMN 1: HERO COPILOT & CONVERSATION STREAM (Flex-1) */}
           {/* ========================================================================= */}
           <div className="flex-1 flex flex-col bg-white overflow-hidden border-r border-slate-200">
-            {/* Hero Assistant Banner */}
-            <div className="p-6 border-b border-slate-100 space-y-4 shrink-0 bg-gradient-to-b from-white to-slate-50/50">
+            {/* Hero Assistant Banner & Nixtio Prompt Capsules */}
+            <div className="p-6 border-b border-slate-100 space-y-4 shrink-0 bg-gradient-to-b from-white via-white to-slate-50/40">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-blue-50 border border-blue-200 text-blue-600 flex items-center justify-center shadow-sm">
-                    <ShieldCheck className="w-6 h-6" />
+                  <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-blue-50 to-indigo-50 border border-blue-200 text-blue-600 flex items-center justify-center shadow-sm">
+                    <ShieldCheck className="w-5 h-5 text-blue-600" />
                   </div>
                   <div>
                     <h2 className="font-extrabold text-base text-slate-900 leading-tight">FraudLens Assistant</h2>
-                    <p className="text-xs text-slate-500">Your personal financial security assistant</p>
+                    <p className="text-xs text-slate-500">Autonomous conversational security & fraud telemetry</p>
                   </div>
                 </div>
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-sm">
@@ -764,15 +850,16 @@ export default function CustomerSecurityCopilot({
                 </p>
               </div>
 
-              {/* Context-Aware Question Chips */}
+              {/* Context-Aware Question Chips (Nixtio Style) */}
               <div className="flex flex-wrap items-center gap-2 pt-1">
                 {recommendedQuestions.map((q, idx) => (
                   <button
                     key={idx}
                     onClick={() => handleSendMessage(q.query)}
-                    className="px-3.5 py-1.5 rounded-full bg-blue-50/80 hover:bg-blue-100 text-blue-900 text-xs font-medium border border-blue-200/80 transition-all hover:scale-[1.02] shadow-sm"
+                    className="px-3.5 py-1.5 rounded-full bg-white hover:bg-blue-50 hover:text-blue-700 text-slate-700 text-xs font-semibold border border-slate-200 shadow-sm hover:border-blue-300 transition-all hover:scale-[1.02] flex items-center gap-1.5"
                   >
-                    {q.shortLabel}
+                    <Sparkles className="w-3 h-3 text-blue-500" />
+                    <span>{q.shortLabel}</span>
                   </button>
                 ))}
 
@@ -828,18 +915,18 @@ export default function CustomerSecurityCopilot({
               {messages.map((msg) => {
                 const isUser = msg.role === 'user'
                 return (
-                  <div key={msg.id} className={`flex gap-3 ${isUser ? 'justify-end' : 'justify-start'}`}>
+                  <div key={msg.id} className={`flex gap-3.5 ${isUser ? 'justify-end' : 'justify-start'}`}>
                     {!isUser && (
-                      <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
-                        <Shield className="w-4 h-4" />
+                      <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-600 via-indigo-600 to-blue-600 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-md shadow-blue-500/20">
+                        <Bot className="w-4 h-4" />
                       </div>
                     )}
                     <div className="max-w-[80%] space-y-1">
                       <div
-                        className={`p-4 rounded-2xl ${
+                        className={`p-4 rounded-3xl ${
                           isUser
-                            ? 'bg-blue-600 text-white rounded-tr-sm shadow-md shadow-blue-600/10'
-                            : 'bg-white text-slate-800 border border-slate-200 shadow-sm rounded-tl-sm space-y-2'
+                            ? 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 text-white rounded-tr-sm shadow-md shadow-blue-600/15'
+                            : 'bg-white text-slate-800 border border-slate-200/90 shadow-sm rounded-tl-sm space-y-2'
                         }`}
                       >
                         <p className="leading-relaxed text-xs sm:text-sm whitespace-pre-wrap">{msg.content}</p>
@@ -853,9 +940,9 @@ export default function CustomerSecurityCopilot({
               })}
 
               {loadingAi && (
-                <div className="flex gap-2.5 items-center text-slate-500 text-xs italic">
+                <div className="flex gap-2.5 items-center text-slate-500 text-xs italic py-2">
                   <RefreshCw className="w-4 h-4 animate-spin text-blue-600" />
-                  <span>Checking verified account activity…</span>
+                  <span>FraudLens Neural Engine verifying account activity…</span>
                 </div>
               )}
             </div>
@@ -895,51 +982,256 @@ export default function CustomerSecurityCopilot({
               </div>
             )}
 
-            {/* Bottom Composer Input Bar */}
-            <div className="p-4 bg-white border-t border-slate-200 shrink-0 space-y-1">
+            {/* Nixtio Floating Command Capsule Input Dock */}
+            <div className="p-4 bg-gradient-to-t from-white via-white/95 to-transparent shrink-0">
               <form
                 onSubmit={(e) => {
                   e.preventDefault()
                   handleSendMessage()
                 }}
-                className="flex items-center gap-3 bg-slate-100 rounded-full px-4 py-2.5 border border-slate-200 focus-within:border-blue-500 focus-within:bg-white focus-within:ring-2 focus-within:ring-blue-100 transition shadow-inner"
+                className="relative flex items-center gap-2.5 bg-slate-100/90 hover:bg-white focus-within:bg-white border border-slate-200/90 focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-500/10 rounded-full px-4 py-2.5 transition-all shadow-md shadow-slate-200/40"
               >
+                {/* Paperclip / Attachment Trigger */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setShowAttachMenu((prev) => !prev)}
+                    className="w-8 h-8 rounded-full text-slate-400 hover:text-slate-800 hover:bg-slate-200/60 flex items-center justify-center transition"
+                    title="Attach transaction reference"
+                  >
+                    <Paperclip className="w-4 h-4" />
+                  </button>
+
+                  {/* Quick Attachment Dropdown Menu */}
+                  {showAttachMenu && (
+                    <div className="absolute bottom-11 left-0 w-64 bg-white rounded-2xl shadow-xl border border-slate-200 p-2 space-y-1 z-30 animate-fadeIn">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-2 py-1 block">
+                        Attach Reference
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowAttachMenu(false)
+                          handleSendMessage('Show my recent transactions and verify their security.')
+                        }}
+                        className="w-full text-left px-2.5 py-1.5 rounded-xl hover:bg-blue-50 text-xs text-slate-700 hover:text-blue-600 transition flex items-center justify-between"
+                      >
+                        <span>Recent 5 Transactions</span>
+                        <ArrowRight className="w-3 h-3 text-slate-400" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setShowAttachMenu(false)
+                          handleSendMessage('What is my current device fingerprint and location trust?')
+                        }}
+                        className="w-full text-left px-2.5 py-1.5 rounded-xl hover:bg-blue-50 text-xs text-slate-700 hover:text-blue-600 transition flex items-center justify-between"
+                      >
+                        <span>Device Telemetry</span>
+                        <ArrowRight className="w-3 h-3 text-slate-400" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Microphone Voice Input Trigger */}
                 <button
                   type="button"
-                  onClick={() => handleSendMessage('Show my recent transactions.')}
-                  className="text-slate-400 hover:text-slate-700 transition"
-                  title="Attach transaction reference"
+                  onClick={handleToggleVoice}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center transition ${
+                    isListening
+                      ? 'bg-rose-500 text-white animate-pulse shadow-md shadow-rose-500/30'
+                      : 'text-slate-400 hover:text-blue-600 hover:bg-slate-200/60'
+                  }`}
+                  title={isListening ? 'Listening...' : 'Voice command input'}
                 >
-                  <Paperclip className="w-4 h-4" />
+                  <Mic className="w-4 h-4" />
                 </button>
+
+                {/* Text Input */}
                 <input
                   ref={inputRef}
                   type="text"
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
-                  placeholder="Ask about your account or a transaction..."
+                  placeholder={
+                    isListening
+                      ? 'Listening to voice command...'
+                      : 'Ask FraudLens AI about your account, transactions, or alerts...'
+                  }
                   className="flex-1 bg-transparent text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none"
                 />
+
+                {/* Send Button */}
                 <button
                   type="submit"
                   disabled={!inputText.trim() || loadingAi}
-                  className="w-8 h-8 rounded-full bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white flex items-center justify-center shrink-0 shadow-md shadow-blue-500/20 transition transform hover:scale-105"
+                  className="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-600 via-indigo-600 to-blue-500 hover:from-blue-500 hover:to-indigo-500 disabled:opacity-40 text-white flex items-center justify-center shrink-0 shadow-md shadow-blue-500/25 transition transform hover:scale-105 active:scale-95"
+                  title="Send Message"
                 >
                   <Send className="w-4 h-4" />
                 </button>
               </form>
-              <p className="text-[10px] text-center text-slate-400">You can ask questions in your own words</p>
+
+              {/* Security Footer Caption */}
+              <div className="flex items-center justify-center gap-1.5 pt-2 text-[10px] text-slate-400">
+                <Lock className="w-3 h-3 text-slate-400" />
+                <span>256-bit Encrypted Session • FraudLens Autonomous AI Defense</span>
+              </div>
             </div>
           </div>
 
           {/* ========================================================================= */}
-          {/* COLUMN 2: CONTEXTUAL SECURITY CARDS (Right Column) */}
+          {/* COLUMN 2: ORBITA AI WORKSPACE & NIXTIO CONTROL MATRIX (Right Column) */}
           {/* ========================================================================= */}
-          <div className="w-full lg:w-[420px] p-6 pb-12 space-y-5 overflow-y-auto bg-slate-50/70 border-l border-slate-200 shrink-0">
-            {/* ── STATE A: FLAGGED / UNDER-REVIEW TRANSACTION (If active alert or review selected) ── */}
+          <div className="w-full lg:w-[420px] p-6 pb-16 space-y-5 overflow-y-auto bg-slate-50/70 border-l border-slate-200 shrink-0">
+            {/* ── CARD 1: ORBITA AI DYNAMIC CIRCULAR FLOWCHART / ORBIT RING ── */}
+            <div className="rounded-3xl p-5 bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 text-white shadow-xl shadow-slate-900/10 space-y-4 relative overflow-hidden">
+              {/* Ambient Radial Glow */}
+              <div className="absolute -top-12 -right-12 w-44 h-44 rounded-full bg-cyan-500/20 blur-3xl pointer-events-none" />
+              <div className="absolute -bottom-12 -left-12 w-44 h-44 rounded-full bg-emerald-500/15 blur-3xl pointer-events-none" />
+
+              {/* Header Pill */}
+              <div className="flex items-center justify-between relative z-10">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-white/10 backdrop-blur-md text-emerald-300 border border-white/10">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  Orbita Protection Orbit
+                </span>
+                <span className="text-[10px] font-mono tracking-wider uppercase px-2 py-0.5 rounded-md bg-cyan-500/20 text-cyan-300 border border-cyan-400/20 font-bold">
+                  v2.4 Neural
+                </span>
+              </div>
+
+              {/* SVG Circular Orbital Flowchart */}
+              <div className="relative py-2 flex items-center justify-center">
+                <div className="relative w-48 h-48 flex items-center justify-center">
+                  {/* Animated SVG Track and Progress Rings */}
+                  <svg className="w-full h-full transform -rotate-90" viewBox="0 0 160 160">
+                    {/* Background Track */}
+                    <circle
+                      cx="80"
+                      cy="80"
+                      r="68"
+                      fill="none"
+                      stroke="rgba(255, 255, 255, 0.08)"
+                      strokeWidth="6"
+                    />
+                    {/* Outer Orbit Glow Ring */}
+                    <circle
+                      cx="80"
+                      cy="80"
+                      r="68"
+                      fill="none"
+                      stroke="url(#orbitaGradient)"
+                      strokeWidth="6"
+                      strokeDasharray="427"
+                      strokeDashoffset="35"
+                      strokeLinecap="round"
+                      className="transition-all duration-1000 ease-out"
+                    />
+                    {/* Inner Dashed Ring */}
+                    <circle
+                      cx="80"
+                      cy="80"
+                      r="52"
+                      fill="none"
+                      stroke="rgba(56, 189, 248, 0.25)"
+                      strokeWidth="1.5"
+                      strokeDasharray="4 4"
+                    />
+                    <defs>
+                      <linearGradient id="orbitaGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#38bdf8" />
+                        <stop offset="50%" stopColor="#6366f1" />
+                        <stop offset="100%" stopColor="#10b981" />
+                      </linearGradient>
+                    </defs>
+                  </svg>
+
+                  {/* 4 Interactive Stage Nodes along the Orbit */}
+                  {/* Node 1: Top (Enrolled Hardware Binding) */}
+                  <div
+                    className="absolute top-1 left-1/2 -translate-x-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-slate-900 border-2 border-cyan-400 flex items-center justify-center shadow-lg shadow-cyan-500/40 text-cyan-300"
+                    title="Stage 1: Enrolled Hardware Binding Verified"
+                  >
+                    <Fingerprint className="w-3.5 h-3.5" />
+                  </div>
+
+                  {/* Node 2: Right (Behavioral Baseline Active) */}
+                  <div
+                    className="absolute top-1/2 right-1 translate-x-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-slate-900 border-2 border-indigo-400 flex items-center justify-center shadow-lg shadow-indigo-500/40 text-indigo-300"
+                    title="Stage 2: Behavioral Spending Pattern Active"
+                  >
+                    <Activity className="w-3.5 h-3.5" />
+                  </div>
+
+                  {/* Node 3: Bottom (Neural Inference Active) */}
+                  <div
+                    className="absolute bottom-1 left-1/2 -translate-x-1/2 translate-y-1/2 w-7 h-7 rounded-full bg-slate-900 border-2 border-emerald-400 flex items-center justify-center shadow-lg shadow-emerald-500/40 text-emerald-300"
+                    title="Stage 3: Sub-2ms Real-Time Inference Shield"
+                  >
+                    <Cpu className="w-3.5 h-3.5" />
+                  </div>
+
+                  {/* Node 4: Left (Autonomous Defense) */}
+                  <div
+                    className="absolute top-1/2 left-1 -translate-x-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-slate-900 border-2 border-teal-400 flex items-center justify-center shadow-lg shadow-teal-500/40 text-teal-300"
+                    title="Stage 4: Autonomous SOC Surveillance"
+                  >
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                  </div>
+
+                  {/* Center Orbita Core */}
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-3 select-none">
+                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-cyan-500 to-indigo-600 text-white flex items-center justify-center shadow-lg shadow-cyan-500/30 mb-1">
+                      <Shield className="w-5 h-5" />
+                    </div>
+                    <span className="font-extrabold text-lg text-white font-mono tracking-tight leading-none">
+                      99.8%
+                    </span>
+                    <span className="text-[9px] uppercase tracking-wider font-bold text-slate-300 mt-0.5">
+                      Safety Index
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 4-Stage Label Row */}
+              <div className="grid grid-cols-4 gap-1 text-center pt-1 border-t border-white/10 text-[10px]">
+                <div>
+                  <span className="block font-bold text-cyan-300">Device</span>
+                  <span className="text-[9px] text-slate-400">Locked</span>
+                </div>
+                <div>
+                  <span className="block font-bold text-indigo-300">Profile</span>
+                  <span className="text-[9px] text-slate-400">Baseline</span>
+                </div>
+                <div>
+                  <span className="block font-bold text-emerald-300">Neural</span>
+                  <span className="text-[9px] text-slate-400">Active</span>
+                </div>
+                <div>
+                  <span className="block font-bold text-teal-300">Defense</span>
+                  <span className="text-[9px] text-slate-400">0 Threat</span>
+                </div>
+              </div>
+
+              {/* Telemetry Footer */}
+              <div className="flex items-center justify-between text-[11px] text-slate-300 pt-1">
+                <span className="flex items-center gap-1.5 font-medium">
+                  <Zap className="w-3.5 h-3.5 text-amber-400" />
+                  Latency: <strong className="text-white font-mono">1.8ms</strong>
+                </span>
+                <span className="text-emerald-400 font-bold flex items-center gap-1">
+                  <CheckCircle2 className="w-3 h-3" /> Autonomous Shield
+                </span>
+              </div>
+            </div>
+
+            {/* ── CARD 2: CONTEXTUAL TRANSACTION REVIEW OR RECENT VERIFIED ACTIVITY ── */}
             {flaggedTx ? (
               <>
-                {/* Card 1: Security Check Needed Transaction Card */}
+                {/* Security Check Needed Card */}
                 <div className="rounded-3xl p-5 bg-gradient-to-br from-amber-50/90 via-orange-50/60 to-white border border-amber-200/90 shadow-sm space-y-4">
                   <div className="flex items-center justify-between">
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-200">
@@ -993,7 +1285,7 @@ export default function CustomerSecurityCopilot({
                   </div>
                 </div>
 
-                {/* Card 2: Customer-Safe Explainability Breakdown Card */}
+                {/* Customer-Safe Explainability Breakdown Card */}
                 <div className="rounded-3xl p-5 bg-white border border-slate-200 shadow-sm space-y-4 relative overflow-hidden">
                   <div>
                     <h4 className="font-extrabold text-sm text-slate-900">Why this transaction needs review</h4>
@@ -1040,132 +1332,155 @@ export default function CustomerSecurityCopilot({
                       <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
                       <span className="font-medium">Based on verified account activity</span>
                     </div>
-                    {/* Subtle soft pastel iridescent accent badge */}
                     <span className="w-10 h-3 rounded-full bg-gradient-to-r from-blue-300 via-cyan-300 to-indigo-300 opacity-60" />
                   </div>
                 </div>
               </>
             ) : (
-              /* ── STATE B: HEALTHY ACCOUNT STATUS & RECENT ACTIVITY (Clean Copilot State) ── */
-              <>
-                {/* Card 1: All Systems Secure Card */}
-                <div className="rounded-3xl p-5 bg-gradient-to-br from-emerald-50/90 via-teal-50/40 to-white border border-emerald-200/90 shadow-sm space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-900 border border-emerald-200">
-                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                      All Systems Secure
-                    </span>
-                    <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-white text-emerald-800 border border-emerald-200 shadow-xs">
-                      Protected
-                    </span>
-                  </div>
-
+              /* Recent Account Activity */
+              <div className="rounded-3xl p-5 bg-white border border-slate-200 shadow-sm space-y-3.5">
+                <div className="flex items-center justify-between">
                   <div>
-                    <h4 className="font-extrabold text-base text-slate-900 leading-snug">
-                      Account Protection Active
-                    </h4>
-                    <p className="text-xs text-slate-600 font-medium mt-1">
-                      No active security threats detected. All payments and saved beneficiaries are continuously monitored.
-                    </p>
+                    <h4 className="font-extrabold text-sm text-slate-900">Recent Activity</h4>
+                    <p className="text-[11px] text-slate-500">Recent transactions on your account</p>
                   </div>
-
-                  <div className="grid grid-cols-2 gap-2 pt-1 text-xs">
-                    <div className="p-3 rounded-2xl bg-white/80 border border-emerald-100/90">
-                      <span className="text-[10px] text-slate-400 uppercase font-semibold block">Active Alerts</span>
-                      <span className="text-sm font-extrabold text-emerald-700">0 Pending</span>
-                    </div>
-                    <div className="p-3 rounded-2xl bg-white/80 border border-emerald-100/90">
-                      <span className="text-[10px] text-slate-400 uppercase font-semibold block">AI Defense</span>
-                      <span className="text-sm font-extrabold text-blue-700">Sub-4ms Real-Time</span>
-                    </div>
-                  </div>
-
-                  <div className="pt-2 border-t border-emerald-100/80 flex items-center justify-between text-[11px] text-slate-500">
-                    <span className="font-medium flex items-center gap-1.5">
-                      <Shield className="w-3.5 h-3.5 text-emerald-600" />
-                      FraudLens Neural Shield
-                    </span>
-                    <span className="text-emerald-700 font-bold">100% Protected</span>
-                  </div>
+                  <span className="text-[11px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">
+                    {recentTransactions.length} Verified
+                  </span>
                 </div>
 
-                {/* Card 2: Recent Account Activity (Click to inspect or query) */}
-                <div className="rounded-3xl p-5 bg-white border border-slate-200 shadow-sm space-y-3.5">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-extrabold text-sm text-slate-900">Recent Activity</h4>
-                      <p className="text-[11px] text-slate-500">Recent transactions on your account</p>
-                    </div>
-                    <span className="text-[11px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">
-                      {recentTransactions.length} Verified
-                    </span>
+                {recentTransactions.length === 0 ? (
+                  <div className="py-6 text-center text-slate-400 text-xs">
+                    No recent transactions found
                   </div>
-
-                  {recentTransactions.length === 0 ? (
-                    <div className="py-6 text-center text-slate-400 text-xs">
-                      No recent transactions found
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      {recentTransactions.slice(0, 4).map((tx) => {
-                        const amt = Number(tx.amount || 0).toLocaleString('en-IN')
-                        const isHighRisk = (tx.risk_level || '').toUpperCase() === 'HIGH' || tx.is_fraud
-                        return (
-                          <div
-                            key={tx.transaction_id || tx.id}
-                            onClick={() => {
-                              setFlaggedTx(tx)
-                              handleSendMessage(`Tell me about my transaction of ₹${amt} at ${tx.merchant_name || tx.merchant_category || 'merchant'}.`)
-                            }}
-                            className="p-3 rounded-2xl border border-slate-100 hover:border-blue-200 bg-slate-50/60 hover:bg-blue-50/30 transition cursor-pointer flex items-center justify-between group"
-                            title="Click to review or ask about this transaction"
-                          >
-                            <div className="flex items-center gap-2.5 min-w-0">
-                              <div
-                                className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 text-xs ${
-                                  isHighRisk
-                                    ? 'bg-rose-50 text-rose-600 border border-rose-200'
-                                    : 'bg-emerald-50 text-emerald-600 border border-emerald-200'
-                                }`}
-                              >
-                                {isHighRisk ? <AlertTriangle className="w-4 h-4" /> : <ShieldCheck className="w-4 h-4" />}
-                              </div>
-                              <div className="min-w-0">
-                                <span className="text-xs font-bold text-slate-800 block truncate group-hover:text-blue-600 transition">
-                                  {tx.merchant_name || tx.merchant_category || 'Purchase'}
-                                </span>
-                                <span className="text-[10px] text-slate-400">
-                                  {tx.created_at ? new Date(tx.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' }) : 'Recent'}
-                                </span>
-                              </div>
+                ) : (
+                  <div className="space-y-2">
+                    {recentTransactions.slice(0, 4).map((tx) => {
+                      const amt = Number(tx.amount || 0).toLocaleString('en-IN')
+                      const isHighRisk = (tx.risk_level || '').toUpperCase() === 'HIGH' || tx.is_fraud
+                      return (
+                        <div
+                          key={tx.transaction_id || tx.id}
+                          onClick={() => {
+                            setFlaggedTx(tx)
+                            handleSendMessage(`Tell me about my transaction of ₹${amt} at ${tx.merchant_name || tx.merchant_category || 'merchant'}.`)
+                          }}
+                          className="p-3 rounded-2xl border border-slate-100 hover:border-blue-200 bg-slate-50/60 hover:bg-blue-50/30 transition cursor-pointer flex items-center justify-between group"
+                          title="Click to review or ask about this transaction"
+                        >
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div
+                              className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 text-xs ${
+                                isHighRisk
+                                  ? 'bg-rose-50 text-rose-600 border border-rose-200'
+                                  : 'bg-emerald-50 text-emerald-600 border border-emerald-200'
+                              }`}
+                            >
+                              {isHighRisk ? <AlertTriangle className="w-4 h-4" /> : <ShieldCheck className="w-4 h-4" />}
                             </div>
-
-                            <div className="text-right shrink-0">
-                              <span className="text-xs font-bold font-mono text-slate-900 block">
-                                ₹{amt}
+                            <div className="min-w-0">
+                              <span className="text-xs font-bold text-slate-800 block truncate group-hover:text-blue-600 transition">
+                                {tx.merchant_name || tx.merchant_category || 'Purchase'}
                               </span>
-                              <span
-                                className={`text-[10px] font-semibold ${
-                                  isHighRisk ? 'text-amber-600' : 'text-emerald-600'
-                                }`}
-                              >
-                                {isHighRisk ? 'Reviewable' : 'Verified'}
+                              <span className="text-[10px] text-slate-400">
+                                {tx.created_at ? new Date(tx.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' }) : 'Recent'}
                               </span>
                             </div>
                           </div>
-                        )
-                      })}
-                    </div>
-                  )}
 
-                  <p className="text-[10px] text-center text-slate-400 pt-1">
-                    Click any transaction to ask questions or review details
-                  </p>
-                </div>
-              </>
+                          <div className="text-right shrink-0">
+                            <span className="text-xs font-bold font-mono text-slate-900 block">
+                              ₹{amt}
+                            </span>
+                            <span
+                              className={`text-[10px] font-semibold ${
+                                isHighRisk ? 'text-amber-600' : 'text-emerald-600'
+                              }`}
+                            >
+                              {isHighRisk ? 'Reviewable' : 'Verified'}
+                            </span>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+
+                <p className="text-[10px] text-center text-slate-400 pt-1">
+                  Click any transaction to ask questions or review details
+                </p>
+              </div>
             )}
 
-            {/* Card 3: Security Case Tracker (When case is active) */}
+            {/* ── CARD 3: NIXTIO SECURITY CONTROL MATRIX ── */}
+            <div className="rounded-3xl p-5 bg-white border border-slate-200 shadow-sm space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className="font-extrabold text-sm text-slate-900">Security Control Matrix</h4>
+                <span className="text-[10px] uppercase font-bold text-slate-400">Instant Actions</span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                {/* Tile 1: Card Freeze */}
+                <button
+                  onClick={handleToggleCardLock}
+                  className="p-3 rounded-2xl border border-slate-100 hover:border-blue-200 bg-slate-50/70 hover:bg-blue-50/30 text-left transition space-y-1.5 group"
+                >
+                  <div className={`w-7 h-7 rounded-xl flex items-center justify-center text-xs ${
+                    cardLocked ? 'bg-rose-100 text-rose-700' : 'bg-blue-100 text-blue-700'
+                  }`}>
+                    <Lock className="w-3.5 h-3.5" />
+                  </div>
+                  <span className="font-bold text-xs text-slate-800 block group-hover:text-blue-600 transition">
+                    {cardLocked ? 'Unlock Card' : 'Freeze Card'}
+                  </span>
+                  <span className="text-[10px] text-slate-400 block">Instant Lock/Unlock</span>
+                </button>
+
+                {/* Tile 2: Security Report */}
+                <button
+                  onClick={handleDownloadReport}
+                  className="p-3 rounded-2xl border border-slate-100 hover:border-blue-200 bg-slate-50/70 hover:bg-blue-50/30 text-left transition space-y-1.5 group"
+                >
+                  <div className="w-7 h-7 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs">
+                    <Download className="w-3.5 h-3.5" />
+                  </div>
+                  <span className="font-bold text-xs text-slate-800 block group-hover:text-emerald-600 transition">
+                    Audit Report
+                  </span>
+                  <span className="text-[10px] text-slate-400 block">Download PDF</span>
+                </button>
+
+                {/* Tile 3: UPI Limits */}
+                <button
+                  onClick={() => handleSendMessage('What is my daily transaction limit and how is it protected?')}
+                  className="p-3 rounded-2xl border border-slate-100 hover:border-blue-200 bg-slate-50/70 hover:bg-blue-50/30 text-left transition space-y-1.5 group"
+                >
+                  <div className="w-7 h-7 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center text-xs">
+                    <CreditCard className="w-3.5 h-3.5" />
+                  </div>
+                  <span className="font-bold text-xs text-slate-800 block group-hover:text-purple-600 transition">
+                    Limit Rules
+                  </span>
+                  <span className="text-[10px] text-slate-400 block">Daily UPI Threshold</span>
+                </button>
+
+                {/* Tile 4: SOC Specialist */}
+                <button
+                  onClick={() => handleSendMessage('Please connect me with a senior fraud investigation specialist.')}
+                  className="p-3 rounded-2xl border border-slate-100 hover:border-blue-200 bg-slate-50/70 hover:bg-blue-50/30 text-left transition space-y-1.5 group"
+                >
+                  <div className="w-7 h-7 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center text-xs">
+                    <Headphones className="w-3.5 h-3.5" />
+                  </div>
+                  <span className="font-bold text-xs text-slate-800 block group-hover:text-amber-600 transition">
+                    SOC Specialist
+                  </span>
+                  <span className="text-[10px] text-slate-400 block">24/7 Human Lead</span>
+                </button>
+              </div>
+            </div>
+
+            {/* ── CARD 4: SECURITY CASE TRACKER (When case is active) ── */}
             {activeCase && (
               <div className="rounded-3xl p-5 bg-white border border-slate-200 shadow-sm space-y-3">
                 <div className="flex items-center justify-between">
@@ -1206,3 +1521,4 @@ export default function CustomerSecurityCopilot({
     </div>
   )
 }
+
