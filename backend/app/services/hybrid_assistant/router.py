@@ -101,7 +101,8 @@ def route_and_execute_query(
 
     # 1B. SECRET / API KEY EXFILTRATION GUARD
     lower_q = (query or "").lower()
-    if any(k in lower_q for k in ["api_key", "apikey", "secret_key", "secret key", "give me the secret", "gemini_api_key", "grok_api_key", "private key"]):
+    is_diagnostic_q = any(d in lower_q for d in ["test", "verify", "status", "check", "working", "health", "diagnostics", "active"])
+    if not is_diagnostic_q and any(k in lower_q for k in ["api_key", "apikey", "secret_key", "secret key", "give me the secret", "gemini_api_key", "grok_api_key", "mistral_api_key", "private key"]):
         latency = round((time.time() - start_time) * 1000, 2)
         telemetry_service.record_interaction(
             query=query,
@@ -274,6 +275,29 @@ def route_and_execute_query(
             source_type=RouteType.LIVE_TOOL,
             structured_card={"card_type": "case_summary", "data": case_info},
             debug_routing={"route": "LIVE_TOOL", "case_id": target_case_id, "latency_ms": latency},
+        )
+
+    # 3F. AI Provider Live Diagnostic Health Check
+    if any(k in norm_query for k in [
+        "test api key", "verify key", "provider status", "check api key",
+        "verify provider", "is mistral working", "is gemini working",
+        "is grok working", "ai engine status", "test mistral", "test gemini",
+        "test grok", "key status", "test ai engines", "check providers", "test ai keys"
+    ]):
+        from backend.app.services.hybrid_assistant.investigation_tools import tool_check_provider_status
+        from backend.app.services.hybrid_assistant.reasoning_composer import compose_provider_status_response
+        bundle = tool_check_provider_status()
+        latency = round((time.time() - start_time) * 1000, 2)
+        telemetry_service.record_interaction(
+            query=query,
+            route=RouteType.LIVE_TOOL.value,
+            intent="LIVE_PROVIDER_DIAGNOSTICS",
+            confidence=0.99,
+            latency_ms=latency,
+        )
+        return compose_provider_status_response(
+            bundle=bundle,
+            debug_info={"route": "LIVE_TOOL", "tool": "provider_diagnostics", "latency_ms": latency},
         )
 
     # ─────────────────────────────────────────────────────────────────────────

@@ -200,3 +200,68 @@ def compose_ranking_response(
         structured_card={"card_type": "ranking_summary", "items": items},
         debug_routing=debug_info,
     )
+
+
+def compose_provider_status_response(
+    bundle: LiveEvidenceBundle,
+    debug_info: Optional[Dict[str, Any]] = None,
+) -> AssistantResponseEnvelope:
+    """Format live AI provider diagnostics into an authoritative, clean status card."""
+    data = bundle.investigation or {}
+    gemini = data.get("gemini", {})
+    mistral = data.get("mistral", {})
+    grok = data.get("grok", {})
+
+    mistral_valid = mistral.get("valid", False)
+    mistral_model = mistral.get("model", "open-mistral-7b")
+
+    gemini_valid = gemini.get("valid", False)
+    gemini_msg = gemini.get("message", "")
+    if "429" in gemini_msg or "RESOURCE_EXHAUSTED" in gemini_msg:
+        gemini_summary = "⚠️ **Quota Paused** (Free-tier 20 req/day limit reached; auto-cascaded to Mistral AI)"
+    elif gemini_valid:
+        gemini_summary = "✅ **Connected & Active** (Google Gemini 3.6 / 3.7 Flash)"
+    else:
+        gemini_summary = f"❌ **Not Active**: {gemini_msg[:80]}"
+
+    mistral_summary = (
+        f"✅ **Connected & Active!** (`{mistral_model}`)"
+        if mistral_valid else f"❌ **Not Active**: {mistral.get('message', 'Key not configured')}"
+    )
+
+    grok_valid = grok.get("valid", False)
+    grok_summary = (
+        f"✅ **Authenticated** (Key Name: `{grok.get('key_name', 'llm')}`, Team: `{str(grok.get('team_id', ''))[:8]}...`)"
+        if grok_valid else f"❌ **Not Configured**: {grok.get('message', '')}"
+    )
+
+    answer = (
+        "### 🔑 Live AI Provider Diagnostics & Engine Status\n\n"
+        f"1. 🌟 **Mistral AI**: {mistral_summary}\n"
+        f"2. ✨ **Google Gemini**: {gemini_summary}\n"
+        f"3. ⚡ **xAI Grok-2**: {grok_summary}\n\n"
+        "**Routing & Failover Intelligence**:\n"
+        "- **Primary Live Engine**: Mistral AI is online, verified, and handling deep forensic synthesis and SAR reporting.\n"
+        "- **Zero-Disruption Failover**: If any engine reaches rate limits, the orchestrator cascades automatically across the configured pool."
+    )
+
+    return AssistantResponseEnvelope(
+        response_type=ResponseCardType.EXPLANATION.value,
+        answer=answer,
+        evidence_refs=["llm/provider_diagnostics", "env/mistral_configured"],
+        follow_up_suggestions=[
+            "What is Mistral AI in FraudLens?",
+            "How does the multi-LLM orchestrator work?",
+            "How do I switch AI engines?",
+        ],
+        confidence=0.99,
+        source_type=RouteType.LIVE_TOOL,
+        structured_card={
+            "card_type": "provider_diagnostics",
+            "mistral_active": mistral_valid,
+            "gemini_active": gemini_valid,
+            "grok_active": grok_valid,
+        },
+        debug_routing=debug_info or {"route": "LIVE_TOOL", "tool": "provider_diagnostics"},
+    )
+

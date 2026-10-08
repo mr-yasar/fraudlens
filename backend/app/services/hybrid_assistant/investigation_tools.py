@@ -280,3 +280,38 @@ def tool_get_recent_customer_transactions(
         })
     bundle.transaction = {"recent_items": items}
     return bundle
+
+
+def tool_check_provider_status() -> LiveEvidenceBundle:
+    """Fetch live diagnostic verification status of all configured AI providers without revealing keys."""
+    from backend.app.services.llm_service import (
+        verify_gemini_key,
+        verify_mistral_key,
+        verify_grok_key,
+    )
+    bundle = LiveEvidenceBundle(
+        query_target="ai_provider_diagnostics",
+        retrieved_at=datetime.datetime.utcnow().isoformat(),
+    )
+    try:
+        gemini_info = verify_gemini_key()
+    except Exception as exc:
+        gemini_info = {"valid": False, "message": str(exc)}
+
+    try:
+        mistral_info = verify_mistral_key()
+    except Exception as exc:
+        mistral_info = {"valid": False, "message": str(exc)}
+
+    try:
+        grok_info = verify_grok_key()
+    except Exception as exc:
+        grok_info = {"valid": False, "message": str(exc)}
+
+    bundle.investigation = {
+        "gemini": gemini_info,
+        "mistral": mistral_info,
+        "grok": grok_info,
+    }
+    return bundle
+

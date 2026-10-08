@@ -1902,13 +1902,79 @@ LIBRARY: Dict[str, PredefinedAnswerRecord] = {
             "Why do you support Gemini and Grok?"
         ],
         negative_examples=["What technologies are used?"],
-        tags=["llm", "orchestrator", "failover", "gemini", "grok"],
+        tags=["llm", "orchestrator", "failover", "gemini", "grok", "mistral"],
         source_refs=["backend/app/services/llm_service.py:L120-L190"],
         card_type=ResponseCardType.EXPLANATION,
         follow_up_suggestions=[
-            "What can this chatbot do?",
-            "How does the chatbot decide how to answer?",
-            "What technologies are used?"
+            "What is Mistral AI in FraudLens?",
+            "How do I switch AI engines?",
+            "Test API key status for Gemini, Mistral, and Grok."
+        ],
+    ),
+    "MISTRAL_AI_INTEGRATION": PredefinedAnswerRecord(
+        intent="MISTRAL_AI_INTEGRATION",
+        canonical_answer=(
+            "Mistral AI (`open-mistral-7b` / Mistral Small) is FraudLens's high-velocity Generative AI reasoning engine, "
+            "specializing in structured Suspicious Activity Report (SAR) drafting, rapid fraud narrative generation, "
+            "and robust, automatic failover when Gemini quotas are paused."
+        ),
+        short_answer="High-speed European GenAI engine optimized for structured SAR filings and seamless auto-failover.",
+        detailed_answer=(
+            "Key features of Mistral AI in FraudLens:\n"
+            "- **Direct API Connection**: Integrated via `https://api.mistral.ai/v1` with verified API key authentication.\n"
+            "- **SAR Regulatory Drafting**: Produces structured JSON dossiers adhering to FinCEN and GDPR Article 22 Right-to-Explanation guidelines.\n"
+            "- **Intelligent Failover**: When Gemini free-tier daily quotas are reached, the orchestrator instantly cascades to Mistral AI with zero user disruption.\n"
+            "- **Privacy Compliant**: Zero customer credentials or API secrets are sent in prompt payloads."
+        ),
+        category="ML Models and Explainability",
+        synonyms=["mistral ai", "mistral engine", "open mistral 7b", "mistral failover", "is mistral active", "mistral model"],
+        examples=[
+            "What is Mistral AI?",
+            "How does Mistral AI work in FraudLens?",
+            "Why do you use Mistral AI?",
+            "Is Mistral AI active?",
+            "Tell me about the Mistral engine"
+        ],
+        negative_examples=["What is XGBoost?"],
+        tags=["mistral", "llm", "sar", "failover", "genai"],
+        source_refs=["backend/app/services/llm_service.py:L87-L95", "backend/app/services/intelligence/mistral_adapter.py"],
+        card_type=ResponseCardType.EXPLANATION,
+        follow_up_suggestions=[
+            "How does the multi-LLM orchestrator work?",
+            "How do I switch AI engines?",
+            "Test API key status for Gemini, Mistral, and Grok."
+        ],
+    ),
+    "HOW_TO_SWITCH_MODELS": PredefinedAnswerRecord(
+        intent="HOW_TO_SWITCH_MODELS",
+        canonical_answer=(
+            "You can switch AI engines at any time using the model selector strip at the top of the chat panel. "
+            "Choose between **AUTO (Intelligent Failover)**, **GEMINI (Primary)**, **MISTRAL (High-Speed)**, or **GROK (Independent Review)**."
+        ),
+        short_answer="Click AUTO, GEMINI, MISTRAL, or GROK on the model selector strip at the top of the chat window.",
+        detailed_answer=(
+            "Model Modes Explained:\n"
+            "- **AUTO**: Intelligent coordinator (Gemini 1st -> automatic failover to Mistral AI or Grok on quota/rate-limit).\n"
+            "- **MISTRAL**: Direct inference via Mistral AI (`open-mistral-7b`) for rapid responses and SAR reports.\n"
+            "- **GEMINI**: Direct Google Gemini (3.6 Flash / 3.7 Deep Reasoning).\n"
+            "- **GROK**: Direct xAI Grok-2 for independent forensic challenges and red-team audits."
+        ),
+        category="Help and Support",
+        synonyms=["switch model", "change ai provider", "select mistral", "choose llm", "select provider"],
+        examples=[
+            "How do I switch AI engines?",
+            "How to change LLM provider?",
+            "Can I use Mistral directly?",
+            "How to select Grok or Gemini?"
+        ],
+        negative_examples=["How does the model predict?"],
+        tags=["provider", "switch", "selector", "mistral", "gemini", "grok"],
+        source_refs=["frontend/src/components/AiAssistantPanel.jsx:L129-L135"],
+        card_type=ResponseCardType.NEXT_STEP,
+        follow_up_suggestions=[
+            "What is Mistral AI in FraudLens?",
+            "How does the multi-LLM orchestrator work?",
+            "What can this chatbot do?"
         ],
     ),
 }

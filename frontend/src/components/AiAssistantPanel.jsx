@@ -83,7 +83,7 @@ const ROLE_PROFILES = {
     greeting: (name) =>
       `Hello ${name}! 👋 I'm your FraudLens Security Assistant. I'm actively protecting your account and cards behind the scenes with real-time AI. How can I assist you with your transaction safety or security questions today?`,
     questions: [
-      { label: '🔑 Test API Keys (Grok & Gemini)', query: 'Test API key status for Grok and Gemini.' },
+      { label: '🔑 Test AI Engines (Gemini, Mistral, Grok)', query: 'Test API key status for Gemini, Mistral, and Grok.' },
       { label: '📱 Why was OTP required?', query: 'Why was my payment held for 6-digit Mobile OTP step-up verification?' },
       { label: '🟢 Instant Approval', query: 'Why was my grocery purchase at NovaMart Fresh approved in milliseconds?' },
       { label: '🚨 Unrecognized Charge', query: 'What should I do immediately if I see a transaction I did not authorize?' },
@@ -100,7 +100,7 @@ const ROLE_PROFILES = {
     greeting: (name) =>
       `Greetings Investigator ${name}. 🔍 FraudLens Forensic AI Copilot is online. I'm synced with your active cases and TreeSHAP explainability pipeline. Which alert or anomaly pattern shall we investigate?`,
     questions: [
-      { label: '🔑 Test API Keys (Grok & Gemini)', query: 'Test API key status for Grok and Gemini.' },
+      { label: '🔑 Test AI Engines (Gemini, Mistral, Grok)', query: 'Test API key status for Gemini, Mistral, and Grok.' },
       { label: '📊 TreeSHAP Waterfall', query: 'Explain the TreeSHAP waterfall and key risk drivers for high-risk alerts.' },
       { label: '⚡ Velocity Bursts & Hops', query: 'What velocity bursts or geo-location hops trigger automated block rules?' },
       { label: '👥 Monisha vs Sowmiya', query: 'Analyze the behavioral risk differences between Monisha, Mohana, and Sowmiya.' },
@@ -117,7 +117,7 @@ const ROLE_PROFILES = {
     greeting: (name) =>
       `System Console connected, Admin ${name}. ⚙️ AI model diagnostics and throughput telemetry ready. XGBoost champion model running at sub-4ms inference latency. What system telemetry would you like to review?`,
     questions: [
-      { label: '🔑 Test API Keys (Grok & Gemini)', query: 'Test API key status for Grok and Gemini.' },
+      { label: '🔑 Test AI Engines (Gemini, Mistral, Grok)', query: 'Test API key status for Gemini, Mistral, and Grok.' },
       { label: '🤖 4 Model Comparison', query: 'What are the ROC-AUC, precision, and recall metrics of the 4 ML models?' },
       { label: '⏱️ <4ms Inference Latency', query: 'How does the FraudLens pre-auth gateway achieve sub-4ms inference latency in production?' },
       { label: '🌲 XGBoost vs Ensemble', query: 'Explain how the XGBoost champion model compares with the Voting / Stacking Ensemble.' },
@@ -129,8 +129,8 @@ const ROLE_PROFILES = {
 const PROVIDER_OPTIONS = [
   { id: 'auto',    label: 'AUTO',    fullLabel: '🤖 AUTO (Intelligent Failover)',   description: 'Gemini-first intelligent coordinator: Gemini 3.6/3.7 → auto-fails over to Mistral/Grok', color: 'emerald' },
   { id: 'gemini',  label: 'GEMINI',  fullLabel: '✨ GEMINI (Primary)',             description: 'Direct Google Gemini (3.6 default; 3.7 for heavy reasoning). No silent failover.',          color: 'cyan' },
+  { id: 'mistral', label: 'MISTRAL', fullLabel: '🌟 MISTRAL (High-Speed Engine)',  description: 'Direct Mistral AI (open-mistral-7b): verified active engine & SAR reporting.',               color: 'violet' },
   { id: 'grok',    label: 'GROK',    fullLabel: '⚡ GROK (Independent Review)',     description: 'Direct xAI Grok-2: independent forensic challenge & adversarial audit. No silent failover.', color: 'indigo' },
-  { id: 'mistral', label: 'MISTRAL', fullLabel: '🌟 MISTRAL (Complementary)',      description: 'Direct Mistral AI (open-mistral-7b): alternative perspective. No silent failover.',          color: 'violet' },
 ]
 
 // Processing stage sequencer — maps elapsed time to meaningful AI state labels
