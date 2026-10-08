@@ -2,13 +2,12 @@ import pytest
 from fastapi.testclient import TestClient
 from backend.app.main import app
 from backend.app.core.security import create_access_token
-
-def test_user_data_isolation_monisha_ajay_mogana_sowmiya():
+def test_user_data_isolation_monisha_ajay_mohana_sowmiya():
     client = TestClient(app)
 
     users = [
         {"name": "Monisha", "email": "monisha@fraudlens.ai", "expected_cust": "CUST_MONISHA_001", "sub": "11"},
-        {"name": "Mogana", "email": "mohana@fraudlens.ai", "expected_cust": "CUST_MOHANA_002", "sub": "12"},
+        {"name": "Mohana", "email": "mohana@fraudlens.ai", "expected_cust": "CUST_MOHANA_002", "sub": "12"},
         {"name": "Sowmiya", "email": "sowmiya@fraudlens.ai", "expected_cust": "CUST_SOWMIYA_003", "sub": "13"},
         {"name": "Ajay", "email": "ajay@fraudlens.ai", "expected_cust": "CUST_AJAY_004", "sub": "15"},
     ]

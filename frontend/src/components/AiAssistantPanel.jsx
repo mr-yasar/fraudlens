@@ -970,6 +970,22 @@ export default function AiAssistantPanel({
                       </div>
                     </div>
 
+                    {/* Follow-up suggestions chips */}
+                    {isAssistant && msg.structured_metadata?.follow_up_suggestions?.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        {msg.structured_metadata.follow_up_suggestions.map((sug, sIdx) => (
+                          <button
+                            key={sIdx}
+                            onClick={() => sendMessage(sug)}
+                            className="text-[10px] font-mono px-2 py-1 rounded-lg bg-cyan-950/70 hover:bg-cyan-900 text-cyan-300 border border-cyan-800/50 hover:border-cyan-500 transition-all text-left flex items-center gap-1 cursor-pointer"
+                          >
+                            <Sparkles className="w-2.5 h-2.5 text-cyan-400 shrink-0" />
+                            <span>{sug}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
                     {/* Assistant metadata & controls */}
                     {isAssistant && (
                       <div className="flex items-center gap-1.5 text-[9px] font-mono text-slate-500 flex-wrap">
