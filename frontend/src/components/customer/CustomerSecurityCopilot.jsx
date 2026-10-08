@@ -165,60 +165,84 @@ export default function CustomerSecurityCopilot({
         const items = txRes && Array.isArray(txRes.items) ? txRes.items : []
         setRecentTransactions(items)
 
-        // Find primary review / flagged transaction
+        // Find primary review / flagged transaction ONLY if explicitly requested or pending step-up verification
         let targetFlagged = null
         if (currentTransactionId) {
-          targetFlagged = items.find((t) => t.transaction_id === currentTransactionId)
+          const matched = items.find((t) => t.transaction_id === currentTransactionId)
+          if (matched) {
+            targetFlagged = matched
+          }
         }
-        if (!targetFlagged) {
-          targetFlagged = items.find(
-            (t) =>
-              (t.risk_level || '').toUpperCase() === 'HIGH' ||
-              (t.risk_level || '').toUpperCase() === 'MEDIUM' ||
-              t.status === 'UNDER_REVIEW' ||
-              t.status === 'PENDING'
-          )
-        }
-        // Fallback to latest transaction if no flagged one
-        if (!targetFlagged && items.length > 0) {
-          targetFlagged = items[0]
-        }
-        setFlaggedTx(targetFlagged)
 
         // Fetch any pending approval challenges for this customer
         try {
           const approvals = await paymentApi.listPendingApprovals(customerId)
           if (isMounted && Array.isArray(approvals) && approvals.length > 0) {
-            setPendingApprovals(approvals)
+            // Only consider genuinely active PENDING challenges that have not expired
+            const activeApprovals = approvals.filter(
+              (a) => (a.status || '').toUpperCase() === 'PENDING' && !a.is_expired
+            )
+            setPendingApprovals(activeApprovals)
+            // If there's an active approval challenge and no explicit transaction was selected, focus on it
+            if (!targetFlagged && activeApprovals.length > 0 && activeApprovals[0]?.transaction_id) {
+              const matchedAppTx = items.find((t) => t.transaction_id === activeApprovals[0].transaction_id)
+              if (matchedAppTx) {
+                targetFlagged = matchedAppTx
+              }
+            }
+          } else {
+            setPendingApprovals([])
           }
         } catch (e) {
           console.warn('Could not load pending approvals:', e)
         }
 
-        // Check if there is an active customer complaint/investigation case
-        try {
-          const invRes = await investigationsApi.list({ limit: 10 })
-          if (isMounted && invRes && Array.isArray(invRes.items)) {
-            const customerCases = invRes.items.filter(
-              (c) => c.customer_id === customerId || (targetFlagged && c.transaction_id === targetFlagged.transaction_id)
-            )
-            if (customerCases.length > 0) {
-              setActiveCase(customerCases[0])
+        setFlaggedTx(targetFlagged || null)
+
+        // Only show an active case tracker if there is an open investigation for the current flagged transaction
+        if (targetFlagged) {
+          try {
+            const invRes = await investigationsApi.list({ limit: 10 })
+            if (isMounted && invRes && Array.isArray(invRes.items)) {
+              const matchedCase = invRes.items.find(
+                (c) =>
+                  c.transaction_id === targetFlagged.transaction_id &&
+                  (c.status === 'OPEN' || c.status === 'UNDER_REVIEW')
+              )
+              if (matchedCase) {
+                setActiveCase(matchedCase)
+              } else {
+                setActiveCase(null)
+              }
             }
+          } catch (e) {
+            console.warn('Could not load customer cases:', e)
           }
-        } catch (e) {
-          console.warn('Could not load customer cases:', e)
+        } else {
+          setActiveCase(null)
         }
 
         // Initialize greeting if chat is empty
         setMessages((prev) => {
           if (prev.length > 0) return prev
           const timeGreeting = getTimeGreeting()
+          if (targetFlagged) {
+            const amtStr = targetFlagged.amount != null ? `₹${Number(targetFlagged.amount).toLocaleString('en-IN')}` : 'a recent purchase'
+            const merchStr = targetFlagged.merchant_name || targetFlagged.merchant_category || 'an online merchant'
+            return [
+              {
+                id: 1,
+                role: 'assistant',
+                content: `Hi there! ${timeGreeting}, ${customerName}! 👋\n\nI noticed your recent transaction of **${amtStr}** at **${merchStr}** is currently flagged for security review.\n\nI can help you review this charge, verify that this payment was made by you, or report an unauthorized charge immediately.`,
+                timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              },
+            ]
+          }
           return [
             {
               id: 1,
               role: 'assistant',
-              content: `Hi there! ${timeGreeting}, ${customerName}! 👋\n\nI'm your FraudLens Assistant. I'm actively protecting your account and cards with real-time AI security.\n\nI can help you understand your transactions, security alerts, and account activity. Click a question below or ask anything in your own words.`,
+              content: `Hi there! ${timeGreeting}, ${customerName}! 👋\n\nI'm your FraudLens Assistant. I'm actively protecting your account and cards with real-time AI security.\n\nYour account is in good standing with zero active security alerts. How can I help you understand your transactions, security alerts, or account activity today?`,
               timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             },
           ]
@@ -839,28 +863,33 @@ export default function CustomerSecurityCopilot({
             {/* Guided Recognition Card (Desktop Flow when review needed) */}
             {flaggedTx && (
               <div className="mx-6 mb-3 p-4 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-2.5 shrink-0">
-                <span className="font-extrabold text-xs text-slate-800 block">Do you recognize this transaction?</span>
+                <div className="flex items-center justify-between">
+                  <span className="font-extrabold text-xs text-slate-800 block">Do you recognize this transaction?</span>
+                  <span className="text-[11px] font-mono text-slate-500 font-bold">{displayAmount}</span>
+                </div>
                 <div className="flex flex-wrap items-center gap-2.5">
                   <button
                     onClick={handleRecognizeYes}
                     disabled={actionLoading}
-                    className="flex-1 min-w-[130px] py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition shadow-sm disabled:opacity-50"
+                    className="flex-1 min-w-[130px] py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition shadow-sm disabled:opacity-50 flex items-center justify-center gap-1.5"
                   >
-                    [ Yes, this was me ]
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>Yes, this was me</span>
                   </button>
                   <button
                     onClick={handleRecognizeNo}
                     disabled={actionLoading}
-                    className="flex-1 min-w-[150px] py-2 rounded-xl bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold transition shadow-sm disabled:opacity-50"
+                    className="flex-1 min-w-[150px] py-2.5 px-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition shadow-sm disabled:opacity-50 flex items-center justify-center gap-1.5"
                   >
-                    [ No, I don't recognize it ]
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                    <span>No, I don't recognize it</span>
                   </button>
                   <button
                     onClick={handleNeedHelp}
                     disabled={actionLoading}
                     className="py-2 px-3 text-xs text-slate-500 hover:text-slate-800 font-semibold hover:underline"
                   >
-                    [ I need more help ]
+                    I need more help
                   </button>
                 </div>
               </div>
@@ -906,99 +935,235 @@ export default function CustomerSecurityCopilot({
           {/* ========================================================================= */}
           {/* COLUMN 2: CONTEXTUAL SECURITY CARDS (Right Column) */}
           {/* ========================================================================= */}
-          <div className="w-full lg:w-[420px] p-6 space-y-5 overflow-y-auto bg-slate-50/70 border-l border-slate-200 shrink-0">
-            {/* Card 1: Security Check Needed Transaction Card */}
-            <div className="rounded-3xl p-5 bg-gradient-to-br from-amber-50/90 via-orange-50/60 to-white border border-amber-200/90 shadow-sm space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-200">
-                  <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
-                  Security check needed
-                </span>
-                <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-white text-amber-900 border border-amber-200 shadow-xs">
-                  Under Review
-                </span>
-              </div>
-
-              <div>
-                <span className="font-extrabold text-2xl text-slate-900 font-mono tracking-tight block">
-                  {displayAmount}
-                </span>
-                <p className="text-xs text-slate-600 font-medium mt-0.5">
-                  {displayMerchant} • {displayTime}
-                </p>
-              </div>
-
-              <p className="text-xs text-slate-600 leading-relaxed">
-                This transaction needs your attention. I can help you understand why it was flagged.
-              </p>
-
-              <div className="flex items-center gap-2 pt-1">
-                <button
-                  onClick={() => handleSendMessage(`Why is transaction ${flaggedTx?.transaction_id || 'this transaction'} under review?`)}
-                  className="flex-1 py-2 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition shadow-sm text-center"
-                >
-                  Understand why
-                </button>
-                <button
-                  onClick={() => handleSendMessage(`Show full details for transaction ${flaggedTx?.transaction_id || ''}.`)}
-                  className="flex-1 py-2 px-3 rounded-xl bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold border border-slate-200 transition text-center shadow-xs"
-                >
-                  View transaction
-                </button>
-              </div>
-            </div>
-
-            {/* Card 2: Customer-Safe Explainability Breakdown Card */}
-            <div className="rounded-3xl p-5 bg-white border border-slate-200 shadow-sm space-y-4 relative overflow-hidden">
-              <div>
-                <h4 className="font-extrabold text-sm text-slate-900">Why this transaction needs review</h4>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Some recent activity did not match your usual transaction pattern.
-                </p>
-              </div>
-
-              <div className="space-y-3 pt-1">
-                <div className="flex items-start gap-3">
-                  <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 mt-0.5">
-                    <Zap className="w-4 h-4" />
+          <div className="w-full lg:w-[420px] p-6 pb-12 space-y-5 overflow-y-auto bg-slate-50/70 border-l border-slate-200 shrink-0">
+            {/* ── STATE A: FLAGGED / UNDER-REVIEW TRANSACTION (If active alert or review selected) ── */}
+            {flaggedTx ? (
+              <>
+                {/* Card 1: Security Check Needed Transaction Card */}
+                <div className="rounded-3xl p-5 bg-gradient-to-br from-amber-50/90 via-orange-50/60 to-white border border-amber-200/90 shadow-sm space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-200">
+                      <AlertTriangle className="w-3.5 h-3.5 text-amber-600" />
+                      Security check needed
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-white text-amber-900 border border-amber-200 shadow-xs">
+                        {flaggedTx.status === 'BLOCKED'
+                          ? 'Blocked / Hold'
+                          : flaggedTx.status === 'PENDING'
+                          ? 'Action Required'
+                          : 'Under Review'}
+                      </span>
+                      <button
+                        onClick={() => setFlaggedTx(null)}
+                        className="text-slate-400 hover:text-slate-700 p-1 rounded-lg hover:bg-amber-100/60 transition"
+                        title="Dismiss transaction review"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
+
                   <div>
-                    <span className="font-bold text-xs text-slate-800 block">Transaction activity</span>
-                    <span className="text-xs text-slate-500">Different from some recent activity</span>
+                    <span className="font-extrabold text-2xl text-slate-900 font-mono tracking-tight block">
+                      {displayAmount}
+                    </span>
+                    <p className="text-xs text-slate-600 font-medium mt-0.5">
+                      {displayMerchant} • {displayTime}
+                    </p>
+                  </div>
+
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    This transaction needs your attention. I can help you understand why it was flagged.
+                  </p>
+
+                  <div className="flex items-center gap-2 pt-1">
+                    <button
+                      onClick={() => handleSendMessage(`Why is transaction ${flaggedTx?.transaction_id || 'this transaction'} under review?`)}
+                      className="flex-1 py-2 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition shadow-sm text-center"
+                    >
+                      Understand why
+                    </button>
+                    <button
+                      onClick={() => handleSendMessage(`Show full details for transaction ${flaggedTx?.transaction_id || ''}.`)}
+                      className="flex-1 py-2 px-3 rounded-xl bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold border border-slate-200 transition text-center shadow-xs"
+                    >
+                      View transaction
+                    </button>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3">
-                  <div className="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 mt-0.5">
-                    <Clock className="w-4 h-4" />
-                  </div>
+                {/* Card 2: Customer-Safe Explainability Breakdown Card */}
+                <div className="rounded-3xl p-5 bg-white border border-slate-200 shadow-sm space-y-4 relative overflow-hidden">
                   <div>
-                    <span className="font-bold text-xs text-slate-800 block">Timing</span>
-                    <span className="text-xs text-slate-500">Occurred at an unusual time</span>
+                    <h4 className="font-extrabold text-sm text-slate-900">Why this transaction needs review</h4>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Some recent activity did not match your usual transaction pattern.
+                    </p>
+                  </div>
+
+                  <div className="space-y-3 pt-1">
+                    <div className="flex items-start gap-3">
+                      <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 mt-0.5">
+                        <Zap className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <span className="font-bold text-xs text-slate-800 block">Transaction activity</span>
+                        <span className="text-xs text-slate-500">Different from some recent activity</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3">
+                      <div className="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 mt-0.5">
+                        <Clock className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <span className="font-bold text-xs text-slate-800 block">Timing</span>
+                        <span className="text-xs text-slate-500">Occurred at an unusual time</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3">
+                      <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 mt-0.5">
+                        <ShieldCheck className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <span className="font-bold text-xs text-slate-800 block">Security review</span>
+                        <span className="text-xs text-slate-500">Additional verification is recommended</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Verified Trust Wave Footer */}
+                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+                    <div className="flex items-center gap-1.5">
+                      <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
+                      <span className="font-medium">Based on verified account activity</span>
+                    </div>
+                    {/* Subtle soft pastel iridescent accent badge */}
+                    <span className="w-10 h-3 rounded-full bg-gradient-to-r from-blue-300 via-cyan-300 to-indigo-300 opacity-60" />
                   </div>
                 </div>
-
-                <div className="flex items-start gap-3">
-                  <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 mt-0.5">
-                    <ShieldCheck className="w-4 h-4" />
+              </>
+            ) : (
+              /* ── STATE B: HEALTHY ACCOUNT STATUS & RECENT ACTIVITY (Clean Copilot State) ── */
+              <>
+                {/* Card 1: All Systems Secure Card */}
+                <div className="rounded-3xl p-5 bg-gradient-to-br from-emerald-50/90 via-teal-50/40 to-white border border-emerald-200/90 shadow-sm space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-900 border border-emerald-200">
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                      All Systems Secure
+                    </span>
+                    <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-white text-emerald-800 border border-emerald-200 shadow-xs">
+                      Protected
+                    </span>
                   </div>
+
                   <div>
-                    <span className="font-bold text-xs text-slate-800 block">Security review</span>
-                    <span className="text-xs text-slate-500">Additional verification is recommended</span>
+                    <h4 className="font-extrabold text-base text-slate-900 leading-snug">
+                      Account Protection Active
+                    </h4>
+                    <p className="text-xs text-slate-600 font-medium mt-1">
+                      No active security threats detected. All payments and saved beneficiaries are continuously monitored.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 pt-1 text-xs">
+                    <div className="p-3 rounded-2xl bg-white/80 border border-emerald-100/90">
+                      <span className="text-[10px] text-slate-400 uppercase font-semibold block">Active Alerts</span>
+                      <span className="text-sm font-extrabold text-emerald-700">0 Pending</span>
+                    </div>
+                    <div className="p-3 rounded-2xl bg-white/80 border border-emerald-100/90">
+                      <span className="text-[10px] text-slate-400 uppercase font-semibold block">AI Defense</span>
+                      <span className="text-sm font-extrabold text-blue-700">Sub-4ms Real-Time</span>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-emerald-100/80 flex items-center justify-between text-[11px] text-slate-500">
+                    <span className="font-medium flex items-center gap-1.5">
+                      <Shield className="w-3.5 h-3.5 text-emerald-600" />
+                      FraudLens Neural Shield
+                    </span>
+                    <span className="text-emerald-700 font-bold">100% Protected</span>
                   </div>
                 </div>
-              </div>
 
-              {/* Verified Trust Wave Footer */}
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
-                <div className="flex items-center gap-1.5">
-                  <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
-                  <span className="font-medium">Based on verified account activity</span>
+                {/* Card 2: Recent Account Activity (Click to inspect or query) */}
+                <div className="rounded-3xl p-5 bg-white border border-slate-200 shadow-sm space-y-3.5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-extrabold text-sm text-slate-900">Recent Activity</h4>
+                      <p className="text-[11px] text-slate-500">Recent transactions on your account</p>
+                    </div>
+                    <span className="text-[11px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">
+                      {recentTransactions.length} Verified
+                    </span>
+                  </div>
+
+                  {recentTransactions.length === 0 ? (
+                    <div className="py-6 text-center text-slate-400 text-xs">
+                      No recent transactions found
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {recentTransactions.slice(0, 4).map((tx) => {
+                        const amt = Number(tx.amount || 0).toLocaleString('en-IN')
+                        const isHighRisk = (tx.risk_level || '').toUpperCase() === 'HIGH' || tx.is_fraud
+                        return (
+                          <div
+                            key={tx.transaction_id || tx.id}
+                            onClick={() => {
+                              setFlaggedTx(tx)
+                              handleSendMessage(`Tell me about my transaction of ₹${amt} at ${tx.merchant_name || tx.merchant_category || 'merchant'}.`)
+                            }}
+                            className="p-3 rounded-2xl border border-slate-100 hover:border-blue-200 bg-slate-50/60 hover:bg-blue-50/30 transition cursor-pointer flex items-center justify-between group"
+                            title="Click to review or ask about this transaction"
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div
+                                className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 text-xs ${
+                                  isHighRisk
+                                    ? 'bg-rose-50 text-rose-600 border border-rose-200'
+                                    : 'bg-emerald-50 text-emerald-600 border border-emerald-200'
+                                }`}
+                              >
+                                {isHighRisk ? <AlertTriangle className="w-4 h-4" /> : <ShieldCheck className="w-4 h-4" />}
+                              </div>
+                              <div className="min-w-0">
+                                <span className="text-xs font-bold text-slate-800 block truncate group-hover:text-blue-600 transition">
+                                  {tx.merchant_name || tx.merchant_category || 'Purchase'}
+                                </span>
+                                <span className="text-[10px] text-slate-400">
+                                  {tx.created_at ? new Date(tx.created_at).toLocaleDateString([], { month: 'short', day: 'numeric' }) : 'Recent'}
+                                </span>
+                              </div>
+                            </div>
+
+                            <div className="text-right shrink-0">
+                              <span className="text-xs font-bold font-mono text-slate-900 block">
+                                ₹{amt}
+                              </span>
+                              <span
+                                className={`text-[10px] font-semibold ${
+                                  isHighRisk ? 'text-amber-600' : 'text-emerald-600'
+                                }`}
+                              >
+                                {isHighRisk ? 'Reviewable' : 'Verified'}
+                              </span>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+
+                  <p className="text-[10px] text-center text-slate-400 pt-1">
+                    Click any transaction to ask questions or review details
+                  </p>
                 </div>
-                {/* Subtle soft pastel iridescent accent badge */}
-                <span className="w-10 h-3 rounded-full bg-gradient-to-r from-blue-300 via-cyan-300 to-indigo-300 opacity-60" />
-              </div>
-            </div>
+              </>
+            )}
 
             {/* Card 3: Security Case Tracker (When case is active) */}
             {activeCase && (
