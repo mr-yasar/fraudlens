@@ -85,7 +85,7 @@ def create_ieee_docx():
     p_title.alignment = WD_ALIGN_PARAGRAPH.CENTER
     p_title.paragraph_format.space_before = Pt(0)
     p_title.paragraph_format.space_after = Pt(12)
-    run_title = p_title.add_run("FraudLens AI: Explainable AI-Based Financial Fraud and Risk Detection System")
+    run_title = p_title.add_run("FraudLens AI: Explainable AI-Based Real-Time Financial Fraud and Risk Detection System")
     run_title.font.name = 'Times New Roman'
     run_title.font.size = Pt(21)
     run_title.font.bold = True
@@ -747,8 +747,13 @@ def create_ieee_docx():
         r_rest.font.size = Pt(8.0)
 
     # Save Document
-    doc.save(str(DOCX_PATH))
-    print(f"Generated DOCX manuscript at: {DOCX_PATH}")
+    try:
+        doc.save(str(DOCX_PATH))
+        print(f"Generated DOCX manuscript at: {DOCX_PATH}")
+    except PermissionError:
+        alt_path = OUTPUT_DIR / "FraudLens_AI_IEEE_Research_Paper_Updated.docx"
+        doc.save(str(alt_path))
+        print(f"Primary DOCX file is currently open in Word. Saved updated manuscript to: {alt_path}")
 
     # Check DOCX for prohibited words
     full_docx_text = ""

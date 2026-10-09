@@ -79,7 +79,7 @@ def build_paper_html():
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>FraudLens AI: Explainable AI-Based Financial Fraud and Risk Detection System</title>
+<title>FraudLens AI: Explainable AI-Based Real-Time Financial Fraud and Risk Detection System</title>
 <style>
   @page {
     size: A4 portrait;
@@ -400,7 +400,7 @@ def build_paper_html():
 <body>
 
 <div class="paper-header">
-  <h1 class="paper-title">FraudLens AI: Explainable AI-Based Financial Fraud and Risk Detection System</h1>
+  <h1 class="paper-title">FraudLens AI: Explainable AI-Based Real-Time Financial Fraud and Risk Detection System</h1>
   __AUTHOR_BLOCK__
   <div class="abstract-keywords-container">
     <span class="abstract-label">Abstract—</span>__ABSTRACT_TEXT__

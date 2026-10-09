@@ -1,6 +1,6 @@
 # Research Integrity and Technical Validation Notes
 
-**Manuscript Title:** FraudLens AI: Explainable AI-Based Financial Fraud and Risk Detection System  
+**Manuscript Title:** FraudLens AI: Explainable AI-Based Real-Time Financial Fraud and Risk Detection System  
 **Target Format:** IEEE Conference Two-Column Format (A4)  
 **Deliverables Location:** `FraudLens_AI_Research_Paper/`  
 **Date of Audit:** October 2026  
