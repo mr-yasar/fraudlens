@@ -1,4 +1,4 @@
-"""Render PNG images for each of the 9 pages of the generated IEEE PDF
+"""Render PNG images for each of the 10 pages of the generated IEEE PDF
 and verify text, citations, forbidden words, and layout.
 """
 
@@ -13,7 +13,7 @@ PNG_DIR.mkdir(parents=True, exist_ok=True)
 doc = pymupdf.open(str(PDF_PATH))
 total_pages = len(doc)
 print(f"Total Pages: {total_pages}")
-assert total_pages == 9, f"Expected exactly 9 pages, got {total_pages}"
+assert total_pages == 10, f"Expected exactly 10 pages, got {total_pages}"
 
 full_text = ""
 for i in range(total_pages):
@@ -49,23 +49,21 @@ else:
 # Citation Audit
 print("\n=== CITATION INTEGRITY AUDIT ===")
 citations_found = []
-for ref_id in range(1, 26):
+for ref_id in range(1, 36):
     cite_pat = rf"\[{ref_id}\]"
     if re.search(cite_pat, full_text):
         citations_found.append(ref_id)
     else:
         print(f"Warning: Citation [{ref_id}] not found in text!")
 
-print(f"Total authentic references cited in text: {len(citations_found)}/25")
+print(f"Total authentic references cited in text: {len(citations_found)}/35")
 
-# Author Details Audit
+# Author Verification
 print("\n=== AUTHOR DETAILS AUDIT ===")
-authors_expected = ["Mohana Priya S", "Monisha S", "Sona College of Technology", "Anna University"]
-for a in authors_expected:
-    if a.lower() in full_text.lower():
-        print(f"PASSED: Found '{a}'")
+for expected in ["Mohana Priya S", "Monisha S", "Sona College of Technology", "Anna University"]:
+    if expected in full_text:
+        print(f"PASSED: Found '{expected}'")
     else:
-        print(f"FAILED: '{a}' not found!")
+        print(f"FAILED: Missing '{expected}'")
 
-doc.close()
 print("\nPDF Audit Completed Successfully!")
