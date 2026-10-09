@@ -1,4 +1,4 @@
-"""Render PNG images for each of the 10 pages of the generated IEEE PDF
+"""Render PNG images for each of the 9 pages of the generated IEEE PDF
 and verify text, citations, forbidden words, and layout.
 """
 
@@ -10,10 +10,14 @@ PDF_PATH = Path("FraudLens_AI_Research_Paper/FraudLens_AI_IEEE_Research_Paper.pd
 PNG_DIR = Path("FraudLens_AI_Research_Paper/FraudLens_AI_Research_Paper_Source/page_previews")
 PNG_DIR.mkdir(parents=True, exist_ok=True)
 
+# Clean out old preview images first so no orphan page_10.png remains
+for old_img in PNG_DIR.glob("page_*.png"):
+    old_img.unlink()
+
 doc = pymupdf.open(str(PDF_PATH))
 total_pages = len(doc)
 print(f"Total Pages: {total_pages}")
-assert total_pages == 10, f"Expected exactly 10 pages, got {total_pages}"
+assert total_pages == 9, f"Expected exactly 9 pages, got {total_pages}"
 
 full_text = ""
 for i in range(total_pages):
@@ -49,14 +53,14 @@ else:
 # Citation Audit
 print("\n=== CITATION INTEGRITY AUDIT ===")
 citations_found = []
-for ref_id in range(1, 36):
+for ref_id in range(1, 22):
     cite_pat = rf"\[{ref_id}\]"
     if re.search(cite_pat, full_text):
         citations_found.append(ref_id)
     else:
         print(f"Warning: Citation [{ref_id}] not found in text!")
 
-print(f"Total authentic references cited in text: {len(citations_found)}/35")
+print(f"Total authentic references cited in text: {len(citations_found)}/21")
 
 # Author Verification
 print("\n=== AUTHOR DETAILS AUDIT ===")

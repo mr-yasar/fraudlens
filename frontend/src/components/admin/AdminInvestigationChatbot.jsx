@@ -140,25 +140,30 @@ export default function AdminInvestigationChatbot({
   const isLight = internalTheme === 'light' || (typeof document !== 'undefined' && document.documentElement.classList.contains('light-theme'))
 
   // ── 1. PRESENTATION MODE & VISIBILITY ──
-  const [isOpen, setIsOpen] = useState(true)
-  const [isMaximized, setIsMaximized] = useState(isInitiallyMaximized)
+  const [isOpen, setIsOpen] = useState(Boolean(isOpenExternal))
+  const [isMaximized, setIsMaximized] = useState(Boolean(isInitiallyMaximized && isOpenExternal))
   const [isMinimizedPopup, setIsMinimizedPopup] = useState(false)
 
   // Sync external open changes
   useEffect(() => {
     if (typeof isOpenExternal === 'boolean') {
       setIsOpen(isOpenExternal)
-      if (isOpenExternal) setIsMinimizedPopup(false)
+      if (isOpenExternal) {
+        setIsMinimizedPopup(false)
+        setIsMaximized(true)
+      } else {
+        setIsMaximized(false)
+      }
     }
   }, [isOpenExternal])
 
   // Sync initial maximize
   useEffect(() => {
-    if (isInitiallyMaximized) {
+    if (isInitiallyMaximized && isOpenExternal) {
       setIsMaximized(true)
       setIsOpen(true)
     }
-  }, [isInitiallyMaximized])
+  }, [isInitiallyMaximized, isOpenExternal])
 
   const handleToggleMaximize = useCallback(() => {
     setIsMaximized((prev) => {

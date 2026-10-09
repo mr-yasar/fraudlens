@@ -151,6 +151,15 @@ export function AuthProvider({ children }) {
       .catch(() => {})
   }, [token, logout])
 
+  // Listen for session expiration events and immediately reset auth state
+  useEffect(() => {
+    const handleExpired = () => {
+      logout()
+    }
+    window.addEventListener('fraudlens:auth_expired', handleExpired)
+    return () => window.removeEventListener('fraudlens:auth_expired', handleExpired)
+  }, [logout])
+
   const isAuthenticated = !!token && !!user
   const userRole = (user?.role || '').toUpperCase()
   const userEmail = (user?.email || '').toLowerCase()

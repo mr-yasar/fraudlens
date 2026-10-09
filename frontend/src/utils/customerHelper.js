@@ -21,6 +21,8 @@ export function getCustomerPersona(user, selectedPersonaId = null) {
         name: 'Monisha',
         customerName: 'Monisha',
         email: user.email,
+        phone: '+91 98421 82912',
+        maskedPhone: '+91 98421 ••••2',
         tier: 'STANDARD',
         fraudRate: '3.0%',
         baselineType: 'Safe Habitual (Zero-Friction Auto-Approved, No OTP)',
@@ -39,6 +41,8 @@ export function getCustomerPersona(user, selectedPersonaId = null) {
         name: 'Mohana',
         customerName: 'Mohana',
         email: user.email,
+        phone: '+91 94432 51845',
+        maskedPhone: '+91 94432 ••••5',
         tier: 'STANDARD',
         fraudRate: '12.0%',
         baselineType: 'Elevated Velocity (Step-Up OTP)',
@@ -57,6 +61,8 @@ export function getCustomerPersona(user, selectedPersonaId = null) {
         name: 'Sowmiya',
         customerName: 'Sowmiya',
         email: user.email,
+        phone: '+91 97894 19238',
+        maskedPhone: '+91 97894 ••••8',
         tier: 'STANDARD',
         fraudRate: '26.0%',
         baselineType: 'Botnet ATO Attack (Pre-Auth Block)',
@@ -75,6 +81,8 @@ export function getCustomerPersona(user, selectedPersonaId = null) {
         name: 'Ajay',
         customerName: 'Ajay',
         email: user.email || 'ajay@fraudlens.ai',
+        phone: '+91 98940 73921',
+        maskedPhone: '+91 98940 ••••1',
         tier: 'ENTERPRISE',
         isPremium: true,
         fraudRate: '0.2%',
@@ -91,6 +99,8 @@ export function getCustomerPersona(user, selectedPersonaId = null) {
       name: user.name || 'Customer',
       customerName: user.name || 'Customer',
       email: user.email,
+      phone: '+91 98402 18942',
+      maskedPhone: '+91 98402 ••••2',
       tier: user.account_tier || 'STANDARD',
       fraudRate: '5.0%',
       baselineType: 'Standard Account Baseline',
@@ -112,6 +122,8 @@ export function getCustomerPersona(user, selectedPersonaId = null) {
         name: 'Ajay',
         customerName: 'Ajay',
         email: 'ajay@fraudlens.ai',
+        phone: '+91 98940 73921',
+        maskedPhone: '+91 98940 ••••1',
         tier: 'ENTERPRISE',
         isPremium: true,
         fraudRate: '0.2%',
@@ -128,6 +140,8 @@ export function getCustomerPersona(user, selectedPersonaId = null) {
         name: 'Sowmiya',
         customerName: 'Sowmiya',
         email: 'sowmiya@fraudlens.ai',
+        phone: '+91 97894 19238',
+        maskedPhone: '+91 97894 ••••8',
         tier: 'STANDARD',
         fraudRate: '26.0%',
         baselineType: 'Botnet ATO Attack (Pre-Auth Block)',
@@ -143,6 +157,8 @@ export function getCustomerPersona(user, selectedPersonaId = null) {
         name: 'Mohana',
         customerName: 'Mohana',
         email: 'mohana@fraudlens.ai',
+        phone: '+91 94432 51845',
+        maskedPhone: '+91 94432 ••••5',
         tier: 'STANDARD',
         fraudRate: '12.0%',
         baselineType: 'Elevated Velocity (Step-Up OTP)',
@@ -158,6 +174,8 @@ export function getCustomerPersona(user, selectedPersonaId = null) {
         name: 'Monisha',
         customerName: 'Monisha',
         email: 'monisha@fraudlens.ai',
+        phone: '+91 98421 82912',
+        maskedPhone: '+91 98421 ••••2',
         tier: 'STANDARD',
         fraudRate: '3.0%',
         baselineType: 'Safe Habitual (Zero-Friction Auto-Approved, No OTP)',
@@ -287,5 +305,24 @@ export function getCustomerMeta(customerId, isAdmin = false) {
     color: 'slate',
     bgBadge: 'bg-slate-900 text-slate-300 border-slate-700',
   }
+}
+
+/**
+ * Get customer's registered phone and masked phone numbers for security verification challenges.
+ */
+export function getCustomerPhone(customerId = null, user = null) {
+  const persona = getCustomerPersona(user, customerId)
+  if (persona && persona.maskedPhone) {
+    return {
+      phone: persona.phone || '+91 98402 18942',
+      maskedPhone: persona.maskedPhone || '+91 98402 ••••2',
+    }
+  }
+  const s = String(customerId || user?.name || user?.email || '').toLowerCase()
+  if (s.includes('monisha')) return { phone: '+91 98421 82912', maskedPhone: '+91 98421 ••••2' }
+  if (s.includes('mohana') || s.includes('mogana')) return { phone: '+91 94432 51845', maskedPhone: '+91 94432 ••••5' }
+  if (s.includes('sowmiya') || s.includes('soumya')) return { phone: '+91 97894 19238', maskedPhone: '+91 97894 ••••8' }
+  if (s.includes('ajay')) return { phone: '+91 98940 73921', maskedPhone: '+91 98940 ••••1' }
+  return { phone: '+91 98402 18942', maskedPhone: '+91 98402 ••••2' }
 }
 

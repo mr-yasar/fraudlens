@@ -780,6 +780,14 @@ export default function PaymentView({
   const [phoneModalTx, setPhoneModalTx] = useState(null)
   const [phoneModalApprovalId, setPhoneModalApprovalId] = useState(null)
 
+  // Determine effective merchant or beneficiary name based on transfer type and form data
+  const effectiveMerchantName = useMemo(() => {
+    if (transferType === 'personal' || transferType === 'p2p') {
+      return formData.beneficiary_name || 'Personal Transfer'
+    }
+    return formData.merchant_name || decisionResult?.merchant_name || 'NovaMart Fresh'
+  }, [transferType, formData.beneficiary_name, formData.merchant_name, decisionResult?.merchant_name])
+
   // Load wallet & customer details
   const loadWallet = useCallback(async (customerId) => {
     if (!customerId) return
@@ -1092,11 +1100,10 @@ export default function PaymentView({
     if (normalizedDevice === 'web_browser') normalizedDevice = 'web'
 
     // Determine final merchant/beneficiary based on transfer type
-    let finalMerchantName = formData.merchant_name || 'NovaMart Fresh'
+    const finalMerchantName = effectiveMerchantName
     let finalCategory = formData.merchant_category || 'retail'
 
     if (transferType === 'personal' || transferType === 'p2p') {
-      finalMerchantName = formData.beneficiary_name || 'Personal Transfer'
       finalCategory = 'retail'
     }
 
@@ -1121,9 +1128,11 @@ export default function PaymentView({
       setTimelineStage('risk_analysis')
       const result = await paymentApi.initiate(payload)
       setDecisionResult(result)
-      await loadWallet(formData.customer_id)
-      await loadPendingApprovals(formData.customer_id)
-      await loadAllTransactions(formData.customer_id)
+
+      // Background refresh wallet and transactions without blocking UI or modal opening
+      loadWallet(formData.customer_id).catch(() => {})
+      loadPendingApprovals(formData.customer_id).catch(() => {})
+      loadAllTransactions(formData.customer_id).catch(() => {})
 
       // Unified Risk-Based Flow for all 4 users:
       // Low Risk (ALLOW): Auto-Approved -> green status -> balance deducted
@@ -2031,9 +2040,23 @@ export default function PaymentView({
 
                 {/* Error Banner */}
                 {error && (
-                  <div className="p-3.5 bg-rose-950/80 border border-rose-800/80 rounded-xl text-rose-300 text-xs flex items-center gap-2">
-                    <XCircle className="w-4 h-4 shrink-0 text-rose-400" />
-                    <span>{error}</span>
+                  <div className="p-3.5 bg-rose-950/80 border border-rose-800/80 rounded-xl text-rose-300 text-xs flex items-center justify-between gap-2 shadow-lg animate-fadeIn">
+                    <div className="flex items-center gap-2">
+                      <XCircle className="w-4 h-4 shrink-0 text-rose-400" />
+                      <span>{error}</span>
+                    </div>
+                    {error.toLowerCase().includes('authenticated') && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          localStorage.clear()
+                          window.location.reload()
+                        }}
+                        className="px-3 py-1 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold text-[11px] shadow transition shrink-0"
+                      >
+                        Re-Login Now &rarr;
+                      </button>
+                    )}
                   </div>
                 )}
 
@@ -2325,7 +2348,7 @@ export default function PaymentView({
                           transaction_id: decisionResult.transaction_id || `TXN-${Date.now().toString().slice(-6)}`,
                           customer_id: decisionResult.customer_id || formData.customer_id,
                           customer_name: customerPersona?.name || 'Customer',
-                          merchant_name: finalMerchantName,
+                          merchant_name: effectiveMerchantName,
                           amount: decisionResult.amount || formData.amount,
                           risk_score: decisionResult.risk_score,
                           risk_level: decisionResult.risk_level,
@@ -2398,7 +2421,7 @@ export default function PaymentView({
                         transaction_id: decisionResult.transaction_id || `TXN-${Date.now().toString().slice(-6)}`,
                         customer_id: decisionResult.customer_id || formData.customer_id,
                         customer_name: customerPersona?.name || 'Customer',
-                        merchant_name: finalMerchantName,
+                        merchant_name: effectiveMerchantName,
                         amount: decisionResult.amount || formData.amount,
                         risk_score: decisionResult.risk_score,
                         risk_level: decisionResult.risk_level,
@@ -2974,6 +2997,9 @@ export default function PaymentView({
         transaction={phoneModalTx || formData}
         approvalId={phoneModalApprovalId || decisionResult?.approval_id}
         customerName={customerPersona?.name || 'Customer'}
+        customerPhone={customerPersona?.phone}
+        maskedCustomerPhone={customerPersona?.maskedPhone}
+        customerPersona={customerPersona}
         actionLoading={actionLoading}
         onApprove={async (appId, challengeResponse) => {
           const id = appId || phoneModalApprovalId || decisionResult?.approval_id
@@ -2984,7 +3010,7 @@ export default function PaymentView({
               `Transaction authorized via mobile SMS OTP (${challengeResponse})! Funds released.`
             )
             loadWallet(formData.customer_id)
-            loadRecentTransactions(formData.customer_id)
+            loadAllTransactions(formData.customer_id)
           }
         }}
         onReject={async (appId) => {

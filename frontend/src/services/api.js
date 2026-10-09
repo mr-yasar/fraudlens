@@ -6,7 +6,7 @@
 const BASE_URL = '/api/v1'
 
 function getAuthHeaders() {
-  const token = localStorage.getItem('fraudlens_token')
+  const token = localStorage.getItem('fraudlens_token') || localStorage.getItem('access_token') || sessionStorage.getItem('fraudlens_token')
   return {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
@@ -21,6 +21,9 @@ async function handleResponse(response) {
     localStorage.removeItem('fraudlens_user')
     localStorage.removeItem('access_token')
     try { sessionStorage.clear() } catch {}
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('fraudlens:auth_expired'))
+    }
   }
 
   if (!response.ok) {

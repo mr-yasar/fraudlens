@@ -354,7 +354,7 @@ export default function CustomerSecurityCopilot({
   currentTransactionId = '',
   isOpenExternal,
   onOpenChange,
-  isInitiallyMaximized = true,
+  isInitiallyMaximized = false,
   onMinimizeExternal,
 }) {
   // ── 1. IDENTITY RESOLUTION ──
@@ -371,8 +371,8 @@ export default function CustomerSecurityCopilot({
   }, [customerPersona, customerName])
 
   // ── 2. STATE ──
-  const [isOpen, setIsOpen] = useState(true)
-  const [isMaximized, setIsMaximized] = useState(isInitiallyMaximized)
+  const [isOpen, setIsOpen] = useState(Boolean(isOpenExternal))
+  const [isMaximized, setIsMaximized] = useState(Boolean(isInitiallyMaximized && isOpenExternal))
   const [isMinimizedPopup, setIsMinimizedPopup] = useState(false)
   const [activeNavTab, setActiveNavTab] = useState('home')
   const [activeCenterView, setActiveCenterView] = useState('studio') // 'studio' | 'chat'
@@ -439,27 +439,35 @@ export default function CustomerSecurityCopilot({
   useEffect(() => {
     if (typeof isOpenExternal === 'boolean') {
       setIsOpen(isOpenExternal)
-      if (isOpenExternal) setIsMinimizedPopup(false)
+      if (isOpenExternal) {
+        setIsMinimizedPopup(false)
+        setIsMaximized(true)
+      } else {
+        setIsMaximized(false)
+      }
     }
   }, [isOpenExternal])
 
   // Sync initial maximize
   useEffect(() => {
-    if (isInitiallyMaximized) {
+    if (isInitiallyMaximized && isOpenExternal) {
       setIsMaximized(true)
       setIsOpen(true)
     }
-  }, [isInitiallyMaximized])
+  }, [isInitiallyMaximized, isOpenExternal])
 
   const handleToggleMaximize = useCallback(() => {
     setIsMaximized((prev) => {
       const next = !prev
-      if (!next && onMinimizeExternal) {
-        onMinimizeExternal()
+      if (!next) {
+        setIsMinimizedPopup(true)
+        setIsOpen(false)
+        onOpenChange?.(false)
+        if (onMinimizeExternal) onMinimizeExternal()
       }
       return next
     })
-  }, [onMinimizeExternal])
+  }, [onMinimizeExternal, onOpenChange])
 
   // Load real customer transactions
   useEffect(() => {
@@ -741,6 +749,7 @@ export default function CustomerSecurityCopilot({
         <button
           onClick={() => {
             setIsOpen(true)
+            setIsMaximized(true)
             setIsMinimizedPopup(false)
             onOpenChange?.(true)
           }}

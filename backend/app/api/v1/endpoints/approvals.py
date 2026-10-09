@@ -169,11 +169,23 @@ def send_approval_otp(
     approval.expires_at = datetime.now(timezone.utc) + timedelta(minutes=5)
     db.commit()
 
+    dest_phone = "+91 98402 18942"
+    if approval.customer_id:
+        cid_l = approval.customer_id.lower()
+        if "monisha" in cid_l:
+            dest_phone = "+91 98421 82912"
+        elif "mohana" in cid_l:
+            dest_phone = "+91 94432 51845"
+        elif "sowmiya" in cid_l:
+            dest_phone = "+91 97894 19238"
+        elif "ajay" in cid_l:
+            dest_phone = "+91 98940 73921"
+
     return SendOtpResponse(
         status="SENT",
         approval_id=approval.approval_id,
         otp_code=new_otp,
-        destination="+91 98402 18942",
+        destination=dest_phone,
         expires_in_seconds=300,
         message=f"FraudLens Bank SMS: Your authorization OTP is {new_otp}. Valid for 5 minutes.",
     )

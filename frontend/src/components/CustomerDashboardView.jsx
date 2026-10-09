@@ -410,8 +410,8 @@ export default function CustomerDashboardView({
           </div>
         </div>
 
-        {/* Pending Security Reviews Alert Banner (for Mohana or elevated cases - never for Monisha) */}
-        {!isMonisha && pendingApprovals.length > 0 && (
+        {/* Pending Security Reviews Alert Banner (for all customers with pending challenges) */}
+        {pendingApprovals.length > 0 && (
           <div className="mt-4 p-3.5 rounded-2xl bg-amber-950/60 border border-amber-600 text-amber-200 text-xs flex flex-wrap items-center justify-between gap-3 shadow-lg animate-pulse">
             <div className="flex items-center gap-2.5">
               <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
@@ -879,7 +879,10 @@ export default function CustomerDashboardView({
           approvalId={activeApproval.approval_id}
           onApprove={handleApproveChallenge}
           onReject={handleRejectChallenge}
-          customerName={data?.name || customerPersona.customerName}
+          customerName={data?.name || customerPersona.customerName || customerPersona.name}
+          customerPhone={customerPersona?.phone}
+          maskedCustomerPhone={customerPersona?.maskedPhone}
+          customerPersona={customerPersona}
           transaction={{
             transaction_id: activeApproval.transaction_id,
             amount: activeApproval.amount,
@@ -887,7 +890,7 @@ export default function CustomerDashboardView({
             risk_level: activeApproval.risk_level,
             risk_score: activeApproval.risk_score,
             otp_code: activeApproval.otp_code,
-            location: data?.primary_location || 'Chennai, IN',
+            location: data?.primary_location || 'Salem, IN',
             device_type: data?.primary_device || 'Android Mobile',
           }}
         />

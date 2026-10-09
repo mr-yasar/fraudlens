@@ -106,6 +106,7 @@ class PreAuthDecisionResult(BaseModel):
     risk_level: RiskLevelEnum = Field(..., description="Risk tier: LOW, MEDIUM, HIGH")
     decision: PaymentDecision = Field(..., description="Authoritative gateway action: ALLOW, REVIEW, BLOCK")
     lifecycle_status: str = Field(default="CREATED", description="Explicit payment domain lifecycle status")
+    status: Optional[str] = Field(default=None, description="Authoritative payment outcome status (e.g. APPROVED, PENDING_VERIFICATION, BLOCKED)")
     triggered_rules: List[TriggeredRule] = Field(default_factory=list)
     top_risk_factors: List[RiskFactorExplanation] = Field(default_factory=list)
     structured_explanations: List[StructuredShapFactor] = Field(default_factory=list)

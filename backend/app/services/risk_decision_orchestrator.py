@@ -712,6 +712,7 @@ class RiskDecisionOrchestrator:
             risk_level=risk_level,
             decision=decision,
             lifecycle_status=lifecycle_status.value,
+            status="APPROVED" if decision == PaymentDecision.ALLOW else ("BLOCKED" if decision == PaymentDecision.BLOCK else "PENDING_VERIFICATION"),
             triggered_rules=triggered_rule_dtos,
             top_risk_factors=top_factors,
             structured_explanations=structured_shap,

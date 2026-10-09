@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import {
   Smartphone,
@@ -31,14 +31,15 @@ import {
 import { formatINR, formatDateTime } from '../utils/formatters'
 import { sound } from './login/soundEffects'
 import { paymentApi } from '../services/api'
+import { getCustomerPhone } from '../utils/customerHelper'
 
 /**
  * MobileSecurityApprovalModal
  *
  * Upgraded High-Fintech Security Verification Interface.
  * Implements authoritative rapid transaction detection, "Why OTP is Required?" explanation panel,
- * 3-4s auto-settling futuristic security pulse shield, transaction summary, SMS banner, and
- * strict OTP verification with zero premature completion.
+ * 3-4s auto-settling futuristic security pulse shield, transaction summary, SMS banner, masked
+ * registered phone number display, two-step OTP verification and explicit Allow/Approve controls.
  */
 export default function MobileSecurityApprovalModal({
   isOpen,
@@ -46,6 +47,8 @@ export default function MobileSecurityApprovalModal({
   transaction,
   approvalId,
   customerName = 'Customer',
+  customerPhone = null,
+  maskedCustomerPhone = null,
   onApprove,
   onReject,
   actionLoading = false,
@@ -58,9 +61,10 @@ export default function MobileSecurityApprovalModal({
   const [isSending, setIsSending] = useState(false)
   const [otpError, setOtpError] = useState(null)
   const [failedCount, setFailedCount] = useState(0)
+  const [verifiedToken, setVerifiedToken] = useState('')
   
   // Verification lifecycle states:
-  // 'entering_otp' -> 'processing_approval' -> 'completed' -> 'rejected'
+  // 'entering_otp' -> 'otp_verified' -> 'processing_approval' -> 'completed' -> 'rejected'
   const [stage, setStage] = useState('entering_otp')
   const [currentTime, setCurrentTime] = useState('09:41')
   const [copied, setCopied] = useState(false)
@@ -209,6 +213,16 @@ export default function MobileSecurityApprovalModal({
     }
   }, [isOpen, transaction, approvalId])
 
+  const txCustomerId = transaction?.customer_id || 'CUST_MONISHA_001'
+  const txCustomerName = customerName || transaction?.customer_name || 'Cardholder'
+
+  // Customer registered phone resolution (Must be called before any early return)
+  const resolvedPhone = useMemo(() => {
+    return getCustomerPhone(txCustomerId, {
+      name: txCustomerName,
+    })
+  }, [txCustomerId, txCustomerName])
+
   if (!isOpen || typeof document === 'undefined') return null
 
   const txAmount = transaction?.amount || 500
@@ -218,10 +232,11 @@ export default function MobileSecurityApprovalModal({
   const txRisk = transaction?.risk_score !== undefined ? transaction?.risk_score : 18
   const txLevel = transaction?.risk_level || (txRisk > 70 ? 'HIGH' : (txRisk > 30 ? 'MEDIUM' : 'LOW'))
   const txId = transaction?.transaction_id || transaction?.payment_id || 'PAY-REF9841'
-  const txCustomerId = transaction?.customer_id || 'CUST_MONISHA_001'
-  const txCustomerName = customerName || transaction?.customer_name || 'Cardholder'
   const txType = transaction?.transaction_type || transaction?.payment_channel || 'UPI / Online Payment'
   const txDate = transaction?.timestamp ? formatDateTime(transaction.timestamp) : new Date().toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })
+
+  const displayMaskedPhone = maskedCustomerPhone || resolvedPhone?.maskedPhone || '+91 94432 ••••5'
+  const displayFullPhone = customerPhone || resolvedPhone?.phone || '+91 94432 51845'
 
   // Rapid Transaction Activity Telemetry & Context
   const isRapid = Boolean(
@@ -339,8 +354,8 @@ export default function MobileSecurityApprovalModal({
     sound.playBlip && sound.playBlip()
   }
 
-  // AUTHORITATIVE VERIFY & CONTINUE ACTION
-  const handleVerifyAndContinue = async () => {
+  // STEP 4: VERIFY OTP ACTION (Strict validation without auto-debiting)
+  const handleVerifyOtpOnly = async () => {
     if (expiryCountdown <= 0) {
       setOtpError('❌ OTP has expired. Please request a new code.')
       sound.playError && sound.playError()
@@ -368,12 +383,29 @@ export default function MobileSecurityApprovalModal({
       codeToVerify = 'BIOMETRIC_TOUCH_ID'
     }
 
+    // OTP Successfully Verified!
+    setVerifiedToken(codeToVerify)
+    setStage('otp_verified')
+    setOtpError(null)
+    sound.playVerified && sound.playVerified()
+  }
+
+  // STEP 5: EXPLICIT ALLOW / APPROVE TRANSACTION (Enabled only after OTP is verified)
+  const handleExecuteApproval = async () => {
+    if (stage !== 'otp_verified') return
+    if (expiryCountdown <= 0) {
+      setOtpError('❌ Security session expired. Please re-verify OTP.')
+      sound.playError && sound.playError()
+      setStage('entering_otp')
+      return
+    }
+
     setStage('processing_approval')
     sound.playBlip && sound.playBlip()
 
     try {
       if (onApprove) {
-        await onApprove(approvalId, codeToVerify)
+        await onApprove(approvalId, verifiedToken || generatedOtp)
       }
       setStage('completed')
       sound.playVerified && sound.playVerified()
@@ -382,13 +414,13 @@ export default function MobileSecurityApprovalModal({
         onClose && onClose()
       }, 1600)
     } catch (err) {
-      setStage('entering_otp')
+      setStage('otp_verified')
       setOtpError(err instanceof Error ? err.message : 'Server approval verification failed.')
       sound.playError && sound.playError()
     }
   }
 
-  // User Action — REJECT / BLOCK
+  // User Action — REJECT / CANCEL / BLOCK
   const handleRejectClick = async () => {
     setStage('rejected')
     sound.playError && sound.playError()
@@ -453,8 +485,9 @@ export default function MobileSecurityApprovalModal({
                   <h2 className="text-xs font-black tracking-wider text-white uppercase font-mono">
                     Security Verification
                   </h2>
-                  <p className="text-[10px] text-slate-400 font-mono">
-                    Pre-Authorization Gateway Shield Active
+                  <p className="text-[10px] text-slate-400 font-mono flex items-center gap-1">
+                    <span>SMS dispatched to:</span>
+                    <strong className="text-cyan-300 font-bold">{displayMaskedPhone}</strong>
                   </p>
                 </div>
               </div>
@@ -652,6 +685,10 @@ export default function MobileSecurityApprovalModal({
                   <span className="text-white font-medium">{txMerchant}</span>
                 </div>
                 <div>
+                  <span className="text-slate-500">Registered Phone:</span>{' '}
+                  <span className="text-cyan-300 font-bold">{displayMaskedPhone}</span>
+                </div>
+                <div>
                   <span className="text-slate-500">Type / Channel:</span>{' '}
                   <span className="text-white font-medium">{txType}</span>
                 </div>
@@ -659,7 +696,7 @@ export default function MobileSecurityApprovalModal({
                   <span className="text-slate-500">Date &amp; Time:</span>{' '}
                   <span className="text-white font-medium">{txDate}</span>
                 </div>
-                <div>
+                <div className="col-span-2">
                   <span className="text-slate-500">Security Trigger:</span>{' '}
                   <span className="text-cyan-300 font-bold">{securityTrigger}</span>
                 </div>
@@ -669,7 +706,7 @@ export default function MobileSecurityApprovalModal({
             {/* =====================================================================
                 INCOMING REAL SMS POPUP BANNER (Copy & 1-Click Auto-fill)
                 ===================================================================== */}
-            {incomingSms && (stage === 'entering_otp') && (
+            {incomingSms && (stage === 'entering_otp' || stage === 'otp_verified') && (
               <div className="z-30 p-2.5 rounded-2xl bg-slate-900/98 border border-cyan-500/80 shadow-[0_8px_30px_rgba(6,182,212,0.4)] backdrop-blur-xl animate-bounce-subtle space-y-1.5">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
@@ -682,7 +719,7 @@ export default function MobileSecurityApprovalModal({
                   </div>
                   <div className="flex items-center gap-1.5">
                     <span className="px-1.5 py-0.2 rounded bg-cyan-950 text-cyan-300 border border-cyan-700 font-mono text-[9px] font-bold">
-                      SMS DELIVERED
+                      SMS DISPATCHED ({displayMaskedPhone})
                     </span>
                     <button
                       type="button"
@@ -696,15 +733,20 @@ export default function MobileSecurityApprovalModal({
                 </div>
 
                 <p className="text-[11px] text-slate-200 leading-snug">
-                  FraudLens Bank: <strong className="text-white font-mono bg-cyan-950 px-1 py-0.5 rounded border border-cyan-700 tracking-wider font-extrabold text-cyan-300">{incomingSms.code}</strong> is your secret verification OTP for payment of {formatINR(incomingSms.amount)}.
+                  FraudLens Bank SMS: <strong className="text-white font-mono bg-cyan-950 px-1 py-0.5 rounded border border-cyan-700 tracking-wider font-extrabold text-cyan-300">{incomingSms.code}</strong> is your secret verification OTP for payment of {formatINR(incomingSms.amount)}.
                 </p>
+
+                <div className="text-[9px] text-slate-400 font-mono">
+                  [DEV/TESTING DELIVERY]: Dispatched to authorized customer phone ({displayMaskedPhone}).
+                </div>
 
                 {/* 1-Click Action Buttons */}
                 <div className="flex items-center gap-2 pt-0.5 text-[10px]">
                   <button
                     type="button"
+                    disabled={stage === 'otp_verified'}
                     onClick={handleAutoFillFromSms}
-                    className="flex-1 py-1 px-2 rounded-lg bg-cyan-600/90 hover:bg-cyan-500 text-white font-semibold flex items-center justify-center gap-1 shadow-sm transition active:scale-95 cursor-pointer"
+                    className="flex-1 py-1 px-2 rounded-lg bg-cyan-600/90 hover:bg-cyan-500 text-white font-semibold flex items-center justify-center gap-1 shadow-sm transition active:scale-95 cursor-pointer disabled:opacity-50"
                   >
                     <Check className="w-3 h-3" />
                     <span>Auto-Fill Code ({incomingSms.code})</span>
@@ -755,22 +797,31 @@ export default function MobileSecurityApprovalModal({
                 </div>
               )}
 
-              {/* STAGE 1: OTP INPUT FORM */}
-              {stage === 'entering_otp' && authMethod === 'otp' && (
+              {/* STAGE 1 & 2: OTP INPUT FORM */}
+              {(stage === 'entering_otp' || stage === 'otp_verified') && authMethod === 'otp' && (
                 <div className="space-y-2 bg-slate-950/90 p-3 rounded-2xl border border-slate-800">
                   <div className="flex items-center justify-between text-[10px] text-slate-400">
-                    <span className="font-semibold text-slate-300">
-                      Enter 6-Digit Verification OTP:
+                    <span className="font-semibold text-slate-300 flex items-center gap-1.5">
+                      {stage === 'otp_verified' ? (
+                        <>
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                          <span className="text-emerald-300 font-bold">OTP Code Verified:</span>
+                        </>
+                      ) : (
+                        <span>Enter 6-Digit Verification OTP:</span>
+                      )}
                     </span>
-                    <button
-                      type="button"
-                      disabled={cooldown > 0 || isSending}
-                      onClick={handleSendNewOtp}
-                      className="text-cyan-400 hover:text-cyan-300 font-semibold underline flex items-center gap-1 disabled:text-slate-600 cursor-pointer"
-                    >
-                      <RefreshCw className={`w-3 h-3 ${isSending ? 'animate-spin' : ''}`} />
-                      <span>{cooldown > 0 ? `Resend (${cooldown}s)` : 'Resend Code'}</span>
-                    </button>
+                    {stage === 'entering_otp' && (
+                      <button
+                        type="button"
+                        disabled={cooldown > 0 || isSending}
+                        onClick={handleSendNewOtp}
+                        className="text-cyan-400 hover:text-cyan-300 font-semibold underline flex items-center gap-1 disabled:text-slate-600 cursor-pointer"
+                      >
+                        <RefreshCw className={`w-3 h-3 ${isSending ? 'animate-spin' : ''}`} />
+                        <span>{cooldown > 0 ? `Resend (${cooldown}s)` : 'Resend Code'}</span>
+                      </button>
+                    )}
                   </div>
 
                   {/* 6 Individual Styled Digit Input Cells */}
@@ -782,18 +833,34 @@ export default function MobileSecurityApprovalModal({
                         type="text"
                         inputMode="numeric"
                         maxLength={6}
+                        disabled={stage === 'otp_verified'}
                         value={digit}
                         onChange={(e) => handleDigitChange(idx, e.target.value)}
                         onKeyDown={(e) => handleKeyDown(idx, e)}
                         placeholder="•"
                         className={`w-9 sm:w-11 h-10 sm:h-12 text-center font-mono text-lg font-black rounded-xl bg-slate-900 border transition-all ${
-                          digit
+                          stage === 'otp_verified'
+                            ? 'border-emerald-500 bg-emerald-950/40 text-emerald-300 shadow-[0_0_12px_rgba(16,185,129,0.3)]'
+                            : digit
                             ? 'border-cyan-400 text-cyan-300 shadow-[0_0_12px_rgba(6,182,212,0.4)]'
                             : 'border-slate-700 text-slate-500 focus:border-cyan-500'
                         } focus:outline-none focus:scale-105`}
                       />
                     ))}
                   </div>
+
+                  {/* Stage otp_verified explicit banner */}
+                  {stage === 'otp_verified' && (
+                    <div className="p-2.5 rounded-xl bg-emerald-950/90 border border-emerald-500 text-emerald-200 text-xs font-semibold flex items-start gap-2 shadow-md animate-fadeIn">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                      <div>
+                        <div className="font-extrabold text-emerald-300">OTP Verified Successfully!</div>
+                        <div className="text-[10px] text-emerald-200/90 font-normal">
+                          Cardholder identity confirmed for {formatINR(txAmount)}. Click &quot;ALLOW / APPROVE TRANSACTION&quot; below to explicitly authorize payment.
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Error State Banner */}
                   {otpError && (
@@ -821,7 +888,7 @@ export default function MobileSecurityApprovalModal({
                     <div className="absolute inset-0 bg-purple-500/20 rounded-full animate-ping pointer-events-none" />
                     <button
                       type="button"
-                      onClick={handleVerifyAndContinue}
+                      onClick={handleVerifyOtpOnly}
                       className="p-3.5 rounded-full bg-gradient-to-tr from-purple-600 to-indigo-600 text-white shadow-[0_0_20px_rgba(168,85,247,0.5)] active:scale-95 transition cursor-pointer"
                     >
                       <Fingerprint className="w-8 h-8" />
@@ -875,7 +942,7 @@ export default function MobileSecurityApprovalModal({
             </div>
 
             {/* =====================================================================
-                BOTTOM ACTION CONTROLS: VERIFY & CONTINUE + FRAUD BLOCK
+                BOTTOM ACTION CONTROLS: VERIFY OTP -> ALLOW/APPROVE -> CANCEL / DENY
                 ===================================================================== */}
             <div className="z-10 space-y-2 pt-1 border-t border-slate-800 shrink-0">
               {stage === 'entering_otp' && (
@@ -883,11 +950,11 @@ export default function MobileSecurityApprovalModal({
                   <button
                     type="button"
                     disabled={actionLoading}
-                    onClick={handleVerifyAndContinue}
+                    onClick={handleVerifyOtpOnly}
                     className="w-full py-3 px-3 rounded-xl bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-black text-xs shadow-lg shadow-cyan-950/60 flex items-center justify-center gap-2 transition active:scale-95 cursor-pointer"
                   >
                     <KeyRound className="w-4 h-4" />
-                    <span>VERIFY &amp; CONTINUE</span>
+                    <span>VERIFY OTP CODE</span>
                   </button>
 
                   <button
@@ -897,7 +964,31 @@ export default function MobileSecurityApprovalModal({
                     className="w-full py-2 px-3 rounded-xl bg-rose-950/70 hover:bg-rose-900/80 border border-rose-700/60 text-rose-300 font-bold text-xs flex items-center justify-center gap-1.5 transition active:scale-95 cursor-pointer"
                   >
                     <XCircle className="w-4 h-4 text-rose-400" />
-                    <span>NO, FRAUD! BLOCK CARD</span>
+                    <span>CANCEL / DENY TRANSACTION</span>
+                  </button>
+                </>
+              )}
+
+              {stage === 'otp_verified' && (
+                <>
+                  <button
+                    type="button"
+                    disabled={actionLoading}
+                    onClick={handleExecuteApproval}
+                    className="w-full py-3 px-3 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white font-black text-xs shadow-xl shadow-emerald-950/70 flex items-center justify-center gap-2 transition active:scale-95 cursor-pointer animate-pulse"
+                  >
+                    <CheckCircle2 className="w-4 h-4 text-white" />
+                    <span>ALLOW / APPROVE TRANSACTION</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={actionLoading}
+                    onClick={handleRejectClick}
+                    className="w-full py-2 px-3 rounded-xl bg-rose-950/70 hover:bg-rose-900/80 border border-rose-700/60 text-rose-300 font-bold text-xs flex items-center justify-center gap-1.5 transition active:scale-95 cursor-pointer"
+                  >
+                    <XCircle className="w-4 h-4 text-rose-400" />
+                    <span>CANCEL / DENY TRANSACTION</span>
                   </button>
                 </>
               )}
