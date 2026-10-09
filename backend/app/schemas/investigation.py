@@ -99,3 +99,21 @@ class InvestigationListResponse(BaseModel):
     page: int
     page_size: int
     total_pages: int
+
+
+class BulkDecisionInput(BaseModel):
+    """Input payload for bulk resolving or allowing investigation decisions."""
+    decision: str = Field(default="GENUINE", description="Adjudication decision: 'GENUINE' or 'CONFIRMED_FRAUD'")
+    status: str = Field(default="RESOLVED", description="Lifecycle target: 'RESOLVED'")
+    notes: Optional[str] = Field(default="Bulk approved and allowed by Administrator.", description="Audit notes")
+    case_ids: Optional[List[str]] = Field(default=None, description="Optional target case IDs. If empty, all active OPEN/UNDER_REVIEW cases are adjudicated.")
+
+
+class BulkDecisionResponse(BaseModel):
+    """Result of bulk investigation adjudication."""
+    status: str
+    decision: str
+    processed_count: int
+    updated_cases: List[str]
+    message: str
+

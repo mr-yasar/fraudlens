@@ -30,7 +30,7 @@ import {
   ShieldCheck,
 } from 'lucide-react'
 import CyberHeroShield from './CyberHeroShield'
-import { dashboardApi, alertsApi } from '../services/api'
+import { dashboardApi, alertsApi, investigationsApi } from '../services/api'
 import {
   ResponsiveContainer,
   BarChart,
@@ -108,6 +108,34 @@ export default function DashboardView({ onSelectTransaction, onOpenCase, onOpenP
   // activeModal can be: { type: 'METRIC', data: ... } | { type: 'ALERT', data: ... } | { type: 'TX', data: ... } | { type: 'SHAP', data: ... } | { type: 'MODEL', data: ... } | { type: 'CHANNEL', data: ... } | { type: 'DONUT', data: ... }
   const [modalSubTab, setModalSubTab] = useState('channels')
   const [modalSearch, setModalSearch] = useState('')
+
+  // Bulk Decision State
+  const [bulkLoading, setBulkLoading] = useState(false)
+  const [bulkFeedback, setBulkFeedback] = useState(null)
+
+  const handleBulkApproveDecisions = async () => {
+    const confirmed = window.confirm(
+      'Approve All Decisions: Are you sure you want to approve all pending cases and allow all flagged holds as GENUINE?'
+    )
+    if (!confirmed) return
+
+    setBulkLoading(true)
+    try {
+      const res = await investigationsApi.bulkDecision({
+        decision: 'GENUINE',
+        status: 'RESOLVED',
+        notes: 'Bulk approved and allowed by Administrator from Executive Dashboard.',
+      })
+      setBulkFeedback(`✓ Successfully approved and allowed ${res.processed_count} decisions!`)
+      setTimeout(() => setBulkFeedback(null), 4500)
+      fetchStats()
+      fetchAlerts()
+    } catch (err) {
+      alert(`Bulk approval failed: ${err.message}`)
+    } finally {
+      setBulkLoading(false)
+    }
+  }
 
   const fetchStats = async () => {
     setLoading(true)
@@ -268,7 +296,19 @@ export default function DashboardView({ onSelectTransaction, onOpenCase, onOpenP
                 <ContextualModuleHelp moduleKey="dashboard" />
               </div>
             </div>
-            {!isAdmin && (
+            {isAdmin ? (
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={handleBulkApproveDecisions}
+                  disabled={bulkLoading}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold shadow-lg shadow-emerald-950/40 transition cursor-pointer disabled:opacity-50"
+                  title="Approve all pending decisions and allow transactions"
+                >
+                  <CheckCircle2 className="w-4 h-4 text-emerald-200" />
+                  <span>{bulkLoading ? 'Adjudicating...' : 'Approve All Decisions (Allow All)'}</span>
+                </button>
+              </div>
+            ) : (
               <button
                 onClick={() => onOpenPayment && onOpenPayment('scenario_monisha_safe')}
                 className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-bold shadow-lg shadow-cyan-950/40 transition shrink-0"
@@ -278,6 +318,13 @@ export default function DashboardView({ onSelectTransaction, onOpenCase, onOpenP
               </button>
             )}
           </div>
+
+          {bulkFeedback && (
+            <div className="mb-3 p-2.5 rounded-xl bg-emerald-950/80 border border-emerald-500/60 text-emerald-200 text-xs font-mono flex items-center justify-between shadow-md">
+              <span className="font-bold">{bulkFeedback}</span>
+              <button onClick={() => setBulkFeedback(null)} className="text-emerald-400 hover:text-white">✕</button>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {/* Persona 1: Monisha */}

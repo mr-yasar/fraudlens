@@ -18,6 +18,8 @@ import {
   Radio,
   CheckCircle2,
   Sparkles,
+  Sun,
+  Moon,
 } from 'lucide-react'
 
 import { AuthProvider, useAuth } from './context/AuthContext'
@@ -72,6 +74,29 @@ function CommandCenterApp() {
   useEffect(() => {
     setSelectedPersona(null)
   }, [user?.id, user?.email])
+
+  // Global Theme State: 'dark' | 'light'
+  const [theme, setTheme] = useState(() => {
+    const saved = localStorage.getItem('fraudlens_theme')
+    return saved === 'light' ? 'light' : 'dark'
+  })
+
+  useEffect(() => {
+    localStorage.setItem('fraudlens_theme', theme)
+    if (theme === 'light') {
+      document.documentElement.classList.add('light-theme')
+      document.documentElement.classList.remove('dark')
+      document.documentElement.setAttribute('data-theme', 'light')
+    } else {
+      document.documentElement.classList.remove('light-theme')
+      document.documentElement.classList.add('dark')
+      document.documentElement.setAttribute('data-theme', 'dark')
+    }
+  }, [theme])
+
+  const toggleTheme = useCallback(() => {
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'))
+  }, [])
 
   // Floating AI Assistant & Expand/Minimize Synchronization
   const [aiAssistantOpen, setAiAssistantOpen] = useState(false)
@@ -260,7 +285,11 @@ function CommandCenterApp() {
 
   // AUTHENTICATED COMMAND CENTER APPLICATION SHELL
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-cyan-500/30 selection:text-cyan-200 relative overflow-hidden">
+    <div className={`min-h-screen flex flex-col relative overflow-hidden transition-colors duration-200 ${
+      theme === 'light'
+        ? 'light-theme bg-slate-50 text-slate-900 selection:bg-cyan-500/20 selection:text-cyan-900'
+        : 'dark bg-slate-950 text-slate-100 selection:bg-cyan-500/30 selection:text-cyan-200'
+    }`}>
       {/* Personalized Welcome Overlay (2.3s Tailored Experience) */}
       {showWelcome && (
         <PersonalizedWelcomeOverlay
@@ -310,21 +339,23 @@ function CommandCenterApp() {
         }`}
       >
         {/* Responsive Sidebar Navigation */}
-        <ErrorBoundary onReset={() => setActiveView('dashboard')}>
-          <Sidebar
-            activeView={activeView}
-            setActiveView={navigateTo}
-            isAdmin={isAdmin}
-            user={user}
-            logout={handleTriggerLogout}
-            mobileOpen={mobileOpen}
-            setMobileOpen={setMobileOpen}
-            onOpenHowItWorks={() => setShowHowItWorks(true)}
-            onOpenManual={() => setShowHowItWorks(true)}
-            onOpenVoiceHelp={() => setShowHowItWorks(true)}
-            onSelectPersona={handleSelectPersona}
-          />
-        </ErrorBoundary>
+        {activeView !== 'ai-copilot' && (
+          <ErrorBoundary onReset={() => setActiveView('dashboard')}>
+            <Sidebar
+              activeView={activeView}
+              setActiveView={navigateTo}
+              isAdmin={isAdmin}
+              user={user}
+              logout={handleTriggerLogout}
+              mobileOpen={mobileOpen}
+              setMobileOpen={setMobileOpen}
+              onOpenHowItWorks={() => setShowHowItWorks(true)}
+              onOpenManual={() => setShowHowItWorks(true)}
+              onOpenVoiceHelp={() => setShowHowItWorks(true)}
+              onSelectPersona={handleSelectPersona}
+            />
+          </ErrorBoundary>
+        )}
 
         {/* Main Content Layout */}
         <div
@@ -335,7 +366,8 @@ function CommandCenterApp() {
           }`}
         >
           {/* Top Operational Navigation Bar (Clean, Minimal, Enterprise-Grade) */}
-          <header className="border-b border-slate-800/80 bg-slate-950/70 backdrop-blur-xl sticky top-0 z-30 px-4 sm:px-6 h-16 flex items-center justify-between">
+          {activeView !== 'ai-copilot' && (
+            <header className="border-b border-slate-800/80 bg-slate-950/70 backdrop-blur-xl sticky top-0 z-30 px-4 sm:px-6 h-16 flex items-center justify-between">
             {/* LEFT: Branding, Mobile Menu & Active View Context */}
             <div className="flex items-center gap-3 min-w-0">
               {/* Mobile sidebar toggle */}
@@ -382,8 +414,32 @@ function CommandCenterApp() {
             {/* CENTER: Minimal & Spacious */}
             <div className="hidden md:flex flex-1" />
 
-            {/* RIGHT: Refresh, User Profile, Logout */}
-            <div className="flex items-center gap-2 sm:gap-3">
+            {/* RIGHT: Operational Actions & Profile */}
+            <div className="flex items-center gap-2.5">
+              {/* Light / Dark Mode Toggle Button */}
+              <button
+                onClick={toggleTheme}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border transition-all text-xs font-semibold cursor-pointer ${
+                  theme === 'light'
+                    ? 'bg-white hover:bg-slate-100 text-slate-800 border-slate-300 shadow-sm'
+                    : 'bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-amber-300 border-slate-800'
+                }`}
+                title={theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode'}
+                aria-label="Toggle Light/Dark Theme"
+              >
+                {theme === 'light' ? (
+                  <>
+                    <Moon className="w-4 h-4 text-indigo-600" />
+                    <span className="hidden sm:inline">Dark</span>
+                  </>
+                ) : (
+                  <>
+                    <Sun className="w-4 h-4 text-amber-400" />
+                    <span className="hidden sm:inline">Light</span>
+                  </>
+                )}
+              </button>
+
               {/* Refresh Action */}
               <button
                 onClick={handleRefresh}
@@ -433,6 +489,7 @@ function CommandCenterApp() {
               </button>
             </div>
           </header>
+        )}
 
           {/* Dynamic Page Views */}
           <main className={activeView === 'ai-copilot' ? 'flex-1 overflow-hidden' : 'p-4 sm:p-6 lg:p-8 flex-1'}>
@@ -582,6 +639,7 @@ function CommandCenterApp() {
         isOpenExternal={aiAssistantOpen}
         onOpenChange={setAiAssistantOpen}
         onExpandToCommandCenter={handleExpandToCommandCenter}
+        theme={theme}
       />
 
       {/* Interactive Unified How It Works (System Guide, Architecture & AI Voice Help) */}

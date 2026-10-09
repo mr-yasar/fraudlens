@@ -88,6 +88,33 @@ export default function LiveMonitorAndInvestigationHub({
   const [submittingComplaint, setSubmittingComplaint] = useState(false)
   const [complaintSuccess, setComplaintSuccess] = useState(null)
 
+  // Bulk Decision State
+  const [bulkLoading, setBulkLoading] = useState(false)
+  const [bulkBanner, setBulkBanner] = useState(null)
+
+  const handleBulkApproveAll = async () => {
+    const confirmed = window.confirm(
+      'Approve All Decisions: Are you sure you want to approve all pending cases and allow all held transactions as GENUINE?'
+    )
+    if (!confirmed) return
+
+    setBulkLoading(true)
+    try {
+      const res = await investigationsApi.bulkDecision({
+        decision: 'GENUINE',
+        status: 'RESOLVED',
+        notes: 'Bulk approved and allowed by Administrator from Live Monitor Hub.',
+      })
+      setBulkBanner(`✓ Approved & Allowed ${res.processed_count} pending decisions!`)
+      setTimeout(() => setBulkBanner(null), 4500)
+      fetchData()
+    } catch (err) {
+      alert(`Bulk approval failed: ${err.message}`)
+    } finally {
+      setBulkLoading(false)
+    }
+  }
+
   const getToken = () => localStorage.getItem('fraudlens_token') || localStorage.getItem('access_token')
 
   // Fetch Live Transactions & Cases
@@ -378,8 +405,20 @@ export default function LiveMonitorAndInvestigationHub({
             </p>
           </div>
 
-          {/* Controls: Live Polling Toggle & Refresh */}
-          <div className="flex items-center gap-2.5 self-start md:self-auto">
+          {/* Controls: Live Polling Toggle, Bulk Approve & Refresh */}
+          <div className="flex flex-wrap items-center gap-2.5 self-start md:self-auto">
+            {isAdmin && (
+              <button
+                type="button"
+                onClick={handleBulkApproveAll}
+                disabled={bulkLoading}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-mono font-bold bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white border border-emerald-400/40 shadow-lg shadow-emerald-950/40 transition cursor-pointer disabled:opacity-50"
+                title="Approve All Decisions and Allow All Flagged Transactions"
+              >
+                <CheckCircle2 className="w-4 h-4 text-emerald-200" />
+                <span>{bulkLoading ? 'Adjudicating...' : 'Approve All Decisions (Allow All)'}</span>
+              </button>
+            )}
             <button
               type="button"
               onClick={() => setIsLiveStreaming(!isLiveStreaming)}
@@ -402,6 +441,13 @@ export default function LiveMonitorAndInvestigationHub({
             </button>
           </div>
         </div>
+
+        {bulkBanner && (
+          <div className="mt-4 p-3 rounded-2xl bg-emerald-950/90 border border-emerald-500/60 text-emerald-200 text-xs font-mono flex items-center justify-between shadow-xl animate-fadeIn">
+            <span className="font-bold">{bulkBanner}</span>
+            <button onClick={() => setBulkBanner(null)} className="text-emerald-400 hover:text-white">✕</button>
+          </div>
+        )}
 
         {/* Real-Time Telemetry KPI Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-6">

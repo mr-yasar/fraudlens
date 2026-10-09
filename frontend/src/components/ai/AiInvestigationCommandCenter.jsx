@@ -915,7 +915,7 @@ export default function AiInvestigationCommandCenter(props) {
 
   if (isDetectedAdmin) {
     return (
-      <div className="min-h-screen bg-slate-100 flex flex-col">
+      <div className="w-full h-screen bg-[#040814] flex flex-col overflow-hidden">
         <AdminInvestigationChatbot
           user={props.user}
           isInitiallyMaximized={true}

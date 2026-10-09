@@ -357,3 +357,100 @@
   }
 }
 
+/* ==========================================================================
+   LIGHT MODE & FLAT 2D CRISP ART THEME SYSTEM (NO 3D BEND/TILT)
+   ========================================================================== */
+
+[data-theme="light"],
+.light-theme {
+  --bg-primary: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-surface-subtle: #f1f5f9;
+  --border-primary: #e2e8f0;
+  --border-focus: #0ea5e9;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+  color-scheme: light;
+}
+
+[data-theme="light"] body,
+.light-theme body,
+body.light-theme {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+/* Light mode overrides for high-level command center layout */
+[data-theme="light"] .bg-slate-950,
+.light-theme .bg-slate-950 {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .bg-slate-900,
+.light-theme .bg-slate-900 {
+  background-color: #ffffff !important;
+}
+
+[data-theme="light"] .bg-slate-900\/80,
+[data-theme="light"] .bg-slate-900\/60,
+[data-theme="light"] .bg-slate-900\/90,
+[data-theme="light"] .bg-slate-950\/70,
+[data-theme="light"] .bg-slate-950\/80,
+.light-theme .bg-slate-900\/80,
+.light-theme .bg-slate-900\/60,
+.light-theme .bg-slate-900\/90,
+.light-theme .bg-slate-950\/70,
+.light-theme .bg-slate-950\/80 {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+}
+
+[data-theme="light"] .border-slate-800,
+[data-theme="light"] .border-slate-800\/80,
+.light-theme .border-slate-800,
+.light-theme .border-slate-800\/80 {
+  border-color: #e2e8f0 !important;
+}
+
+[data-theme="light"] .text-slate-100,
+.light-theme .text-slate-100 {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .text-slate-200,
+.light-theme .text-slate-200 {
+  color: #1e293b !important;
+}
+
+[data-theme="light"] .text-slate-300,
+.light-theme .text-slate-300 {
+  color: #334155 !important;
+}
+
+[data-theme="light"] .text-slate-400,
+.light-theme .text-slate-400 {
+  color: #64748b !important;
+}
+
+/* Crisp 2D Flat Art & Border Accents (Strictly No 3D Tilt or Perspective Distortions) */
+.flat-art-card {
+  transform: none !important;
+  perspective: none !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.08), 0 1px 2px -1px rgba(0, 0, 0, 0.05) !important;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.flat-art-card:hover {
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.12), 0 2px 6px -2px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Ensure no 3D skewed bends or perspective warps are applied anywhere */
+.no-3d-tilt {
+  transform: none !important;
+  transform-style: flat !important;
+  perspective: none !important;
+}
+
+

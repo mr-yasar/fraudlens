@@ -249,8 +249,9 @@ export const customersApi = {
 
 // 4. Investigations API
 export const investigationsApi = {
-  list: async ({ page = 1, limit = 20, status = '', decision = '' } = {}) => {
-    const params = new URLSearchParams({ page, limit })
+  list: async ({ page = 1, limit = 20, page_size = 20, status = '', decision = '' } = {}) => {
+    const size = limit || page_size || 20
+    const params = new URLSearchParams({ page: String(page), page_size: String(size), limit: String(size) })
     if (status) params.append('status', status)
     if (decision) params.append('decision', decision)
 
@@ -278,6 +279,14 @@ export const investigationsApi = {
       method: 'PUT',
       headers: getAuthHeaders(),
       body: JSON.stringify(payload),
+    })
+    return handleResponse(res)
+  },
+  bulkDecision: async ({ decision = 'GENUINE', status = 'RESOLVED', notes = 'Bulk approved and allowed by Administrator.', case_ids = null } = {}) => {
+    const res = await fetch(`${BASE_URL}/investigations/bulk-decision`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({ decision, status, notes, case_ids }),
     })
     return handleResponse(res)
   },

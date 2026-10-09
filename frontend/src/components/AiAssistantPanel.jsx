@@ -1179,6 +1179,7 @@ export default function AiAssistantPanel(props) {
         currentTransactionId={props.currentTransactionId}
         isOpenExternal={props.isOpenExternal}
         onOpenChange={props.onOpenChange}
+        theme={props.theme}
       />
     )
   }
@@ -1191,6 +1192,7 @@ export default function AiAssistantPanel(props) {
         currentTransactionId={props.currentTransactionId}
         isOpenExternal={props.isOpenExternal}
         onOpenChange={props.onOpenChange}
+        theme={props.theme}
       />
     )
   }

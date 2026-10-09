@@ -78,3 +78,10 @@ htmlcov/
 scratch_*.py
 scratch/
 
+# Large media files
+*.mp4
+*.webm
+
+# Office temporary lock files
+~$*
+

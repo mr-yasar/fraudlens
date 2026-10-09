@@ -14,7 +14,7 @@ from backend.app.models.customer import Customer
 from backend.app.models.transaction import Transaction
 from backend.app.models.investigation import Investigation
 from backend.app.models.shap_explanation import ShapExplanation
-from backend.app.models.approval import Approval
+from backend.app.models.approval import Approval, TransactionApproval, ApprovalStatus
 from backend.app.models.audit_log import AuditLog
 
 from backend.app.models.payment_intent import PaymentIntent, PaymentLifecycleStatus
@@ -29,6 +29,8 @@ from backend.app.schemas.investigation import (
     InvestigationSummaryResponse,
     InvestigationDetailResponse,
     InvestigationListResponse,
+    BulkDecisionInput,
+    BulkDecisionResponse,
 )
 
 router = APIRouter()
@@ -322,6 +324,104 @@ def list_investigations(
         page=page,
         page_size=page_size,
         total_pages=total_pages,
+    )
+
+
+@router.post(
+    "/bulk-decision",
+    response_model=BulkDecisionResponse,
+    summary="Bulk Approve or Allow All Pending Investigations",
+    description="Allows administrator or fraud investigator to bulk approve all pending/open cases as GENUINE (or CONFIRMED_FRAUD) with unified audit trail and payment intent lifecycle synchronization.",
+)
+def bulk_decision(
+    payload: BulkDecisionInput,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+) -> BulkDecisionResponse:
+    """Execute bulk decision on pending investigation cases and linked payment holds."""
+    role_str = str(current_user.role or "").upper().strip()
+    if role_str not in ("ADMIN", "SUPERADMIN", "FRAUD_INVESTIGATOR", "INVESTIGATOR", "ANALYST"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied: Only fraud investigators and administrators can perform bulk adjudication.",
+        )
+
+    # Resolve target cases
+    query = db.query(Investigation)
+    if payload.case_ids and len(payload.case_ids) > 0:
+        query = query.filter(Investigation.case_id.in_([c.strip() for c in payload.case_ids]))
+    else:
+        query = query.filter(Investigation.status.in_([InvestigationStatus.OPEN.value, InvestigationStatus.UNDER_REVIEW.value]))
+
+    cases_to_resolve = query.all()
+    updated_cases = []
+    target_decision = payload.decision.upper().strip()
+    target_status = payload.status.upper().strip()
+    notes_to_record = payload.notes.strip() if payload.notes else "Bulk approved and allowed by Administrator."
+
+    for inv in cases_to_resolve:
+        old_status = inv.status
+        inv.status = target_status
+        inv.decision = target_decision
+        inv.notes = notes_to_record
+        if not inv.investigator_id:
+            inv.investigator_id = current_user.id
+        updated_cases.append(inv.case_id)
+
+        # Audit entry
+        audit_entry = AuditLog(
+            user_id=current_user.id,
+            action="INVESTIGATION_CASE_RESOLVED" if target_status == InvestigationStatus.RESOLVED.value else "INVESTIGATION_CASE_UPDATED",
+            resource_type="investigation",
+            resource_id=inv.case_id,
+            details=json.dumps({
+                "bulk": True,
+                "previous_status": old_status,
+                "status": inv.status,
+                "decision": inv.decision,
+                "notes": inv.notes,
+            }),
+        )
+        db.add(audit_entry)
+
+        # Sync PaymentIntent lifecycle
+        linked_payment = db.query(PaymentIntent).filter(PaymentIntent.payment_id == inv.transaction_id).first()
+        if linked_payment:
+            if target_decision == "CONFIRMED_FRAUD":
+                linked_payment.lifecycle_status = PaymentLifecycleStatus.BLOCKED.value
+            elif target_decision == "GENUINE":
+                linked_payment.lifecycle_status = PaymentLifecycleStatus.APPROVED.value
+
+        # Sync linked TransactionApproval if exists
+        linked_approval = db.query(TransactionApproval).filter(
+            or_(
+                TransactionApproval.transaction_id == inv.transaction_id,
+                TransactionApproval.payment_id == inv.transaction_id
+            ),
+            TransactionApproval.status == ApprovalStatus.PENDING.value
+        ).first()
+        if linked_approval:
+            linked_approval.status = ApprovalStatus.APPROVED.value if target_decision == "GENUINE" else ApprovalStatus.REJECTED.value
+            linked_approval.notes = f"Adjudicated via Bulk Decision ({target_decision}) by {current_user.email}"
+            linked_approval.responded_at = datetime.utcnow()
+
+    # Also resolve any remaining pending TransactionApprovals if bulk approving all
+    if not payload.case_ids:
+        pending_approvals = db.query(TransactionApproval).filter(TransactionApproval.status == ApprovalStatus.PENDING.value).all()
+        for app in pending_approvals:
+            app.status = ApprovalStatus.APPROVED.value if target_decision == "GENUINE" else ApprovalStatus.REJECTED.value
+            app.notes = f"Allowed and approved via Global Bulk Decision by Administrator ({current_user.email})"
+            app.responded_at = datetime.utcnow()
+
+    db.commit()
+
+    count = len(updated_cases)
+    return BulkDecisionResponse(
+        status="SUCCESS",
+        decision=target_decision,
+        processed_count=count,
+        updated_cases=updated_cases,
+        message=f"Successfully approved and allowed {count} investigation decisions as {target_decision}." if count > 0 else "No pending cases found to adjudicate. All queues cleared.",
     )
 
 

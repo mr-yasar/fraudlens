@@ -61,6 +61,33 @@ export default function InvestigationsView({
   const [editNotes, setEditNotes] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
+  // Bulk Decision state
+  const [bulkLoading, setBulkLoading] = useState(false)
+  const [bulkToast, setBulkToast] = useState(null)
+
+  const handleBulkApproveAll = async () => {
+    const confirmed = window.confirm(
+      'Approve All Decisions: Are you sure you want to approve all pending cases and allow all held transactions as GENUINE?'
+    )
+    if (!confirmed) return
+
+    setBulkLoading(true)
+    try {
+      const res = await investigationsApi.bulkDecision({
+        decision: 'GENUINE',
+        status: 'RESOLVED',
+        notes: 'Bulk approved and allowed by Administrator.',
+      })
+      setBulkToast(`✓ Successfully approved and allowed ${res.processed_count} decisions!`)
+      setTimeout(() => setBulkToast(null), 4500)
+      fetchCases()
+    } catch (err) {
+      alert(`Bulk approval failed: ${err.message}`)
+    } finally {
+      setBulkLoading(false)
+    }
+  }
+
   useEffect(() => {
     if (initialTxId) {
       setTargetTx(initialTxId)
@@ -310,14 +337,43 @@ export default function InvestigationsView({
           </div>
         </div>
 
-        <button
-          onClick={fetchCases}
-          className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition cursor-pointer"
-          title="Refresh Cases"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Bulk Approve All / Allow All Decisions Button */}
+          <button
+            onClick={handleBulkApproveAll}
+            disabled={bulkLoading}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs shadow-md transition disabled:opacity-50 cursor-pointer"
+            title="Approve All Decisions and Allow Pending Holds"
+          >
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            <span>{bulkLoading ? 'Adjudicating...' : 'Approve All Decisions (Allow All)'}</span>
+          </button>
+
+          <button
+            onClick={fetchCases}
+            className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition cursor-pointer"
+            title="Refresh Cases"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+          </button>
+        </div>
       </div>
+
+      {/* Bulk Feedback Banner */}
+      {bulkToast && (
+        <div className="p-3 rounded-xl bg-emerald-950/80 border border-emerald-500/60 text-emerald-200 text-xs font-mono flex items-center justify-between shadow-lg animate-fadeIn">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span className="font-bold">{bulkToast}</span>
+          </div>
+          <button
+            onClick={() => setBulkToast(null)}
+            className="text-emerald-400 hover:text-white"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       {/* Cases Table */}
       <div className="rounded-2xl bg-slate-900/60 border border-slate-800 shadow-xl overflow-hidden backdrop-blur-md">

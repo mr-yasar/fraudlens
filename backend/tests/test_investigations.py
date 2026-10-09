@@ -347,3 +347,19 @@ def test_investigator_authorization_boundaries(investigator1_token, investigator
     )
     assert res_admin.status_code == 200
     assert res_admin.json()["investigator_id"] == u2.id
+
+
+def test_bulk_decision_approve_all(admin_token):
+    client = TestClient(app)
+    # Bulk approve all decisions as GENUINE
+    res = client.post(
+        "/api/v1/investigations/bulk-decision",
+        json={"decision": "GENUINE", "status": "RESOLVED", "notes": "Approved all by Admin."},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert res.status_code == 200
+    data = res.json()
+    assert data["status"] == "SUCCESS"
+    assert data["decision"] == "GENUINE"
+    assert "processed_count" in data
+
