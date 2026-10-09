@@ -747,13 +747,20 @@ def create_ieee_docx():
         r_rest.font.size = Pt(8.0)
 
     # Save Document
-    try:
-        doc.save(str(DOCX_PATH))
-        print(f"Generated DOCX manuscript at: {DOCX_PATH}")
-    except PermissionError:
-        alt_path = OUTPUT_DIR / "FraudLens_AI_IEEE_Research_Paper_Updated.docx"
-        doc.save(str(alt_path))
-        print(f"Primary DOCX file is currently open in Word. Saved updated manuscript to: {alt_path}")
+    saved_path = None
+    for fname in ["FraudLens_AI_IEEE_Research_Paper.docx", "FraudLens_AI_IEEE_Research_Paper_v2.docx", "FraudLens_AI_IEEE_Research_Paper_Updated.docx"]:
+        try:
+            target_p = OUTPUT_DIR / fname
+            doc.save(str(target_p))
+            saved_path = target_p
+            print(f"Generated DOCX manuscript at: {target_p}")
+            break
+        except PermissionError:
+            continue
+    if not saved_path:
+        fallback_p = OUTPUT_DIR / f"FraudLens_AI_IEEE_Research_Paper_final.docx"
+        doc.save(str(fallback_p))
+        print(f"Generated DOCX manuscript at: {fallback_p}")
 
     # Check DOCX for prohibited words
     full_docx_text = ""
