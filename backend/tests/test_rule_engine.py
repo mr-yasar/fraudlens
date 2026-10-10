@@ -5,6 +5,7 @@ from backend.app.services.rule_engine import RuleEngine, RuleActionImpact, RuleS
 
 
 def _build_features(
+    customer_id="CUST-TEST",
     amount=100.0,
     historical_avg=100.0,
     velocity_1h=0,
@@ -16,7 +17,7 @@ def _build_features(
 ) -> DerivedPreAuthFeatures:
     ratio = amount / (historical_avg + 1e-5)
     return DerivedPreAuthFeatures(
-        customer_id="CUST-TEST",
+        customer_id=customer_id,
         amount=amount,
         historical_avg_amount=historical_avg,
         amount_deviation=amount - historical_avg,
@@ -52,12 +53,14 @@ def test_rule_engine_routine_transaction_allows():
 
 
 def test_rule_engine_velocity_burst_blocks():
-    """Verify critical velocity burst triggers RULE-VEL-01 and hard blocks."""
-    feats = _build_features(amount=100.0, velocity_1h=6)
+    """Verify velocity burst beyond customer limit triggers RULE-VEL-01 and requires Face ID review."""
+    feats = _build_features(amount=100.0, velocity_1h=13, customer_id="CUST_MONISHA_001")
     res = RuleEngine.evaluate(feats)
     assert any(r.rule_id == "RULE-VEL-01" for r in res.triggered_rules)
-    assert res.hard_block is True
-    assert res.recommended_action == RuleActionImpact.ENFORCE_BLOCK
+    vel_rule = next(r for r in res.triggered_rules if r.rule_id == "RULE-VEL-01")
+    assert vel_rule.action_impact == RuleActionImpact.FLAG_REVIEW
+    assert vel_rule.metadata.get("requires_face_id") is True
+    assert res.recommended_action == RuleActionImpact.FLAG_REVIEW
 
 
 def test_rule_engine_failed_attempts_blocks():

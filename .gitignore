@@ -77,6 +77,7 @@ htmlcov/
 *.db-wal
 scratch_*.py
 scratch/
+scratch_video_frames/
 
 # Large media files
 *.mp4

@@ -1164,6 +1164,7 @@ export default function PaymentView({
           rapid_activity_window_minutes: result.rapid_activity_window_minutes,
           recent_transaction_amounts: result.recent_transaction_amounts,
           security_trigger: result.security_trigger,
+          requires_face_id: result.security_trigger === 'VELOCITY_LIMIT_FACE_ID_REQUIRED' || Boolean(result.triggered_rules?.some((r) => r.rule_id === 'RULE-VEL-01' || (r.rule_name && r.rule_name.includes('Face ID')))),
           why_otp_reason: result.why_otp_reason,
           why_otp_explanation: result.why_otp_explanation,
           rule_triggered:

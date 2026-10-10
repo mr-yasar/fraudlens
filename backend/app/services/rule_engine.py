@@ -75,34 +75,52 @@ class RuleEngine:
         evaluated_rules: List[EvaluatedRule] = []
 
         # ----------------------------------------------------
-        # 1. VELOCITY RULES
+        # 1. VELOCITY RULES (Calibrated per customer profile)
+        # Monisha & Mohana: 12 tx/hr limit
+        # Sowmiya: 8 tx/hr limit
+        # Over the limit: Step-Up Face ID Biometric Verification required
         # ----------------------------------------------------
-        # Critical velocity burst (>= 5 tx in 1 hour)
-        vel_crit = features.velocity_1h >= 5
+        cid = (getattr(features, "customer_id", "") or "").upper()
+        if "SOWMIYA" in cid:
+            vel_threshold = 8
+        elif "MONISHA" in cid or "MOHANA" in cid:
+            vel_threshold = 12
+        elif "AJAY" in cid:
+            vel_threshold = 15
+        else:
+            vel_threshold = 12
+
+        vel_exceeded = features.velocity_1h > vel_threshold
+        vel_elev = (features.velocity_1h >= (vel_threshold - 3) and not vel_exceeded)
+
         evaluated_rules.append(EvaluatedRule(
             rule_id="RULE-VEL-01",
-            rule_name="Critical 1-Hour Velocity Burst",
+            rule_name="1-Hour Velocity Burst (Face ID Step-Up Required)",
             category=RuleCategory.VELOCITY,
-            triggered=vel_crit,
-            severity=RuleSeverity.CRITICAL if vel_crit else RuleSeverity.LOW,
-            action_impact=RuleActionImpact.ENFORCE_BLOCK if vel_crit else RuleActionImpact.ALLOW,
-            reason=f"Customer initiated {features.velocity_1h} transactions within 1 hour (Threshold: 5).",
-            score_penalty=35 if vel_crit else 0,
-            metadata={"velocity_1h": features.velocity_1h, "threshold": 5},
+            triggered=vel_exceeded,
+            severity=RuleSeverity.HIGH if vel_exceeded else RuleSeverity.LOW,
+            action_impact=RuleActionImpact.FLAG_REVIEW if vel_exceeded else RuleActionImpact.ALLOW,
+            reason=f"Customer initiated {features.velocity_1h} transactions in 1 hour (Limit: {vel_threshold}). Biometric Face ID verification strictly required for authorization.",
+            score_penalty=25 if vel_exceeded else 0,
+            metadata={
+                "velocity_1h": features.velocity_1h,
+                "threshold": vel_threshold,
+                "requires_face_id": True if vel_exceeded else False,
+                "auth_method_required": "face_id" if vel_exceeded else "otp",
+            },
         ))
 
-        # Elevated velocity (>= 3 tx in 1 hour)
-        vel_elev = (features.velocity_1h >= 3 and not vel_crit)
+        # Elevated velocity notice approaching threshold
         evaluated_rules.append(EvaluatedRule(
             rule_id="RULE-VEL-02",
             rule_name="Elevated Velocity Acceleration",
             category=RuleCategory.VELOCITY,
             triggered=vel_elev,
-            severity=RuleSeverity.HIGH if vel_elev else RuleSeverity.LOW,
+            severity=RuleSeverity.MEDIUM if vel_elev else RuleSeverity.LOW,
             action_impact=RuleActionImpact.FLAG_REVIEW if vel_elev else RuleActionImpact.ALLOW,
-            reason=f"Customer initiated {features.velocity_1h} transactions in 1 hour (Threshold: 3).",
-            score_penalty=20 if vel_elev else 0,
-            metadata={"velocity_1h": features.velocity_1h, "threshold": 3},
+            reason=f"Customer initiated {features.velocity_1h} transactions in 1 hour (Approaching {vel_threshold} limit).",
+            score_penalty=15 if vel_elev else 0,
+            metadata={"velocity_1h": features.velocity_1h, "threshold": vel_threshold - 3},
         ))
 
         # ----------------------------------------------------

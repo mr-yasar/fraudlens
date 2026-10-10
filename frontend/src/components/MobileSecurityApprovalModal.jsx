@@ -27,6 +27,9 @@ import {
   Activity,
   Clock,
   Zap,
+  Volume2,
+  VolumeX,
+  ScanFace,
 } from 'lucide-react'
 import { formatINR, formatDateTime } from '../utils/formatters'
 import { sound } from './login/soundEffects'
@@ -73,6 +76,14 @@ export default function MobileSecurityApprovalModal({
   // 3-4 Second Auto-Settling Security Animation State
   const [isScanning, setIsScanning] = useState(true)
   const scanTimerRef = useRef(null)
+  const videoRef = useRef(null)
+  const [isSoundMuted, setIsSoundMuted] = useState(() => sound.getMuted())
+  const [isScanningFace, setIsScanningFace] = useState(false)
+
+  const handleToggleSound = () => {
+    const next = sound.toggleMute()
+    setIsSoundMuted(next)
+  }
 
   const inputRefs = [
     useRef(null),
@@ -137,10 +148,15 @@ export default function MobileSecurityApprovalModal({
     }
   }, [isOpen, expiryCountdown, stage])
 
-  // Trigger 3.5s auto-settling animation when opened
+  // Trigger 3.5s auto-settling animation and cyber scan sound when opened
   useEffect(() => {
     if (isOpen) {
       setIsScanning(true)
+      sound.playScanPulse && sound.playScanPulse()
+      if (videoRef.current) {
+        videoRef.current.currentTime = 0
+        videoRef.current.play().catch(() => {})
+      }
       if (scanTimerRef.current) clearTimeout(scanTimerRef.current)
       scanTimerRef.current = setTimeout(() => {
         setIsScanning(false)
@@ -153,7 +169,11 @@ export default function MobileSecurityApprovalModal({
 
   const handleReplayScan = () => {
     setIsScanning(true)
-    sound.playAlert && sound.playAlert()
+    if (videoRef.current) {
+      videoRef.current.currentTime = 0
+      videoRef.current.play().catch(() => {})
+    }
+    sound.playScanPulse && sound.playScanPulse()
     if (scanTimerRef.current) clearTimeout(scanTimerRef.current)
     scanTimerRef.current = setTimeout(() => {
       setIsScanning(false)
@@ -169,6 +189,23 @@ export default function MobileSecurityApprovalModal({
       setFailedCount(0)
       setCopied(false)
       setExpiryCountdown(300)
+      setIsScanningFace(false)
+
+      const cid = (transaction?.customer_id || customerName || '').toUpperCase()
+      const isOverVelocityLimit = Boolean(
+        transaction?.requires_face_id ||
+        transaction?.challenge_type === 'FACE_ID' ||
+        transaction?.security_trigger === 'VELOCITY_LIMIT_FACE_ID_REQUIRED' ||
+        (transaction?.rapid_activity_count && (
+          (cid.includes('SOWMIYA') && transaction.rapid_activity_count > 8) ||
+          ((cid.includes('MONISHA') || cid.includes('MOHANA')) && transaction.rapid_activity_count > 12)
+        ))
+      )
+      if (isOverVelocityLimit) {
+        setAuthMethod('face_id')
+      } else {
+        setAuthMethod('otp')
+      }
 
       let initialOtp = transaction?.otp_code
 
@@ -242,9 +279,20 @@ export default function MobileSecurityApprovalModal({
   const isRapid = Boolean(
     transaction?.rapid_activity_detected ||
     transaction?.security_trigger === 'RAPID_TRANSACTION_ACTIVITY' ||
+    transaction?.security_trigger === 'VELOCITY_LIMIT_FACE_ID_REQUIRED' ||
     (transaction?.rapid_activity_count && transaction?.rapid_activity_count >= 3)
   )
+  const isFaceIdRequired = Boolean(
+    transaction?.requires_face_id ||
+    transaction?.challenge_type === 'FACE_ID' ||
+    transaction?.security_trigger === 'VELOCITY_LIMIT_FACE_ID_REQUIRED' ||
+    (transaction?.rapid_activity_count && (
+      (txCustomerId.toUpperCase().includes('SOWMIYA') && transaction.rapid_activity_count > 8) ||
+      ((txCustomerId.toUpperCase().includes('MONISHA') || txCustomerId.toUpperCase().includes('MOHANA')) && transaction.rapid_activity_count > 12)
+    ))
+  )
   const rapidCount = transaction?.rapid_activity_count || (isRapid ? 4 : 1)
+  const customerLimit = txCustomerId.toUpperCase().includes('SOWMIYA') ? 8 : 12
   const rapidWindow = transaction?.rapid_activity_window_minutes || 60
   const recentAmounts = transaction?.recent_transaction_amounts || []
   const securityTrigger = transaction?.security_trigger || (isRapid ? 'RAPID_TRANSACTION_ACTIVITY' : 'SECURITY_HOLD')
@@ -322,8 +370,11 @@ export default function MobileSecurityApprovalModal({
     next[index] = cleanChar
     setOtpDigits(next)
 
-    if (cleanChar && index < 5) {
-      inputRefs[index + 1]?.current?.focus()
+    if (cleanChar) {
+      sound.playDigitType && sound.playDigitType(index)
+      if (index < 5) {
+        inputRefs[index + 1]?.current?.focus()
+      }
     }
   }
 
@@ -354,6 +405,20 @@ export default function MobileSecurityApprovalModal({
     sound.playBlip && sound.playBlip()
   }
 
+  // Interactive Face ID Biometric Recognition Scan
+  const handleScanFaceId = () => {
+    setIsScanningFace(true)
+    sound.playScanPulse && sound.playScanPulse()
+    setTimeout(() => {
+      setIsScanningFace(false)
+      setVerifiedToken('BIOMETRIC_FACE_ID')
+      setStage('otp_verified')
+      setOtpError(null)
+      sound.playVerified && sound.playVerified()
+      sound.playUnlock && sound.playUnlock()
+    }, 700)
+  }
+
   // STEP 4: VERIFY OTP ACTION (Strict validation without auto-debiting)
   const handleVerifyOtpOnly = async () => {
     if (expiryCountdown <= 0) {
@@ -379,6 +444,8 @@ export default function MobileSecurityApprovalModal({
         sound.playError && sound.playError()
         return
       }
+    } else if (authMethod === 'face_id') {
+      codeToVerify = 'BIOMETRIC_FACE_ID'
     } else {
       codeToVerify = 'BIOMETRIC_TOUCH_ID'
     }
@@ -388,6 +455,7 @@ export default function MobileSecurityApprovalModal({
     setStage('otp_verified')
     setOtpError(null)
     sound.playVerified && sound.playVerified()
+    sound.playUnlock && sound.playUnlock()
   }
 
   // STEP 5: EXPLICIT ALLOW / APPROVE TRANSACTION (Enabled only after OTP is verified)
@@ -408,6 +476,7 @@ export default function MobileSecurityApprovalModal({
         await onApprove(approvalId, verifiedToken || generatedOtp)
       }
       setStage('completed')
+      sound.playVaultLock && sound.playVaultLock()
       sound.playVerified && sound.playVerified()
 
       setTimeout(() => {
@@ -526,80 +595,79 @@ export default function MobileSecurityApprovalModal({
               </div>
 
               {/* =========================================================================
-                  7 & 8. SOPHISTICATED SECURITY VISUAL (AUTO-PLAYS 3-4s, THEN SETTLES)
+                  7 & 8. SOPHISTICATED 3D SECURITY VISUAL (GEMINI CYBER PHONE ANIMATION)
                   ========================================================================= */}
-              <div className="p-3 rounded-xl bg-slate-950/80 border border-cyan-500/20 text-center relative overflow-hidden my-1">
-                {/* Visual Rings and Shield */}
-                <div className="relative w-20 h-20 mx-auto my-1 flex items-center justify-center">
-                  {/* Outer Orbital Pulse Ring */}
-                  <div
-                    className={`absolute inset-0 rounded-full border-2 transition-all duration-1000 ${
-                      isScanning
-                        ? 'border-cyan-400/90 animate-spin border-t-transparent shadow-[0_0_20px_rgba(6,182,212,0.6)]'
-                        : 'border-emerald-500/70 shadow-[0_0_15px_rgba(16,185,129,0.3)]'
-                    }`}
-                    style={{ animationDuration: '3.5s' }}
+              <div className="relative rounded-2xl overflow-hidden border border-cyan-500/40 bg-black/90 shadow-[0_0_30px_rgba(6,182,212,0.3)] my-2 group">
+                <div className="relative w-full h-44 sm:h-52 overflow-hidden flex items-center justify-center bg-slate-950">
+                  <video
+                    ref={videoRef}
+                    src="/gemini_generated_video_8e175e68.mp4"
+                    poster="/phone_security_video_poster.jpg"
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                    className="w-full h-full object-cover object-center filter contrast-110 brightness-105"
                   />
+                  {/* Subtle holographic cyber vignette */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-slate-950/70 pointer-events-none" />
+                  <div className="absolute inset-0 bg-cyan-500/5 mix-blend-screen pointer-events-none" />
 
-                  {/* Middle Concentric Ring */}
-                  <div
-                    className={`absolute inset-2 rounded-full border border-dashed transition-all duration-1000 ${
-                      isScanning
-                        ? 'border-indigo-400/80 animate-reverse-spin'
-                        : 'border-cyan-500/50'
-                    }`}
-                    style={{ animationDuration: '5s' }}
-                  />
+                  {/* Top HUD Badges */}
+                  <div className="absolute top-2.5 inset-x-2.5 flex items-center justify-between z-10 pointer-events-auto">
+                    <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-slate-950/85 backdrop-blur-md border border-cyan-500/50 text-[9px] font-mono text-cyan-300 shadow">
+                      <span className={`w-1.5 h-1.5 rounded-full ${isScanning ? 'bg-cyan-400 animate-ping' : 'bg-emerald-400'}`} />
+                      <span className="font-bold tracking-wider">3D CYBER SHIELD v2.4</span>
+                    </div>
 
-                  {/* Core Glow Aura */}
-                  <div
-                    className={`absolute inset-3 rounded-full blur-md transition-all duration-700 ${
-                      isScanning ? 'bg-cyan-500/30 animate-pulse' : 'bg-emerald-500/20'
-                    }`}
-                  />
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={handleToggleSound}
+                        className="px-2 py-1 rounded-full bg-slate-950/85 backdrop-blur-md border border-slate-700 hover:border-cyan-500 text-[9px] font-mono text-slate-300 hover:text-cyan-300 transition flex items-center gap-1 cursor-pointer"
+                        title={isSoundMuted ? 'Sound Muted - Click to Unmute' : 'Sound Active - Click to Mute'}
+                      >
+                        {isSoundMuted ? (
+                          <VolumeX className="w-3 h-3 text-slate-400" />
+                        ) : (
+                          <Volume2 className="w-3 h-3 text-cyan-400 animate-pulse" />
+                        )}
+                        <span>{isSoundMuted ? 'MUTED' : 'AUDIO ON'}</span>
+                      </button>
 
-                  {/* Central Shield Graphic */}
-                  <div
-                    className={`relative z-10 w-11 h-11 rounded-xl flex items-center justify-center border transition-all duration-700 ${
-                      isScanning
-                        ? 'bg-slate-900 border-cyan-400 text-cyan-300 shadow-[0_0_20px_rgba(6,182,212,0.8)] scale-105'
-                        : 'bg-emerald-950 border-emerald-500 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.5)]'
-                    }`}
-                  >
-                    {isScanning ? (
-                      <ShieldAlert className="w-5 h-5 animate-pulse text-cyan-300" />
-                    ) : (
-                      <ShieldCheck className="w-5 h-5 text-emerald-400" />
-                    )}
+                      <button
+                        type="button"
+                        onClick={handleReplayScan}
+                        className="p-1.5 rounded-full bg-slate-950/85 backdrop-blur-md border border-slate-700 hover:border-cyan-500 text-slate-300 hover:text-cyan-300 transition cursor-pointer"
+                        title="Replay Cyber Scan"
+                      >
+                        <RefreshCw className={`w-3 h-3 ${isScanning ? 'animate-spin text-cyan-400' : ''}`} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Bottom HUD Telemetry Strip */}
+                  <div className="absolute bottom-2.5 inset-x-2.5 flex items-center justify-between z-10 pointer-events-none">
+                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-slate-950/90 backdrop-blur-md border border-cyan-500/30 text-[9px] font-mono">
+                      <span className="text-slate-400">STATUS:</span>
+                      <span className={`font-bold ${isScanning ? 'text-cyan-300 animate-pulse' : 'text-emerald-400'}`}>
+                        {isScanning ? 'DEPLOYING PROTECTION RING...' : 'PAYMENT TEMPORARILY SECURED'}
+                      </span>
+                    </div>
+                    <span className="px-1.5 py-0.5 rounded bg-slate-900/90 border border-slate-800 text-[8px] font-mono text-cyan-400">
+                      256-BIT ENCRYPTION
+                    </span>
                   </div>
                 </div>
 
-                {/* Status Telemetry Text & Replay Action */}
-                <div className="flex items-center justify-center gap-1.5 mt-1">
-                  <span
-                    className={`w-2 h-2 rounded-full ${
-                      isScanning ? 'bg-cyan-400 animate-ping' : 'bg-emerald-400'
-                    }`}
-                  />
-                  <span className="text-[10px] font-mono font-bold tracking-wider uppercase text-cyan-200">
-                    {isScanning
-                      ? 'Deploying Gateway Protection Ring...'
-                      : 'Payment Temporarily Secured & Protected'}
-                  </span>
-                  {!isScanning && (
-                    <button
-                      type="button"
-                      onClick={handleReplayScan}
-                      className="p-1 text-slate-400 hover:text-cyan-300 rounded hover:bg-slate-800 transition cursor-pointer"
-                      title="Replay Security Scan"
-                    >
-                      <RefreshCw className="w-3 h-3" />
-                    </button>
-                  )}
+                {/* Subtitle Telemetry Strip */}
+                <div className="px-3 py-2 bg-slate-950/95 border-t border-slate-800/80 flex items-center justify-between text-[10px]">
+                  <div className="flex items-center gap-1.5 text-slate-300">
+                    <Sparkles className="w-3 h-3 text-cyan-400" />
+                    <span>Holographic security lock defending {formatINR(txAmount)}</span>
+                  </div>
+                  <span className="text-cyan-300/80 font-mono text-[9px]">REGISTERED PHONE OTP</span>
                 </div>
-                <p className="text-[10px] text-slate-400 mt-0.5">
-                  Your payment of {formatINR(txAmount)} is temporarily being protected and verified.
-                </p>
               </div>
 
               {/* 6. RAPID TRANSACTION EVIDENCE DETAILS */}
@@ -764,35 +832,100 @@ export default function MobileSecurityApprovalModal({
             )}
 
             {/* =====================================================================
-                5. SECTION: OTP INPUT FORM
+                5. SECTION: OTP / FACE ID / BIOMETRIC INPUT FORM
                 ===================================================================== */}
             <div className="z-10 space-y-2">
-              {/* Method Toggle: OTP vs Biometric */}
+              {/* Velocity Limit Alert Banner if Face ID is mandatory */}
+              {isFaceIdRequired && (
+                <div className="p-2.5 rounded-xl bg-purple-950/80 border border-purple-500/80 text-purple-200 text-xs font-semibold flex items-center gap-2 shadow-lg animate-pulse">
+                  <ScanFace className="w-5 h-5 text-purple-400 shrink-0" />
+                  <div className="text-[10px] leading-tight">
+                    <strong className="text-white block font-bold">Urgent Transaction: Hourly Velocity Limit Reached</strong>
+                    <span>Customer initiated {rapidCount} transactions in 1 hr (Limit: {customerLimit}). Mandatory Face ID Biometric Recognition required to authorize payment.</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Method Toggle: Face ID vs SMS OTP vs Touch ID */}
               {stage === 'entering_otp' && (
-                <div className="flex p-0.5 bg-slate-950 rounded-xl border border-slate-800 text-[11px]">
+                <div className="flex p-0.5 bg-slate-950 rounded-xl border border-slate-800 text-[11px] gap-1">
                   <button
                     type="button"
-                    onClick={() => setAuthMethod('otp')}
-                    className={`flex-1 py-1 rounded-lg font-semibold flex items-center justify-center gap-1 transition cursor-pointer ${
-                      authMethod === 'otp'
-                        ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-sm'
+                    onClick={() => setAuthMethod('face_id')}
+                    className={`flex-1 py-1.5 rounded-lg font-semibold flex items-center justify-center gap-1 transition cursor-pointer ${
+                      authMethod === 'face_id'
+                        ? 'bg-gradient-to-r from-purple-600 via-indigo-600 to-cyan-600 text-white shadow-md'
                         : 'text-slate-400 hover:text-white'
                     }`}
                   >
-                    <KeyRound className="w-3.5 h-3.5" />
-                    <span>SMS OTP</span>
+                    <ScanFace className="w-3.5 h-3.5" />
+                    <span>Face ID {isFaceIdRequired ? '(Required)' : ''}</span>
                   </button>
+                  {!isFaceIdRequired && (
+                    <button
+                      type="button"
+                      onClick={() => setAuthMethod('otp')}
+                      className={`flex-1 py-1.5 rounded-lg font-semibold flex items-center justify-center gap-1 transition cursor-pointer ${
+                        authMethod === 'otp'
+                          ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-sm'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      <KeyRound className="w-3.5 h-3.5" />
+                      <span>SMS OTP</span>
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => setAuthMethod('biometric')}
-                    className={`flex-1 py-1 rounded-lg font-semibold flex items-center justify-center gap-1 transition cursor-pointer ${
+                    className={`flex-1 py-1.5 rounded-lg font-semibold flex items-center justify-center gap-1 transition cursor-pointer ${
                       authMethod === 'biometric'
-                        ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-sm'
+                        ? 'bg-gradient-to-r from-teal-600 to-emerald-600 text-white shadow-sm'
                         : 'text-slate-400 hover:text-white'
                     }`}
                   >
                     <Fingerprint className="w-3.5 h-3.5" />
                     <span>Touch ID</span>
+                  </button>
+                </div>
+              )}
+
+              {/* STAGE 1: Face ID biometric scanner */}
+              {stage === 'entering_otp' && authMethod === 'face_id' && (
+                <div className="py-4 px-3 bg-slate-950/95 rounded-2xl border border-purple-500/50 text-center space-y-3 relative overflow-hidden">
+                  <div className="relative w-24 h-24 mx-auto flex items-center justify-center">
+                    <div className="absolute inset-0 border-2 border-purple-500/60 rounded-2xl pointer-events-none" />
+                    <div className="absolute inset-2 border border-dashed border-cyan-400/60 rounded-xl animate-spin pointer-events-none" style={{ animationDuration: '6s' }} />
+                    <div className={`absolute inset-0 rounded-2xl transition-all duration-300 ${isScanningFace ? 'bg-purple-500/30' : 'bg-transparent'}`} />
+                    
+                    <button
+                      type="button"
+                      disabled={isScanningFace}
+                      onClick={handleScanFaceId}
+                      className="p-3.5 rounded-xl bg-gradient-to-tr from-purple-700 via-indigo-600 to-cyan-600 text-white shadow-[0_0_25px_rgba(168,85,247,0.6)] active:scale-95 hover:scale-105 transition cursor-pointer z-10"
+                      title="Tap to scan Face ID"
+                    >
+                      <ScanFace className={`w-9 h-9 ${isScanningFace ? 'animate-pulse text-cyan-200' : 'text-white'}`} />
+                    </button>
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="text-xs font-black text-white uppercase tracking-wider font-mono">
+                      {isScanningFace ? 'Verifying Cardholder Face...' : 'Face ID Recognition Ready'}
+                    </div>
+                    <p className="text-[10px] text-slate-300 max-w-[240px] mx-auto leading-relaxed">
+                      Confirm facial biometrics to authorize payment of {formatINR(txAmount)}.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    disabled={isScanningFace}
+                    onClick={handleScanFaceId}
+                    className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-cyan-600 hover:from-purple-500 hover:to-cyan-500 text-white font-bold text-xs shadow-lg transition active:scale-95 cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    <ScanFace className="w-4 h-4" />
+                    <span>{isScanningFace ? 'SCANNING FACE BIOMETRICS...' : 'CONFIRM FACE ID & UNLOCK'}</span>
                   </button>
                 </div>
               )}

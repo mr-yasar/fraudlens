@@ -39,6 +39,79 @@ class SoundEffectsEngine {
     return this.isMuted
   }
 
+  /** Dual-tone smartphone incoming SMS notification chime */
+  playAlert() {
+    const ctx = this._getAudioContext()
+    if (!ctx) return
+    try {
+      const notes = [1046.5, 1318.51] // C6 -> E6
+      notes.forEach((freq, idx) => {
+        const osc = ctx.createOscillator()
+        const gain = ctx.createGain()
+        osc.type = 'sine'
+        const startTime = ctx.currentTime + idx * 0.09
+        osc.frequency.setValueAtTime(freq, startTime)
+        gain.gain.setValueAtTime(0.08, startTime)
+        gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.28)
+        osc.connect(gain)
+        gain.connect(ctx.destination)
+        osc.start(startTime)
+        osc.stop(startTime + 0.28)
+      })
+    } catch {
+      // Audio failure ignored
+    }
+  }
+
+  /** Cyber shield scanning frequency pulse sweep */
+  playScanPulse() {
+    const ctx = this._getAudioContext()
+    if (!ctx) return
+    try {
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.type = 'triangle'
+      osc.frequency.setValueAtTime(340, ctx.currentTime)
+      osc.frequency.exponentialRampToValueAtTime(1180, ctx.currentTime + 0.25)
+      osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.5)
+
+      gain.gain.setValueAtTime(0.06, ctx.currentTime)
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.55)
+
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+      osc.start()
+      osc.stop(ctx.currentTime + 0.55)
+    } catch {
+      // Audio failure ignored
+    }
+  }
+
+  /** Tactile digital keypad digit entry click with pitch graduation */
+  playDigitType(index = 0) {
+    const ctx = this._getAudioContext()
+    if (!ctx) return
+    try {
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      const baseFreq = 680 + (index % 6) * 60
+
+      osc.type = 'sine'
+      osc.frequency.setValueAtTime(baseFreq, ctx.currentTime)
+      osc.frequency.exponentialRampToValueAtTime(baseFreq * 1.3, ctx.currentTime + 0.04)
+
+      gain.gain.setValueAtTime(0.05, ctx.currentTime)
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.04)
+
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+      osc.start()
+      osc.stop(ctx.currentTime + 0.04)
+    } catch {
+      // Audio failure ignored
+    }
+  }
+
   /** Subtle tactical blip on button hover or click */
   playBlip() {
     const ctx = this._getAudioContext()
