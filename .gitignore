@@ -72,9 +72,11 @@ ml/models/*.h5
 htmlcov/
 .pytest_cache/
 
+
 # Scratch & DB temporary files
 *.db-shm
 *.db-wal
+backend/backups/exports/*.xlsx
 scratch_*.py
 scratch/
 scratch_video_frames/

@@ -178,51 +178,97 @@ def generate_fig_5_2():
 # FIG 5.3: UML Use Case Diagram
 # ==============================================================================
 def generate_fig_5_3():
-    fig, ax = plt.subplots(figsize=(11, 7.2))
+    fig, ax = plt.subplots(figsize=(13.333, 7.5), dpi=300)
     ax.axis("off")
     ax.set_xlim(0, 100)
     ax.set_ylim(0, 100)
 
-    ax.text(50, 97, "Figure 5.3: UML Use Case Diagram for User Roles", 
-            ha="center", va="center", fontsize=14, fontweight="bold", color="#1e293b")
+    # Figure Caption / Title at Top
+    ax.text(50, 97.0, "Figure 5.3: UML Use Case Diagram for User Roles (Customer & Admin)", 
+            ha="center", va="center", fontsize=14, fontweight="bold", color="#0f172a")
 
-    # Boundary
-    system_box = patches.FancyBboxPatch((24, 6), 52, 86, boxstyle="round,pad=1", ec="#94a3b8", fc="#f8fafc", lw=1.5, ls="--")
+    # System Boundary Box
+    system_box = patches.FancyBboxPatch((21, 5), 58, 87, boxstyle="round,pad=1.0", 
+                                       ec="#475569", fc="#f8fafc", lw=1.8, ls="--", zorder=1)
     ax.add_patch(system_box)
-    ax.text(50, 89, "FraudLens AI Security System", ha="center", fontsize=11, fontweight="bold", color="#0f172a")
+    
+    # Boundary Header
+    ax.text(50, 89.5, "FraudLens AI - Autonomous Pre-Auth Fraud Prevention Platform", 
+            ha="center", va="center", fontsize=11.5, fontweight="bold", color="#1e3a8a",
+            bbox=dict(boxstyle="round,pad=0.4", fc="#eff6ff", ec="#93c5fd", lw=1.2), zorder=2)
 
-    # Use Cases
-    use_cases = [
-        (50, 80, "Initiate Pre-Auth Payment"),
-        (50, 69, "Receive & Verify SMS OTP"),
-        (50, 58, "View Account & Self-Ledger"),
-        (50, 47, "Inspect Real-Time Radar"),
-        (50, 36, "Adjudicate Fraud Cases"),
-        (50, 25, "Consult AI Forensic Copilot"),
-        (50, 14, "Model Registry & Audit Logs"),
+    def draw_actor(x, y, name, role):
+        head = patches.Circle((x, y + 6.0), 2.0, ec="#1e293b", fc="#ffffff", lw=2.2, zorder=6)
+        ax.add_patch(head)
+        ax.plot([x, x], [y + 4.0, y - 2.0], color="#1e293b", lw=2.2, zorder=6)
+        ax.plot([x - 3.2, x + 3.2], [y + 2.0, y + 2.0], color="#1e293b", lw=2.2, zorder=6)
+        ax.plot([x, x - 2.8], [y - 2.0, y - 7.5], color="#1e293b", lw=2.2, zorder=6)
+        ax.plot([x, x + 2.8], [y - 2.0, y - 7.5], color="#1e293b", lw=2.2, zorder=6)
+        ax.text(x, y - 10.5, name, ha="center", va="top", fontsize=11.5, fontweight="bold", color="#0f172a",
+                bbox=dict(boxstyle="round,pad=0.35", fc="#f8fafc", ec="#94a3b8", lw=1.2), zorder=6)
+        if role:
+            ax.text(x, y - 14.5, role, ha="center", va="top", fontsize=8.5, fontstyle="italic", color="#475569", zorder=6)
+
+    # Actors (Customer on Left, Admin on Right - Fraud Investigator removed)
+    draw_actor(10.5, 50, "Customer", "(Cardholder User)")
+    draw_actor(89.5, 50, "Admin", "(Security Administrator)")
+
+    # Customer Use Cases (left column cx=36)
+    customer_cases = [
+        (36.0, 78.5, 24.5, 7.2, "Initiate Pre-Auth Payment\n(Amount, Merchant, Device)"),
+        (36.0, 63.0, 24.5, 7.2, "Verify Step-Up SMS OTP\n(6-Digit Interactive Challenge)"),
+        (36.0, 48.0, 24.5, 7.2, "Inspect Live Pre-Flight\nFraud Score & Signals"),
+        (36.0, 33.0, 24.5, 7.2, "View Personal Balance &\nAtomic Transaction Ledger"),
+        (36.0, 18.0, 24.5, 7.2, "Access Cardholder Security\nCopilot & System Guide"),
     ]
 
-    for ux, uy, label in use_cases:
-        ellipse = patches.Ellipse((ux, uy), 42, 7.5, ec="#0284c7", fc="#e0f2fe", lw=1.2)
+    # Admin Use Cases (right column cx=64)
+    admin_cases = [
+        (64.0, 80.0, 25.0, 6.8, "Monitor Real-Time Radar &\nLive Transaction Feed"),
+        (64.0, 67.5, 25.0, 6.8, "Inspect TreeSHAP Risk\nAttribution & Explainability"),
+        (64.0, 54.5, 25.0, 6.8, "Adjudicate High-Risk Fraud &\nDispatch SAR Reports"),
+        (64.0, 41.5, 25.0, 6.8, "Query Conversational AI\nForensic Investigation Copilot"),
+        (64.0, 28.5, 25.0, 6.8, "Manage Model Registry &\nRetraining Tournament"),
+        (64.0, 15.5, 25.0, 6.8, "Audit Tamper-Evident System\nLogs & Hardware Fleet"),
+    ]
+
+    for cx, cy, w, h, txt in customer_cases:
+        ellipse = patches.Ellipse((cx, cy), w, h, ec="#0284c7", fc="#e0f2fe", lw=1.5, zorder=3)
         ax.add_patch(ellipse)
-        ax.text(ux, uy, label, ha="center", va="center", fontsize=8.5, fontweight="semibold", color="#0369a1")
+        ax.text(cx, cy, txt, ha="center", va="center", fontsize=8.2, fontweight="bold", color="#0369a1", zorder=4)
 
-    # Actor: Cardholder
-    ax.text(10, 68, "Cardholder /\nCustomer", ha="center", va="center", fontsize=9.5, fontweight="bold", color="#1e293b")
-    ax.annotate("", xy=(30, 80), xytext=(15, 68), arrowprops=dict(arrowstyle="-", lw=1.2, color="#475569"))
-    ax.annotate("", xy=(30, 69), xytext=(15, 68), arrowprops=dict(arrowstyle="-", lw=1.2, color="#475569"))
-    ax.annotate("", xy=(30, 58), xytext=(15, 68), arrowprops=dict(arrowstyle="-", lw=1.2, color="#475569"))
+    for cx, cy, w, h, txt in admin_cases:
+        ellipse = patches.Ellipse((cx, cy), w, h, ec="#4338ca", fc="#e0e7ff", lw=1.5, zorder=3)
+        ax.add_patch(ellipse)
+        ax.text(cx, cy, txt, ha="center", va="center", fontsize=8.0, fontweight="bold", color="#312e81", zorder=4)
 
-    # Actor: Fraud Investigator
-    ax.text(90, 42, "Fraud\nInvestigator", ha="center", va="center", fontsize=9.5, fontweight="bold", color="#1e293b")
-    ax.annotate("", xy=(70, 47), xytext=(85, 42), arrowprops=dict(arrowstyle="-", lw=1.2, color="#475569"))
-    ax.annotate("", xy=(70, 36), xytext=(85, 42), arrowprops=dict(arrowstyle="-", lw=1.2, color="#475569"))
-    ax.annotate("", xy=(70, 25), xytext=(85, 42), arrowprops=dict(arrowstyle="-", lw=1.2, color="#475569"))
+    c_anchor_x, c_anchor_y = 13.5, 52.0
+    for cx, cy, w, h, _ in customer_cases:
+        target_x = cx - w/2
+        target_y = cy
+        ax.annotate("", xy=(target_x, target_y), xytext=(c_anchor_x, c_anchor_y),
+                    arrowprops=dict(arrowstyle="-", lw=1.4, color="#0284c7", shrinkA=0, shrinkB=0), zorder=2)
 
-    # Actor: Security Administrator
-    ax.text(90, 18, "Security\nAdmin", ha="center", va="center", fontsize=9.5, fontweight="bold", color="#1e293b")
-    ax.annotate("", xy=(70, 14), xytext=(85, 18), arrowprops=dict(arrowstyle="-", lw=1.2, color="#475569"))
-    ax.annotate("", xy=(70, 25), xytext=(85, 18), arrowprops=dict(arrowstyle="-", lw=1.2, color="#475569"))
+    a_anchor_x, a_anchor_y = 86.5, 52.0
+    for cx, cy, w, h, _ in admin_cases:
+        target_x = cx + w/2
+        target_y = cy
+        ax.annotate("", xy=(target_x, target_y), xytext=(a_anchor_x, a_anchor_y),
+                    arrowprops=dict(arrowstyle="-", lw=1.4, color="#4338ca", shrinkA=0, shrinkB=0), zorder=2)
+
+    ax.annotate("", xy=(36.0, 66.8), xytext=(36.0, 74.8),
+                arrowprops=dict(arrowstyle="->", lw=1.3, ls="--", color="#0284c7"), zorder=5)
+    ax.text(36.0, 70.8, "<<extend>>\n[Risk > Threshold]", ha="center", va="center", fontsize=7.2, 
+            fontweight="bold", color="#0369a1", bbox=dict(boxstyle="square,pad=0.15", fc="#ffffff", ec="#93c5fd", lw=0.8), zorder=6)
+
+    ax.annotate("", xy=(64.0, 63.8), xytext=(64.0, 58.2),
+                arrowprops=dict(arrowstyle="->", lw=1.3, ls="--", color="#4338ca"), zorder=5)
+    ax.text(64.0, 61.0, "<<include>>", ha="center", va="center", fontsize=7.2, 
+            fontweight="bold", color="#312e81", bbox=dict(boxstyle="square,pad=0.15", fc="#ffffff", ec="#a5b4fc", lw=0.8), zorder=6)
+
+    ax.text(10.5, 12, "UML Actor Scope:\n• Customer (Cardholder User)\n• Admin (Security Operator)\n* Fraud Investigator removed per\n  consolidated 2-tier architecture.", 
+            ha="center", va="center", fontsize=7.6, color="#475569",
+            bbox=dict(boxstyle="round,pad=0.4", fc="#f8fafc", ec="#cbd5e1", lw=1.0), zorder=5)
 
     save_fig(fig, "fig_5_3_use_case_diagram.png")
 

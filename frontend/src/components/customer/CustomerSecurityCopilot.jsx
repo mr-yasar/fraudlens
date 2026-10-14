@@ -318,8 +318,8 @@ export default function CustomerSecurityCopilot({
   }, [customerPersona, customerName])
 
   // ── 2. STATE ──
-  const [isOpen, setIsOpen] = useState(Boolean(isOpenExternal))
-  const [isMaximized, setIsMaximized] = useState(Boolean(isInitiallyMaximized && isOpenExternal))
+  const [isOpen, setIsOpen] = useState(() => (typeof isOpenExternal === 'boolean' ? isOpenExternal : Boolean(isInitiallyMaximized)))
+  const [isMaximized, setIsMaximized] = useState(() => Boolean(isInitiallyMaximized || (isOpenExternal && isInitiallyMaximized)))
   const [isMinimizedPopup, setIsMinimizedPopup] = useState(false)
   const [viewState, setViewState] = useState('intro') // 'intro' | 'active'
   const [activeNavTab, setActiveNavTab] = useState('home')
@@ -388,24 +388,32 @@ export default function CustomerSecurityCopilot({
       setIsOpen(isOpenExternal)
       if (isOpenExternal) {
         setIsMinimizedPopup(false)
-        setIsMaximized(true)
+        if (isInitiallyMaximized) {
+          setIsMaximized(true)
+        }
       } else {
         setIsMaximized(false)
       }
     }
-  }, [isOpenExternal])
+  }, [isOpenExternal, isInitiallyMaximized])
 
   // Sync initial maximize
   useEffect(() => {
-    if (isInitiallyMaximized && isOpenExternal) {
+    if (isInitiallyMaximized) {
       setIsMaximized(true)
       setIsOpen(true)
     }
-  }, [isInitiallyMaximized, isOpenExternal])
+  }, [isInitiallyMaximized])
 
   const handleToggleMaximize = useCallback(() => {
-    setIsMaximized((prev) => !prev)
-  }, [])
+    setIsMaximized((prev) => {
+      const next = !prev
+      if (!next && onMinimizeExternal) {
+        onMinimizeExternal()
+      }
+      return next
+    })
+  }, [onMinimizeExternal])
 
   // Load real customer transactions
   useEffect(() => {

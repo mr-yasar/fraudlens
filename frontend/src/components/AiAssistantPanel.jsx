@@ -1171,6 +1171,10 @@ export default function AiAssistantPanel(props) {
       ? 'investigator'
       : 'customer')
 
+  if (props.currentView === 'ai-copilot') {
+    return null
+  }
+
   if (detectedRoleKey === 'admin') {
     return (
       <AdminInvestigationChatbot

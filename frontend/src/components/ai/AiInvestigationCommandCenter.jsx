@@ -915,9 +915,10 @@ export default function AiInvestigationCommandCenter(props) {
 
   if (isDetectedAdmin) {
     return (
-      <div className="w-full h-screen bg-[#040814] flex flex-col overflow-hidden">
+      <div className="w-full h-full min-h-[calc(100vh-4rem)] bg-[#040814] flex flex-col overflow-hidden relative">
         <AdminInvestigationChatbot
           user={props.user}
+          isOpenExternal={true}
           isInitiallyMaximized={true}
           onMinimizeExternal={props.onMinimize || (() => props.onNavigate?.('dashboard'))}
         />
@@ -927,9 +928,10 @@ export default function AiInvestigationCommandCenter(props) {
 
   if (isDetectedCustomer) {
     return (
-      <div className="min-h-screen bg-slate-100 flex flex-col">
+      <div className="w-full h-full min-h-[calc(100vh-4rem)] bg-[#07090f] flex flex-col overflow-hidden relative">
         <CustomerSecurityCopilot
           user={props.user}
+          isOpenExternal={true}
           isInitiallyMaximized={true}
           onMinimizeExternal={props.onMinimize || (() => props.onNavigate?.('dashboard'))}
         />

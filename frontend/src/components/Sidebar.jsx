@@ -81,7 +81,6 @@ export default function Sidebar({
       ].filter((item) => !isAdmin || (item.id !== 'payment' && item.id !== 'analyzer'))
 
   const systemNav = [
-    { id: 'audit-logs', label: 'Audit Trail & Compliance', icon: FileSpreadsheet },
     { id: 'settings', label: 'Platform Settings', icon: Settings },
   ]
 
@@ -261,7 +260,7 @@ export default function Sidebar({
             {!isCustomer && (
               <div>
                 <div className="px-3 mb-2 text-[10px] font-mono uppercase tracking-widest text-slate-400">
-                  Governance &amp; Logs
+                  System &amp; Settings
                 </div>
                 <ul className="space-y-1">
                   {systemNav.map((item) => {

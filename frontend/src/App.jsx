@@ -36,7 +36,6 @@ import ExplainableAiView from './components/ExplainableAiView'
 import InvestigationsView from './components/InvestigationsView'
 import ModelLabView from './components/ModelLabView'
 import DatasetHealthView from './components/DatasetHealthView'
-import AuditLogsView from './components/AuditLogsView'
 import SettingsView from './components/SettingsView'
 import LoginScene from './components/login/LoginScene'
 import SecurityUnlockTransition from './components/SecurityUnlockTransition'
@@ -104,6 +103,10 @@ function CommandCenterApp() {
 
   // Navigate to a new view — push current view into history
   const navigateTo = useCallback((view) => {
+    if (view === 'ai-copilot') {
+      setPreviousViewBeforeCopilot((prev) => (activeView !== 'ai-copilot' ? activeView : 'dashboard'))
+      setAiAssistantOpen(true)
+    }
     setActiveView((prev) => {
       if (prev !== view) {
         setNavHistory((h) => [...h, prev])
@@ -111,7 +114,7 @@ function CommandCenterApp() {
       return view
     })
     setMobileOpen(false)
-  }, [])
+  }, [activeView])
 
   const handleExpandToCommandCenter = useCallback(() => {
     setPreviousViewBeforeCopilot((prev) => (activeView !== 'ai-copilot' ? activeView : 'dashboard'))
@@ -130,9 +133,9 @@ function CommandCenterApp() {
     setAiAssistantOpen(true)
   }, [previousViewBeforeCopilot, navHistory, navigateTo])
 
-  // Guard payment gateway & analyzer: Admin never accesses Payment Gateway or Customer Analyzer
+  // Guard payment gateway & analyzer & audit logs: Admin never accesses Payment Gateway, Customer Analyzer, or removed Audit Logs
   useEffect(() => {
-    if (isAdmin && (activeView === 'payment' || activeView === 'analyzer')) {
+    if (isAdmin && (activeView === 'payment' || activeView === 'analyzer' || activeView === 'audit-logs')) {
       setActiveView('dashboard')
     }
   }, [isAdmin, activeView])
@@ -339,35 +342,32 @@ function CommandCenterApp() {
         }`}
       >
         {/* Responsive Sidebar Navigation */}
-        {activeView !== 'ai-copilot' && (
-          <ErrorBoundary onReset={() => setActiveView('dashboard')}>
-            <Sidebar
-              activeView={activeView}
-              setActiveView={navigateTo}
-              isAdmin={isAdmin}
-              user={user}
-              logout={handleTriggerLogout}
-              mobileOpen={mobileOpen}
-              setMobileOpen={setMobileOpen}
-              onOpenHowItWorks={() => setShowHowItWorks(true)}
-              onOpenManual={() => setShowHowItWorks(true)}
-              onOpenVoiceHelp={() => setShowHowItWorks(true)}
-              onSelectPersona={handleSelectPersona}
-            />
-          </ErrorBoundary>
-        )}
+        <ErrorBoundary onReset={() => setActiveView('dashboard')}>
+          <Sidebar
+            activeView={activeView}
+            setActiveView={navigateTo}
+            isAdmin={isAdmin}
+            user={user}
+            logout={handleTriggerLogout}
+            mobileOpen={mobileOpen}
+            setMobileOpen={setMobileOpen}
+            onOpenHowItWorks={() => setShowHowItWorks(true)}
+            onOpenManual={() => setShowHowItWorks(true)}
+            onOpenVoiceHelp={() => setShowHowItWorks(true)}
+            onSelectPersona={handleSelectPersona}
+          />
+        </ErrorBoundary>
 
         {/* Main Content Layout */}
         <div
           className={`flex-1 flex flex-col min-w-0 ${
-            activeView === 'ai-copilot' ? 'overflow-hidden h-screen' : 'overflow-y-auto'
+            activeView === 'ai-copilot' ? 'overflow-hidden' : 'overflow-y-auto'
           } transition-transform duration-500 ${
             isTransitioning ? 'translate-y-0.5' : 'translate-y-0'
           }`}
         >
           {/* Top Operational Navigation Bar (Clean, Minimal, Enterprise-Grade) */}
-          {activeView !== 'ai-copilot' && (
-            <header className="border-b border-slate-800/80 bg-slate-950/70 backdrop-blur-xl sticky top-0 z-30 px-4 sm:px-6 h-16 flex items-center justify-between">
+          <header className="border-b border-slate-800/80 bg-slate-950/70 backdrop-blur-xl sticky top-0 z-30 px-4 sm:px-6 h-16 flex items-center justify-between">
             {/* LEFT: Branding, Mobile Menu & Active View Context */}
             <div className="flex items-center gap-3 min-w-0">
               {/* Mobile sidebar toggle */}
@@ -489,10 +489,9 @@ function CommandCenterApp() {
               </button>
             </div>
           </header>
-        )}
 
           {/* Dynamic Page Views */}
-          <main className={activeView === 'ai-copilot' ? 'flex-1 overflow-hidden' : 'p-4 sm:p-6 lg:p-8 flex-1'}>
+          <main className={activeView === 'ai-copilot' ? 'flex-1 overflow-hidden p-0' : 'p-4 sm:p-6 lg:p-8 flex-1'}>
             <ErrorBoundary onReset={() => setActiveView('dashboard')}>
               {activeView === 'dashboard' && (
                 isPremium ? (
@@ -610,23 +609,17 @@ function CommandCenterApp() {
                 <DatasetHealthView user={user} isAdmin={isAdmin} />
               )}
 
-              {activeView === 'audit-logs' && (
-                <AuditLogsView />
-              )}
-
               {activeView === 'settings' && (
                 <SettingsView />
               )}
             </ErrorBoundary>
           </main>
 
-          {/* Footer (hidden in full-screen AI copilot workspace) */}
-          {activeView !== 'ai-copilot' && (
-            <footer className="border-t border-slate-800/80 py-3 px-6 bg-slate-950/80 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-2">
-              <div>FraudLens AI — Financial Fraud Detection &amp; Explainability Platform</div>
-              <div className="font-mono text-[11px]">29 Merchant Master Architecture • Real-Time AI</div>
-            </footer>
-          )}
+          {/* Footer */}
+          <footer className="border-t border-slate-800/80 py-3 px-6 bg-slate-950/80 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-2">
+            <div>FraudLens AI — Financial Fraud Detection &amp; Explainability Platform</div>
+            <div className="font-mono text-[11px]">29 Merchant Master Architecture • Real-Time AI</div>
+          </footer>
         </div>
       </div>
 

@@ -14,13 +14,38 @@ if (-not (Test-Path $psExe)) {
     if (-not (Test-Path $psExe)) { $psExe = "powershell" }
 }
 
-$pyExe = if (Test-Path ".venv\Scripts\python.exe") { Resolve-Path ".venv\Scripts\python.exe" } else { "python" }
+$pyExe = "$env:LOCALAPPDATA\Python\pythoncore-3.14-64\python.exe"
+if (-not (Test-Path $pyExe)) {
+    if (Test-Path ".venv\Scripts\python.exe") { 
+        $pyExe = Resolve-Path ".venv\Scripts\python.exe" 
+    } else { 
+        $pyExe = "python" 
+    }
+}
 
 # 1. Start Backend in separate window
 Write-Host "`n[1/2] Launching FastAPI Backend on http://127.0.0.1:8000 ..." -ForegroundColor Green
 Start-Process $psExe -WorkingDirectory $PSScriptRoot -ArgumentList "-NoExit", "-Command", "`$env:PYTHONPATH='.'; & '$pyExe' -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000 --reload"
 
-Start-Sleep -Seconds 3
+Write-Host "Waiting for backend ML models to warm up..." -ForegroundColor Gray
+$ready = $false
+for ($i = 0; $i -lt 15; $i++) {
+    try {
+        $res = Invoke-RestMethod -Uri "http://127.0.0.1:8000/api/v1/health" -TimeoutSec 2 -ErrorAction Stop
+        if ($res.status -eq "healthy") {
+            $ready = $true
+            break
+        }
+    } catch {
+        Start-Sleep -Seconds 1
+    }
+}
+
+if ($ready) {
+    Write-Host "Backend is healthy and models are ready!" -ForegroundColor Green
+} else {
+    Write-Host "Backend is still initializing, proceeding with frontend launch..." -ForegroundColor Yellow
+}
 
 # 2. Start Frontend in separate window
 Write-Host "[2/2] Launching React Vite Frontend on http://localhost:5173 ..." -ForegroundColor Green
