@@ -107,6 +107,10 @@ function CommandCenterApp() {
       setPreviousViewBeforeCopilot((prev) => (activeView !== 'ai-copilot' ? activeView : 'dashboard'))
       setAiAssistantOpen(true)
     }
+    if (view === 'live-monitor') {
+      // Clear target transaction so Live Monitor opens cleanly without any automatic popups
+      setTargetTxId(null)
+    }
     setActiveView((prev) => {
       if (prev !== view) {
         setNavHistory((h) => [...h, prev])
@@ -577,6 +581,7 @@ function CommandCenterApp() {
                   isAdmin={isAdmin}
                   initialTab={activeView === 'investigations' ? 'investigations' : 'monitor'}
                   initialTxId={targetTxId}
+                  onClearInitialTx={() => setTargetTxId(null)}
                   onViewExplanation={handleViewExplanation}
                 />
               )}
@@ -590,6 +595,7 @@ function CommandCenterApp() {
                   user={user}
                   isAdmin={isAdmin}
                   onViewExplanation={handleViewExplanation}
+                  onOpenInvestigation={handleOpenInvestigation}
                 />
               )}
 

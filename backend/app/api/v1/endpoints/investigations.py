@@ -66,7 +66,7 @@ def create_investigation(
                 detail="Access denied: You can only create investigation cases for your own transactions.",
             )
 
-    # 2. Prevent duplicate active investigations for same transaction
+    # 2. Prevent duplicate active investigations for same transaction — return existing case if active
     active_case = (
         db.query(Investigation)
         .filter(
@@ -76,9 +76,35 @@ def create_investigation(
         .first()
     )
     if active_case:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=f"An active investigation case ('{active_case.case_id}') already exists for transaction '{tx.transaction_id}'.",
+        inv_user = db.query(User).filter(User.id == active_case.investigator_id).first() if active_case.investigator_id else None
+        shap_recs = db.query(ShapExplanation).filter(ShapExplanation.transaction_id == tx.transaction_id).all()
+        shap_list = [{"feature_name": s.feature_name, "shap_value": s.shap_value, "impact": s.impact} for s in shap_recs]
+        return InvestigationDetailResponse(
+            id=active_case.id,
+            case_id=active_case.case_id,
+            transaction_id=active_case.transaction_id,
+            investigator_id=active_case.investigator_id,
+            investigator_name=inv_user.name if inv_user else None,
+            investigator_email=inv_user.email if inv_user else None,
+            status=active_case.status,
+            decision=active_case.decision,
+            notes=active_case.notes,
+            created_at=active_case.created_at,
+            updated_at=active_case.updated_at,
+            amount=float(tx.amount) if tx.amount else None,
+            risk_score=tx.risk_score,
+            risk_level=tx.risk_level,
+            prediction="FRAUD" if tx.prediction == 1 else "GENUINE",
+            customer_id=tx.customer_id,
+            fraud_probability=tx.fraud_probability,
+            top_shap_factors=shap_list,
+            transaction_details={
+                "merchant_category": tx.merchant_category,
+                "transaction_country": tx.transaction_country,
+                "device_type": tx.device_type,
+                "transaction_type": tx.transaction_type,
+                "transaction_hour": tx.transaction_hour,
+            },
         )
 
     # 3. Determine investigator assignment

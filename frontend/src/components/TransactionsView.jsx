@@ -19,7 +19,7 @@ import { getCustomerPersona } from '../utils/customerHelper'
 import GlobalCenterModal from './common/GlobalCenterModal'
 import ContextualModuleHelp from './common/ContextualModuleHelp'
 
-export default function TransactionsView({ onViewExplanation, user, isAdmin }) {
+export default function TransactionsView({ onViewExplanation, onOpenInvestigation, user, isAdmin }) {
   const customerPersona = getCustomerPersona(user) || {}
   const isCustomer = !isAdmin && Boolean(customerPersona.isCustomer)
 
@@ -79,16 +79,30 @@ export default function TransactionsView({ onViewExplanation, user, isAdmin }) {
     }
   }
 
-  const handleCreateCase = async (txId) => {
+  const handleInvestigate = async (txId) => {
     try {
-      const res = await investigationsApi.create({
-        transaction_id: txId,
-        notes: 'Case initiated from Transactions Command Panel',
-      })
-      setCaseMsg(`Case opened successfully: ${res.case_id}`)
-      setTimeout(() => setCaseMsg(null), 4000)
+      // Ensure case exists in backend (idempotent, returns existing case if already created)
+      try {
+        await investigationsApi.create({
+          transaction_id: txId,
+          notes: 'Case initiated from All Transactions Panel',
+        })
+      } catch (err) {
+        console.log('Case already active or initialized:', err)
+      }
+
+      // Smoothly navigate to the investigation case
+      if (onOpenInvestigation) {
+        onOpenInvestigation(txId)
+      } else {
+        setCaseMsg(`Investigation case ready for ${txId}`)
+        setTimeout(() => setCaseMsg(null), 3500)
+      }
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to open case')
+      console.error('Failed to open case:', err)
+      if (onOpenInvestigation) {
+        onOpenInvestigation(txId)
+      }
     }
   }
 
@@ -314,9 +328,10 @@ export default function TransactionsView({ onViewExplanation, user, isAdmin }) {
                           )}
                           {!isAdmin ? null : (
                             <button
-                              onClick={() => handleCreateCase(tx.transaction_id)}
-                              className="p-1.5 rounded-lg bg-rose-950/70 hover:bg-rose-900 border border-rose-800/80 text-rose-300 hover:text-white transition"
-                              title="Open Forensic Case"
+                              type="button"
+                              onClick={() => handleInvestigate(tx.transaction_id)}
+                              className="p-1.5 rounded-lg bg-rose-950/70 hover:bg-rose-900 border border-rose-800/80 text-rose-300 hover:text-white transition cursor-pointer"
+                              title="Investigate Transaction Case"
                             >
                               <ShieldAlert className="w-3.5 h-3.5" />
                             </button>

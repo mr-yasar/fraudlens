@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import {
   Radio,
   ShieldAlert,
@@ -49,6 +49,7 @@ export default function LiveMonitorAndInvestigationHub({
   isAdmin = false,
   initialTxId = null,
   initialCaseId = null,
+  onClearInitialTx = null,
   onViewExplanation = null,
 }) {
   const customerPersona = getCustomerPersona(user) || {}
@@ -163,15 +164,31 @@ export default function LiveMonitorAndInvestigationHub({
     }
   }, [isLiveStreaming, fetchData])
 
+  // Ref to ensure initialTxId is only consumed once on mount, never on background polling re-renders
+  const consumedTxIdRef = useRef(null)
+
   // Handle external navigation with initialTxId or initialCaseId
   useEffect(() => {
-    if (initialTxId && transactions.length > 0) {
+    if (initialTxId && consumedTxIdRef.current !== initialTxId) {
+      consumedTxIdRef.current = initialTxId
+
+      // Find match in current transactions or fetch directly
       const match = transactions.find((t) => t.transaction_id === initialTxId)
       if (match) {
         handleOpenInvestigation(match)
+      } else {
+        const token = getToken()
+        fetch(`/api/v1/transactions/${encodeURIComponent(initialTxId)}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        })
+          .then((res) => (res.ok ? res.json() : null))
+          .then((tx) => {
+            if (tx) handleOpenInvestigation(tx)
+          })
+          .catch(() => {})
       }
     }
-  }, [initialTxId, transactions])
+  }, [initialTxId])
 
   useEffect(() => {
     if (initialCaseId && cases.length > 0) {
@@ -183,7 +200,7 @@ export default function LiveMonitorAndInvestigationHub({
         }
       }
     }
-  }, [initialCaseId, cases, transactions])
+  }, [initialCaseId, cases])
 
   // Cross-reference transaction with active case
   const getLinkedCase = useCallback(
@@ -232,6 +249,7 @@ export default function LiveMonitorAndInvestigationHub({
     setSelectedTx(null)
     setActiveCase(null)
     setDecisionFeedback(null)
+    onClearInitialTx?.()
   }
 
   // Direct Adjudication & DB Persistence Handler (Fixes Confirm Fraud & Not Fraud)
