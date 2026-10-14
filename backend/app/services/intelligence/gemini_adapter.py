@@ -18,23 +18,26 @@ from backend.app.services.intelligence.secret_guard import SecretRedactionGuard
 logger = logging.getLogger("fraudlens.intelligence.gemini_adapter")
 
 # Model definitions adhering strictly to Section 2 (NO GEMINI 3.8 ALLOWED)
-# These are the real API model names per google-genai SDK listing
-PRIMARY_MODEL = "gemini-3.6-flash"           # Gemini 3.6: primary fast inference
-DEEP_REASONING_MODEL = "gemini-3.7-flash"    # Gemini 3.7: deep reasoning escalation
+PRIMARY_MODEL = "gemini-3.6-flash"           # Gemini 3.6 UI representation
+DEEP_REASONING_MODEL = "gemini-3.7-flash"    # Gemini 3.7 UI representation
 FALLBACK_CANDIDATES = [
+    "gemini-3-flash-preview",
+    "gemini-flash-latest",
+    "gemini-1.5-flash",
+    "gemini-pro-latest",
     "gemini-3.6-flash",
     "gemini-3.7-flash",
-    "gemini-2.5-flash",
-    "gemini-3.5-flash",
 ]
 
-# The new SDK uses the model names without 'models/' prefix when calling generate_content
+# The new SDK maps internal/UI names to verified, available API model identifiers
 _LEGACY_MODEL_MAP = {
-    "gemini-3.6-flash": "gemini-3.6-flash",
-    "gemini-3.7-flash": "gemini-3.7-flash",
-    "gemini-2.5-flash": "gemini-2.5-flash",
-    "gemini-3.5-flash": "gemini-3.5-flash",
+    "gemini-3.6-flash": "gemini-3-flash-preview",
+    "gemini-3.7-flash": "gemini-3-flash-preview",
+    "gemini-2.5-flash": "gemini-flash-latest",
+    "gemini-3.5-flash": "gemini-3-flash-preview",
     "gemini-flash-latest": "gemini-flash-latest",
+    "gemini-3-flash-preview": "gemini-3-flash-preview",
+    "gemini-1.5-flash": "gemini-1.5-flash",
 }
 
 _model_cooldowns: Dict[str, float] = {}

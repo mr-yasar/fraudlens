@@ -28,10 +28,10 @@ ENV_PATH = Path(__file__).resolve().parents[3] / ".env"
 # ─────────────────────────────────────────────────────────────────────────────
 # Real Gemini API model names (verified via google-genai SDK models list)
 GEMINI_MODELS_CASCADE = [
-    "gemini-3.6-flash",    # Primary — Gemini 3.6 (fast, confirmed available)
-    "gemini-3.7-flash",    # Deep reasoning escalation (confirmed available)
-    "gemini-2.5-flash",    # Intermediate fallback
-    "gemini-3.5-flash",    # Final safety fallback
+    "gemini-3-flash-preview",  # Verified working model in new google-genai SDK
+    "gemini-flash-latest",     # Fast production flash
+    "gemini-1.5-flash",        # Broad compatibility fallback
+    "gemini-pro-latest",       # Deep reasoning fallback
 ]
 
 _model_cooldowns: Dict[str, float] = {}
@@ -268,21 +268,16 @@ def _get_candidate_models_ordered() -> List[str]:
     _request_counter += 1
     now = time.time()
 
-    if _request_counter % ROTATION_INTERVAL == 0:
-        base_order = ["gemini-3.6-flash", "gemini-3.7-flash", "gemini-2.5-flash"]
-    else:
-        base_order = ["gemini-3.6-flash", "gemini-3.7-flash", "gemini-2.5-flash"]
-
     available = []
     cooling = []
-    for m in base_order:
+    for m in GEMINI_MODELS_CASCADE:
         cooldown_until = _model_cooldowns.get(m, 0)
         if now >= cooldown_until:
             available.append(m)
         else:
             cooling.append(m)
 
-    return available + cooling + ["gemini-3.5-flash"]
+    return available + cooling
 
 
 def _call_gemini(
@@ -601,24 +596,39 @@ def verify_gemini_key() -> Dict[str, Any]:
             "configured": False,
             "message": "GEMINI_API_KEY is not configured in .env",
         }
+    candidates = ["gemini-3-flash-preview", "gemini-flash-latest", "gemini-1.5-flash", "gemini-pro-latest"]
     # Try new SDK first
     try:
         from google import genai as new_genai  # type: ignore
         from google.genai import types as genai_types  # type: ignore
         client = new_genai.Client(api_key=gemini_key)
-        resp = client.models.generate_content(
-            model="gemini-3.6-flash",
-            contents="Ping",
-            config=genai_types.GenerateContentConfig(max_output_tokens=5),
-        )
-        return {
-            "success": True,
-            "configured": True,
-            "valid": True,
-            "model": "gemini-3.6-flash",
-            "sdk": "google-genai",
-            "message": "Google Gemini API key is valid, connected, and active! (gemini-3.6-flash)",
-        }
+        last_new_err = None
+        for cand in candidates:
+            try:
+                resp = client.models.generate_content(
+                    model=cand,
+                    contents="Ping",
+                    config=genai_types.GenerateContentConfig(max_output_tokens=5),
+                )
+                if resp:
+                    return {
+                        "success": True,
+                        "configured": True,
+                        "valid": True,
+                        "model": cand,
+                        "sdk": "google-genai",
+                        "message": f"Google Gemini API key is valid, connected, and active! ({cand})",
+                    }
+            except Exception as e:
+                last_new_err = e
+                continue
+        if last_new_err:
+            return {
+                "success": False,
+                "configured": True,
+                "valid": False,
+                "message": f"Gemini API check (new SDK): {last_new_err}",
+            }
     except ImportError:
         pass
     except Exception as exc:
@@ -632,15 +642,27 @@ def verify_gemini_key() -> Dict[str, Any]:
     try:
         import google.generativeai as genai  # type: ignore
         genai.configure(api_key=gemini_key)
-        model = genai.GenerativeModel("gemini-3.6-flash")
-        model.generate_content("Ping", generation_config={"max_output_tokens": 5})
+        last_leg_err = None
+        for cand in candidates:
+            try:
+                model = genai.GenerativeModel(cand)
+                model.generate_content("Ping", generation_config={"max_output_tokens": 5})
+                return {
+                    "success": True,
+                    "configured": True,
+                    "valid": True,
+                    "model": cand,
+                    "sdk": "google-generativeai (legacy)",
+                    "message": f"Google Gemini API key is valid and active! ({cand}, legacy SDK)",
+                }
+            except Exception as e:
+                last_leg_err = e
+                continue
         return {
-            "success": True,
+            "success": False,
             "configured": True,
-            "valid": True,
-            "model": "gemini-3.6-flash",
-            "sdk": "google-generativeai (legacy)",
-            "message": "Google Gemini API key is valid and active! (gemini-3.6-flash, legacy SDK)",
+            "valid": False,
+            "message": f"Gemini API check (legacy SDK): {last_leg_err}",
         }
     except Exception as exc:
         return {

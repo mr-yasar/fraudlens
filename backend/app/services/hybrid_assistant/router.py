@@ -147,9 +147,83 @@ def route_and_execute_query(
         )
 
     # ─────────────────────────────────────────────────────────────────────────
+    # STEP 2.5: NATURAL CONVERSATIONAL INTELLIGENCE & GREETINGS (Phase 02)
+    # ─────────────────────────────────────────────────────────────────────────
+    from backend.app.services.hybrid_assistant.conversational_service import try_handle_conversational_query
+    conversational_res = try_handle_conversational_query(
+        query=query,
+        identity=identity,
+        conversation_context=conversation_context,
+    )
+    if conversational_res:
+        latency = round((time.time() - start_time) * 1000, 2)
+        telemetry_service.record_interaction(
+            query=query,
+            route=conversational_res.debug_routing.get("route", "CONVERSATIONAL"),
+            intent=conversational_res.debug_routing.get("route", "CONVERSATIONAL"),
+            confidence=0.99,
+            latency_ms=latency,
+        )
+        return conversational_res
+
+    # ─────────────────────────────────────────────────────────────────────────
     # STEP 3: ENTITY EXTRACTION & LIVE INVESTIGATION TOOL ROUTING (Phase 13)
     # ─────────────────────────────────────────────────────────────────────────
     entities = extract_entities(query, conversation_context)
+
+    # 3-Verification: "How can I verify that?" / "How to verify?"
+    if any(k in norm_query for k in ["how can i verify", "how do i verify", "how to verify", "how to verify that", "how can we verify"]):
+        ctx_tx = (conversation_context or {}).get("last_transaction_id")
+        latency = round((time.time() - start_time) * 1000, 2)
+        verification_text = (
+            f"### 🔍 Verification Protocol{' for `' + str(ctx_tx) + '`' if ctx_tx else ''}\n\n"
+            "To verify the authenticity of this transaction and assess risk indicators, follow these steps:\n\n"
+            "1. **Cardholder Device Baselines**: Compare the originating device fingerprint and user-agent against enrolled trusted devices.\n"
+            "2. **Geo-Velocity & IP Trajectory**: Check whether the IP geolocation hop is physically possible within the elapsed time window.\n"
+            "3. **3DS / Mobile OTP Challenge Status**: Verify if the 6-digit SMS OTP challenge was triggered and successfully validated.\n"
+            "4. **Merchant Category Pattern**: Check if the merchant category matches the customer's historical spending baseline.\n"
+            "5. **Direct Customer Confirmation**: Ask the customer to review the transaction in their portal or confirm via verified banking SMS."
+        )
+        return AssistantResponseEnvelope(
+            response_type=ResponseCardType.NEXT_STEP.value,
+            answer=verification_text,
+            evidence_refs=["security/verification_guidelines", "compliance/audit_trail"],
+            follow_up_suggestions=[
+                f"Explain {ctx_tx}" if ctx_tx else "Show my recent transactions",
+                "What is risk score?",
+                "Which ML models are used?",
+            ],
+            confidence=0.98,
+            source_type=RouteType.PREDEFINED,
+            structured_card={"card_type": "verification_protocol", "transaction_id": ctx_tx},
+            debug_routing={"route": "CONVERSATIONAL_VERIFICATION", "latency_ms": latency},
+        )
+
+    # 3-Ambiguity Clarification: Transaction question without a specific transaction ID
+    if not entities.transaction_ids and any(k in norm_query for k in [
+        "why is this transaction", "why is the transaction", "why this transaction",
+        "explain this transaction", "explain the transaction", "tell me what happened here",
+        "why is it risky", "why is it considered risky", "why is this risky", "why was it flagged"
+    ]):
+        latency = round((time.time() - start_time) * 1000, 2)
+        clarification_text = (
+            "Which transaction would you like me to analyze? Please provide the **Transaction ID** "
+            "(for example, `TX_MONISHA_1042`), or ask me to *'show my recent transactions'* so you can select one."
+        )
+        return AssistantResponseEnvelope(
+            response_type=ResponseCardType.GENERAL_CARD.value,
+            answer=clarification_text,
+            evidence_refs=["registry/transaction_index"],
+            follow_up_suggestions=[
+                "Show my recent transactions",
+                "Highest-risk transactions today",
+                "Why was OTP required on my payment?",
+            ],
+            confidence=0.98,
+            source_type=RouteType.PREDEFINED,
+            structured_card={"card_type": "transaction_clarification"},
+            debug_routing={"route": "CLARIFICATION_PROMPT", "latency_ms": latency},
+        )
 
     # 3A. Specific Transaction Inquiry / Explanation
     if entities.transaction_ids:

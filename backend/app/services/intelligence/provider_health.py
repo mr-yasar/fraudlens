@@ -28,7 +28,7 @@ class ProviderHealthTracker:
     _cooldowns: Dict[str, float] = {}
     _statuses: Dict[str, ProviderStatus] = {
         "gemini": ProviderStatus.HEALTHY,
-        "grok": ProviderStatus.CREDIT_EXHAUSTED,  # xAI key has 0 prepaid credits
+        "grok": ProviderStatus.HEALTHY,
         "mistral": ProviderStatus.HEALTHY,
     }
     _last_errors: Dict[str, str] = {}

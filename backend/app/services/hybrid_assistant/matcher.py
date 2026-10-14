@@ -89,9 +89,11 @@ def score_query_against_record(norm_query: str, record: PredefinedAnswerRecord) 
         norm_ex = normalize_query_text(ex)
         if norm_query == norm_ex:
             return 1.0
-        # Substring / exact containment
-        if norm_query in norm_ex or norm_ex in norm_query:
+        # Multi-word phrase containment (require at least 3 tokens or regex word-boundary phrase match)
+        if len(query_tokens) >= 3 and (norm_query in norm_ex or norm_ex in norm_query):
             best_score = max(best_score, 0.90)
+        elif len(query_tokens) >= 2 and re.search(rf"\b{re.escape(norm_query)}\b", norm_ex):
+            best_score = max(best_score, 0.88)
         # Jaccard token score
         ex_tokens = _tokenize(norm_ex)
         jaccard = _compute_jaccard_similarity(query_tokens, ex_tokens)
@@ -104,7 +106,7 @@ def score_query_against_record(norm_query: str, record: PredefinedAnswerRecord) 
         norm_syn = normalize_query_text(syn)
         if norm_query == norm_syn:
             return 0.98
-        if norm_syn in norm_query:
+        if len(query_tokens) >= 2 and norm_syn in norm_query:
             best_score = max(best_score, 0.88)
         syn_tokens = _tokenize(norm_syn)
         jaccard = _compute_jaccard_similarity(query_tokens, syn_tokens)

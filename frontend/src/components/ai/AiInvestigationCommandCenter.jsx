@@ -154,6 +154,7 @@ function InvestigatorCommandCenter({
   ])
 
   const [inputText, setInputText] = useState('')
+  const [sessionId] = useState(() => 'session_' + Math.random().toString(36).substring(2, 9))
   const [loading, setLoading] = useState(false)
   const [isSpeaking, setIsSpeaking] = useState(false)
   const [speakingMsgId, setSpeakingMsgId] = useState(null)
@@ -286,9 +287,16 @@ function InvestigatorCommandCenter({
           body: JSON.stringify({
             messages: historyForApi,
             provider: provider === 'auto' ? null : provider,
+            session_id: sessionId,
+            role: user?.role || (isAdmin ? 'admin' : 'investigator'),
             context: selectedCase
               ? `Account: ${selectedCase.account_label || selectedCase.id} | Anomaly: ${selectedCase.anomaly || 'Velocity Burst'} | Risk Score: ${selectedCase.riskScore || 70}`
               : 'General Fraud Investigation',
+            ui_context: {
+              current_view: 'ai-copilot',
+              case_id: selectedCase?.id,
+              account_label: selectedCase?.account_label,
+            },
           }),
         })
 

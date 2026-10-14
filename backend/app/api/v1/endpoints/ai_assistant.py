@@ -312,9 +312,34 @@ def ai_chat(
 
     from backend.app.services.hybrid_assistant import route_and_execute_query, RouteType
 
+    # Extract conversation context from UI context and previous conversation turns
+    last_tx_id = (payload.ui_context.get("transaction_id") if payload.ui_context else None) or (context_str if "TX" in context_str else None)
+    last_cust_id = (payload.ui_context.get("customer_id") if payload.ui_context else None)
+    last_case_id = (payload.ui_context.get("case_id") if payload.ui_context else None)
+
+    # Scan previous turns in payload.messages to inherit referenced transaction or customer
+    if len(payload.messages) > 1:
+        for prev_msg in reversed(payload.messages[:-1]):
+            txt = prev_msg.content or ""
+            if not last_tx_id:
+                tx_m = re.search(r"\b(TX(?:N)?(?:_|-)?(?:[A-Za-z0-9_]{3,36}))\b", txt, re.IGNORECASE)
+                if tx_m:
+                    last_tx_id = tx_m.group(1).upper()
+            if not last_cust_id:
+                cust_m = re.search(r"\b(CUST(?:_|-)?(?:[A-Za-z0-9_]{3,24}))\b", txt, re.IGNORECASE)
+                if cust_m:
+                    last_cust_id = cust_m.group(1).upper()
+            if not last_case_id:
+                case_m = re.search(r"\b(CASE(?:_|-)?(?:[A-Za-z0-9_]{3,24}))\b", txt, re.IGNORECASE)
+                if case_m:
+                    last_case_id = case_m.group(1).upper()
+
     conversation_context = {
-        "last_transaction_id": payload.ui_context.get("transaction_id") if payload.ui_context else None,
-        "current_tx_id": context_str if "TX" in context_str else None,
+        "last_transaction_id": last_tx_id,
+        "last_customer_id": last_cust_id,
+        "last_case_id": last_case_id,
+        "current_tx_id": last_tx_id,
+        "recent_messages": messages,
     }
 
     hybrid_envelope = route_and_execute_query(

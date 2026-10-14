@@ -58,7 +58,7 @@ SYNONYM_REPLACEMENTS = {
 TX_PATTERN = re.compile(r"\b(TX(?:N)?(?:_|-)?(?:[A-Za-z0-9_]{3,36}))\b", re.IGNORECASE)
 CUST_ID_PATTERN = re.compile(r"\b(CUST(?:_|-)?(?:[A-Za-z0-9_]{3,24}))\b", re.IGNORECASE)
 CASE_ID_PATTERN = re.compile(r"\b(CASE(?:_|-)?(?:[A-Za-z0-9_]{3,24}))\b", re.IGNORECASE)
-KNOWN_CUSTOMERS = ["monisha", "mohana", "sowmiya"]
+KNOWN_CUSTOMERS = ["monisha", "mohana", "sowmiya", "ajay"]
 KNOWN_MERCHANTS = [
     "novamart fresh", "dailymart supermarket", "naturebasket",
     "circuitbay electronics", "electroworld", "techgizmo",

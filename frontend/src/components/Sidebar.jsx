@@ -55,8 +55,6 @@ export default function Sidebar({
         { id: 'fleet-security', label: 'Fleet & Device Security', icon: Radio, isHighlight: true },
         { id: 'payment', label: 'Payment Gateway', icon: CreditCard, isHighlight: true },
         { id: 'live-monitor', label: 'Live Transaction Radar', icon: Radio, isHighlight: true },
-        { id: 'security-alerts', label: 'Security Alerts', icon: ShieldAlert },
-        { id: 'audit-trail', label: 'Compliance Audit Trail', icon: FileSpreadsheet },
         { id: 'ai-copilot', label: 'AI Security Assistant', icon: Bot, isHighlight: true },
       ]
     : isCustomer

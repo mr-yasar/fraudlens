@@ -153,45 +153,6 @@ const MODULE_INTEL = {
       'Produces full compliance logs for banking and audit teams.',
     ],
   },
-  'security-alerts': {
-    title: 'Security Alerts',
-    badge: 'INCIDENT RESPONSE',
-    accent: '#ef4444',
-    features: ['Severity Ranked', '1-Click Resolve', 'Live Push'],
-    description: [
-      'Early warning system for critical security events.',
-      'Highlights unauthorized logins, velocity spikes, and anomalies.',
-      'Clear explanations tell you exactly why each alert fired.',
-      'Acknowledge alerts and jump directly into linked transactions.',
-      'Protects your account before any financial damage occurs.',
-    ],
-  },
-  'audit-trail': {
-    title: 'Compliance Audit Trail',
-    badge: 'IMMUTABLE LOGS',
-    accent: '#10b981',
-    features: ['SHA-256 Sealed', 'Non-Repudiation', 'ISO 27001'],
-    description: [
-      'Tamper-proof permanent record of all account actions.',
-      'Every login, payment, and security change is timestamped.',
-      'Secured by SHA-256 cryptographic hashes for non-repudiation.',
-      'Meets international banking compliance and audit standards.',
-      'Guarantees full transparency and verifiable legal safety.',
-    ],
-  },
-  'audit-logs': {
-    title: 'Compliance Audit Trail',
-    badge: 'IMMUTABLE LOGS',
-    accent: '#10b981',
-    features: ['SHA-256 Sealed', 'Non-Repudiation', 'ISO 27001'],
-    description: [
-      'Tamper-proof permanent record of all account actions.',
-      'Every login, payment, and security change is timestamped.',
-      'Secured by SHA-256 cryptographic hashes for non-repudiation.',
-      'Meets international banking compliance and audit standards.',
-      'Guarantees full transparency and verifiable legal safety.',
-    ],
-  },
   'ai-copilot': {
     title: 'AI Security Assistant',
     badge: 'FINTECH AGENT',
@@ -275,8 +236,6 @@ const MODULE_INTEL = {
 // Aliases for sub-views and routes
 MODULE_INTEL['premium-devices'] = MODULE_INTEL['fleet-security']
 MODULE_INTEL['premium-sessions'] = MODULE_INTEL['fleet-security']
-MODULE_INTEL['premium-alerts'] = MODULE_INTEL['security-alerts']
-MODULE_INTEL['premium-audit'] = MODULE_INTEL['audit-trail']
 MODULE_INTEL['admin-models'] = MODULE_INTEL['model-lab']
 MODULE_INTEL['admin-dataset'] = MODULE_INTEL['dataset-health']
 MODULE_INTEL['admin-ml'] = MODULE_INTEL['model-lab']
@@ -737,32 +696,6 @@ export default function ModuleInfoExplainer({
             ctx.fill()
             ctx.shadowBlur = 0
           }
-          break
-        }
-
-        case 'security-alerts': {
-          // Acoustic Threat Sonar with Expanding Danger Polygons
-          const cx = width / 2
-          const cy = height * 0.5
-          for (let i = 0; i < 4; i++) {
-            const wave = (t * 0.9 + i * 0.25) % 1
-            const r = wave * 130
-            ctx.beginPath()
-            ctx.arc(cx, cy, r, 0, Math.PI * 2)
-            ctx.strokeStyle = `rgba(239, 68, 68, ${Math.max(0, 0.6 - wave * 0.6)})`
-            ctx.lineWidth = 2.5
-            ctx.stroke()
-          }
-
-          // Center Pulsating Red Danger Core
-          const beaconSize = 15 + Math.sin(t * 4) * 4
-          ctx.beginPath()
-          ctx.arc(cx, cy, beaconSize, 0, Math.PI * 2)
-          ctx.fillStyle = 'rgba(239, 68, 68, 0.9)'
-          ctx.shadowColor = '#ef4444'
-          ctx.shadowBlur = 25
-          ctx.fill()
-          ctx.shadowBlur = 0
           break
         }
 

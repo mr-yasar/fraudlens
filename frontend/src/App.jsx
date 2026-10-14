@@ -46,8 +46,6 @@ import PremiumSecurityDashboard from './components/premium/PremiumSecurityDashbo
 import PremiumTransactionCenter from './components/premium/PremiumTransactionCenter'
 import PremiumSecurityCenter from './components/premium/PremiumSecurityCenter'
 import PremiumDeviceSecurity from './components/premium/PremiumDeviceSecurity'
-import PremiumAlertCenter from './components/premium/PremiumAlertCenter'
-import PremiumAuditTrail from './components/premium/PremiumAuditTrail'
 import FleetSecurityView from './components/FleetSecurityView'
 import PersonalizedWelcomeOverlay from './components/common/PersonalizedWelcomeOverlay'
 import LogoutConfirmModal from './components/common/LogoutConfirmModal'
@@ -105,7 +103,7 @@ function CommandCenterApp() {
   const navigateTo = useCallback((view) => {
     if (view === 'ai-copilot') {
       setPreviousViewBeforeCopilot((prev) => (activeView !== 'ai-copilot' ? activeView : 'dashboard'))
-      setAiAssistantOpen(true)
+      setAiAssistantOpen(false)
     }
     if (view === 'live-monitor') {
       // Clear target transaction & case so Live Monitor opens cleanly without any automatic popups
@@ -138,16 +136,19 @@ function CommandCenterApp() {
     setAiAssistantOpen(true)
   }, [previousViewBeforeCopilot, navHistory, navigateTo])
 
-  // Guard payment gateway, analyzer & audit trail: Admin never accesses Payment Gateway, Customer Analyzer, or removed Audit Trail
+  // Guard removed modules: neither Admin nor Customers (including Ajay) can access removed Security Alerts or Compliance Audit Trail
   useEffect(() => {
-    if (
-      isAdmin &&
-      (activeView === 'payment' ||
-        activeView === 'analyzer' ||
-        activeView === 'audit-logs' ||
-        activeView === 'audit-trail' ||
-        activeView === 'premium-audit')
-    ) {
+    const isRemovedModule =
+      activeView === 'security-alerts' ||
+      activeView === 'alerts' ||
+      activeView === 'premium-alerts' ||
+      activeView === 'audit-trail' ||
+      activeView === 'premium-audit' ||
+      activeView === 'audit-logs'
+
+    if (isRemovedModule) {
+      setActiveView('dashboard')
+    } else if (isAdmin && (activeView === 'payment' || activeView === 'analyzer')) {
       setActiveView('dashboard')
     }
   }, [isAdmin, activeView])
@@ -540,18 +541,6 @@ function CommandCenterApp() {
                 <FleetSecurityView
                   user={user}
                   isAdmin={isAdmin}
-                />
-              )}
-
-              {(activeView === 'security-alerts' || activeView === 'premium-alerts') && (
-                <PremiumAlertCenter
-                  user={user}
-                />
-              )}
-
-              {(activeView === 'audit-trail' || activeView === 'premium-audit') && !isAdmin && (
-                <PremiumAuditTrail
-                  user={user}
                 />
               )}
 
