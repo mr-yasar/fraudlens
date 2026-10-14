@@ -164,43 +164,73 @@ export default function LiveMonitorAndInvestigationHub({
     }
   }, [isLiveStreaming, fetchData])
 
-  // Ref to ensure initialTxId is only consumed once on mount, never on background polling re-renders
+  // Refs to ensure initialTxId and initialCaseId are consumed exactly once per user intent
   const consumedTxIdRef = useRef(null)
+  const consumedCaseIdRef = useRef(null)
 
-  // Handle external navigation with initialTxId or initialCaseId
+  // Handle external navigation with initialTxId
   useEffect(() => {
-    if (initialTxId && consumedTxIdRef.current !== initialTxId) {
-      consumedTxIdRef.current = initialTxId
+    if (!initialTxId) {
+      consumedTxIdRef.current = null
+      return
+    }
+    if (consumedTxIdRef.current === initialTxId) return
+    consumedTxIdRef.current = initialTxId
 
-      // Find match in current transactions or fetch directly
-      const match = transactions.find((t) => t.transaction_id === initialTxId)
-      if (match) {
-        handleOpenInvestigation(match)
-      } else {
-        const token = getToken()
-        fetch(`/api/v1/transactions/${encodeURIComponent(initialTxId)}`, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
+    // Find match in current transactions or fetch directly
+    const match = transactions.find((t) => t.transaction_id === initialTxId)
+    if (match) {
+      handleOpenInvestigation(match)
+      onClearInitialTx?.()
+    } else {
+      const token = getToken()
+      fetch(`/api/v1/transactions/${encodeURIComponent(initialTxId)}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((tx) => {
+          if (tx) handleOpenInvestigation(tx)
+          onClearInitialTx?.()
         })
-          .then((res) => (res.ok ? res.json() : null))
-          .then((tx) => {
-            if (tx) handleOpenInvestigation(tx)
-          })
-          .catch(() => {})
-      }
+        .catch(() => {
+          onClearInitialTx?.()
+        })
     }
-  }, [initialTxId])
+  }, [initialTxId, onClearInitialTx])
 
+  // Handle external navigation with initialCaseId
   useEffect(() => {
-    if (initialCaseId && cases.length > 0) {
-      const matchCase = cases.find((c) => c.case_id === initialCaseId)
-      if (matchCase) {
-        const matchTx = transactions.find((t) => t.transaction_id === matchCase.transaction_id)
-        if (matchTx) {
-          handleOpenInvestigation(matchTx)
-        }
-      }
+    if (!initialCaseId) {
+      consumedCaseIdRef.current = null
+      return
     }
-  }, [initialCaseId, cases])
+    if (consumedCaseIdRef.current === initialCaseId) return
+    consumedCaseIdRef.current = initialCaseId
+
+    const token = getToken()
+    investigationsApi
+      .get(initialCaseId)
+      .then((caseDetail) => {
+        if (caseDetail && caseDetail.transaction_id) {
+          return fetch(`/api/v1/transactions/${encodeURIComponent(caseDetail.transaction_id)}`, {
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+          })
+            .then((res) => (res.ok ? res.json() : null))
+            .then((tx) => {
+              if (tx) {
+                setSelectedTx(tx)
+                setActiveCase(caseDetail)
+                setInvestigatorNotes(caseDetail.notes || '')
+              }
+              onClearInitialTx?.()
+            })
+        }
+        onClearInitialTx?.()
+      })
+      .catch(() => {
+        onClearInitialTx?.()
+      })
+  }, [initialCaseId, onClearInitialTx])
 
   // Cross-reference transaction with active case
   const getLinkedCase = useCallback(
@@ -210,8 +240,9 @@ export default function LiveMonitorAndInvestigationHub({
     [cases]
   )
 
-  // Open Investigation Panel for a transaction
+  // Open Investigation Panel for a transaction (strictly on user click or explicit external navigation)
   const handleOpenInvestigation = async (tx) => {
+    if (!tx) return
     setSelectedTx(tx)
     setDecisionFeedback(null)
     setInvestigatorNotes('')
@@ -249,6 +280,8 @@ export default function LiveMonitorAndInvestigationHub({
     setSelectedTx(null)
     setActiveCase(null)
     setDecisionFeedback(null)
+    consumedTxIdRef.current = null
+    consumedCaseIdRef.current = null
     onClearInitialTx?.()
   }
 

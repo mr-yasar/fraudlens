@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import desc, asc, or_, func
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import IntegrityError
 
 from backend.app.core.database import get_db
 from backend.app.models.user import User
@@ -34,6 +35,44 @@ from backend.app.schemas.investigation import (
 )
 
 router = APIRouter()
+
+
+def _build_investigation_detail(
+    inv: Investigation,
+    tx: Optional[Transaction],
+    db: Session,
+) -> InvestigationDetailResponse:
+    """Build standardized InvestigationDetailResponse for a case and linked transaction."""
+    inv_user = db.query(User).filter(User.id == inv.investigator_id).first() if inv.investigator_id else None
+    shap_recs = db.query(ShapExplanation).filter(ShapExplanation.transaction_id == inv.transaction_id).all() if tx else []
+    shap_list = [{"feature_name": s.feature_name, "shap_value": s.shap_value, "impact": s.impact} for s in shap_recs]
+    return InvestigationDetailResponse(
+        id=inv.id,
+        case_id=inv.case_id,
+        transaction_id=inv.transaction_id,
+        investigator_id=inv.investigator_id,
+        investigator_name=inv_user.name if inv_user else None,
+        investigator_email=inv_user.email if inv_user else None,
+        status=inv.status,
+        decision=inv.decision,
+        notes=inv.notes,
+        created_at=inv.created_at,
+        updated_at=inv.updated_at,
+        amount=float(tx.amount) if tx and tx.amount else None,
+        risk_score=tx.risk_score if tx else None,
+        risk_level=tx.risk_level if tx else None,
+        prediction="FRAUD" if tx and tx.prediction == 1 else "GENUINE" if tx else None,
+        customer_id=tx.customer_id if tx else None,
+        fraud_probability=tx.fraud_probability if tx else None,
+        top_shap_factors=shap_list,
+        transaction_details={
+            "merchant_category": tx.merchant_category if tx else None,
+            "transaction_country": tx.transaction_country if tx else None,
+            "device_type": tx.device_type if tx else None,
+            "transaction_type": tx.transaction_type if tx else None,
+            "transaction_hour": tx.transaction_hour if tx else None,
+        } if tx else None,
+    )
 
 
 @router.post(
@@ -66,8 +105,8 @@ def create_investigation(
                 detail="Access denied: You can only create investigation cases for your own transactions.",
             )
 
-    # 2. Prevent duplicate active investigations for same transaction — return existing case if active
-    active_case = (
+    # 2. Prevent duplicate active investigations for same transaction — return existing case if active or previously opened
+    existing_case = (
         db.query(Investigation)
         .filter(
             Investigation.transaction_id == tx.transaction_id,
@@ -75,37 +114,15 @@ def create_investigation(
         )
         .first()
     )
-    if active_case:
-        inv_user = db.query(User).filter(User.id == active_case.investigator_id).first() if active_case.investigator_id else None
-        shap_recs = db.query(ShapExplanation).filter(ShapExplanation.transaction_id == tx.transaction_id).all()
-        shap_list = [{"feature_name": s.feature_name, "shap_value": s.shap_value, "impact": s.impact} for s in shap_recs]
-        return InvestigationDetailResponse(
-            id=active_case.id,
-            case_id=active_case.case_id,
-            transaction_id=active_case.transaction_id,
-            investigator_id=active_case.investigator_id,
-            investigator_name=inv_user.name if inv_user else None,
-            investigator_email=inv_user.email if inv_user else None,
-            status=active_case.status,
-            decision=active_case.decision,
-            notes=active_case.notes,
-            created_at=active_case.created_at,
-            updated_at=active_case.updated_at,
-            amount=float(tx.amount) if tx.amount else None,
-            risk_score=tx.risk_score,
-            risk_level=tx.risk_level,
-            prediction="FRAUD" if tx.prediction == 1 else "GENUINE",
-            customer_id=tx.customer_id,
-            fraud_probability=tx.fraud_probability,
-            top_shap_factors=shap_list,
-            transaction_details={
-                "merchant_category": tx.merchant_category,
-                "transaction_country": tx.transaction_country,
-                "device_type": tx.device_type,
-                "transaction_type": tx.transaction_type,
-                "transaction_hour": tx.transaction_hour,
-            },
+    if not existing_case:
+        existing_case = (
+            db.query(Investigation)
+            .filter(Investigation.transaction_id == tx.transaction_id)
+            .order_by(Investigation.created_at.desc())
+            .first()
         )
+    if existing_case:
+        return _build_investigation_detail(existing_case, tx, db)
 
     # 3. Determine investigator assignment
     assigned_id = payload.investigator_id
@@ -153,8 +170,21 @@ def create_investigation(
         }),
     )
     db.add(audit_entry)
-    db.commit()
-    db.refresh(investigation)
+
+    try:
+        db.commit()
+        db.refresh(investigation)
+    except IntegrityError:
+        db.rollback()
+        existing_case = (
+            db.query(Investigation)
+            .filter(Investigation.transaction_id == tx.transaction_id)
+            .order_by(Investigation.created_at.desc())
+            .first()
+        )
+        if existing_case:
+            return _build_investigation_detail(existing_case, tx, db)
+        raise
 
     # 7. Create In-App Security Alert & Real-Time Notification for Admin Review
     from backend.app.services.alert_service import AlertService, AlertType
@@ -197,40 +227,7 @@ def create_investigation(
         # Non-blocking notification
         pass
 
-    # Fetch investigator info if assigned
-    inv_user = db.query(User).filter(User.id == investigation.investigator_id).first() if investigation.investigator_id else None
-
-    # Fetch top SHAP explanations for transaction
-    shap_recs = db.query(ShapExplanation).filter(ShapExplanation.transaction_id == tx.transaction_id).all()
-    shap_list = [{"feature_name": s.feature_name, "shap_value": s.shap_value, "impact": s.impact} for s in shap_recs]
-
-    return InvestigationDetailResponse(
-        id=investigation.id,
-        case_id=investigation.case_id,
-        transaction_id=investigation.transaction_id,
-        investigator_id=investigation.investigator_id,
-        investigator_name=inv_user.name if inv_user else None,
-        investigator_email=inv_user.email if inv_user else None,
-        status=investigation.status,
-        decision=investigation.decision,
-        notes=investigation.notes,
-        created_at=investigation.created_at,
-        updated_at=investigation.updated_at,
-        amount=float(tx.amount) if tx.amount else None,
-        risk_score=tx.risk_score,
-        risk_level=tx.risk_level,
-        prediction="FRAUD" if tx.prediction == 1 else "GENUINE",
-        customer_id=tx.customer_id,
-        fraud_probability=tx.fraud_probability,
-        top_shap_factors=shap_list,
-        transaction_details={
-            "merchant_category": tx.merchant_category,
-            "transaction_country": tx.transaction_country,
-            "device_type": tx.device_type,
-            "transaction_type": tx.transaction_type,
-            "transaction_hour": tx.transaction_hour,
-        },
-    )
+    return _build_investigation_detail(investigation, tx, db)
 
 
 @router.get(
@@ -465,9 +462,16 @@ def get_investigation_detail(
     """Retrieve full investigation case details."""
     investigation = db.query(Investigation).filter(Investigation.case_id == case_id.strip()).first()
     if not investigation:
+        investigation = (
+            db.query(Investigation)
+            .filter(Investigation.transaction_id == case_id.strip())
+            .order_by(Investigation.created_at.desc())
+            .first()
+        )
+    if not investigation:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Investigation case with ID '{case_id}' not found.",
+            detail=f"Investigation case with ID or transaction ID '{case_id}' not found.",
         )
 
     # Load linked transaction
@@ -482,39 +486,7 @@ def get_investigation_detail(
                 detail="Access denied: You do not have permission to view this investigation case.",
             )
 
-    inv_user = db.query(User).filter(User.id == investigation.investigator_id).first() if investigation.investigator_id else None
-
-    # Load SHAP explanations
-    shap_recs = db.query(ShapExplanation).filter(ShapExplanation.transaction_id == investigation.transaction_id).all()
-    shap_list = [{"feature_name": s.feature_name, "shap_value": s.shap_value, "impact": s.impact} for s in shap_recs]
-
-    return InvestigationDetailResponse(
-        id=investigation.id,
-        case_id=investigation.case_id,
-        transaction_id=investigation.transaction_id,
-        investigator_id=investigation.investigator_id,
-        investigator_name=inv_user.name if inv_user else None,
-        investigator_email=inv_user.email if inv_user else None,
-        status=investigation.status,
-        decision=investigation.decision,
-        notes=investigation.notes,
-        created_at=investigation.created_at,
-        updated_at=investigation.updated_at,
-        amount=float(tx.amount) if tx and tx.amount else None,
-        risk_score=tx.risk_score if tx else None,
-        risk_level=tx.risk_level if tx else None,
-        prediction="FRAUD" if tx and tx.prediction == 1 else "GENUINE" if tx else None,
-        customer_id=tx.customer_id if tx else None,
-        fraud_probability=tx.fraud_probability if tx else None,
-        top_shap_factors=shap_list,
-        transaction_details={
-            "merchant_category": tx.merchant_category if tx else None,
-            "transaction_country": tx.transaction_country if tx else None,
-            "device_type": tx.device_type if tx else None,
-            "transaction_type": tx.transaction_type if tx else None,
-            "transaction_hour": tx.transaction_hour if tx else None,
-        } if tx else None,
-    )
+    return _build_investigation_detail(investigation, tx, db)
 
 
 @router.put(

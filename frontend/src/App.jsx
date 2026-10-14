@@ -108,8 +108,9 @@ function CommandCenterApp() {
       setAiAssistantOpen(true)
     }
     if (view === 'live-monitor') {
-      // Clear target transaction so Live Monitor opens cleanly without any automatic popups
+      // Clear target transaction & case so Live Monitor opens cleanly without any automatic popups
       setTargetTxId(null)
+      setTargetCaseId(null)
     }
     setActiveView((prev) => {
       if (prev !== view) {
@@ -137,9 +138,16 @@ function CommandCenterApp() {
     setAiAssistantOpen(true)
   }, [previousViewBeforeCopilot, navHistory, navigateTo])
 
-  // Guard payment gateway & analyzer & audit logs: Admin never accesses Payment Gateway, Customer Analyzer, or removed Audit Logs
+  // Guard payment gateway, analyzer & audit trail: Admin never accesses Payment Gateway, Customer Analyzer, or removed Audit Trail
   useEffect(() => {
-    if (isAdmin && (activeView === 'payment' || activeView === 'analyzer' || activeView === 'audit-logs')) {
+    if (
+      isAdmin &&
+      (activeView === 'payment' ||
+        activeView === 'analyzer' ||
+        activeView === 'audit-logs' ||
+        activeView === 'audit-trail' ||
+        activeView === 'premium-audit')
+    ) {
       setActiveView('dashboard')
     }
   }, [isAdmin, activeView])
@@ -176,6 +184,7 @@ function CommandCenterApp() {
 
   // Cross-view context passing
   const [targetTxId, setTargetTxId] = useState(null)
+  const [targetCaseId, setTargetCaseId] = useState(null)
 
   // Health API telemetry
   const [healthData, setHealthData] = useState(null)
@@ -217,8 +226,9 @@ function CommandCenterApp() {
     navigateTo('transactions')
   }
 
-  const handleOpenInvestigation = (txId) => {
+  const handleOpenInvestigation = (txId, caseId = null) => {
     setTargetTxId(txId)
+    setTargetCaseId(caseId)
     navigateTo('investigations')
   }
 
@@ -539,7 +549,7 @@ function CommandCenterApp() {
                 />
               )}
 
-              {(activeView === 'audit-trail' || activeView === 'premium-audit') && (
+              {(activeView === 'audit-trail' || activeView === 'premium-audit') && !isAdmin && (
                 <PremiumAuditTrail
                   user={user}
                 />
@@ -581,7 +591,11 @@ function CommandCenterApp() {
                   isAdmin={isAdmin}
                   initialTab={activeView === 'investigations' ? 'investigations' : 'monitor'}
                   initialTxId={targetTxId}
-                  onClearInitialTx={() => setTargetTxId(null)}
+                  initialCaseId={targetCaseId}
+                  onClearInitialTx={() => {
+                    setTargetTxId(null)
+                    setTargetCaseId(null)
+                  }}
                   onViewExplanation={handleViewExplanation}
                 />
               )}

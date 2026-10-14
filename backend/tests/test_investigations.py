@@ -176,6 +176,7 @@ def test_create_case_success_and_audit_log(investigator1_token):
 
 
 def test_create_duplicate_active_case_prevention(investigator1_token):
+    """Verify idempotent case creation: returning existing case details without HTTP 409 conflict and preventing duplicate cases."""
     client = TestClient(app)
     payload = {
         "transaction_id": "TX-INV-001",
@@ -186,8 +187,16 @@ def test_create_duplicate_active_case_prevention(investigator1_token):
         json=payload,
         headers={"Authorization": f"Bearer {investigator1_token}"},
     )
-    assert response.status_code == 409
-    assert "already exists" in response.json()["detail"].lower()
+    assert response.status_code in (200, 201)
+    data = response.json()
+    assert data["transaction_id"] == "TX-INV-001"
+    assert "case_id" in data
+
+    # Verify database has exactly 1 case for this transaction (no duplicates created)
+    db = TestingSessionLocal()
+    case_count = db.query(Investigation).filter(Investigation.transaction_id == "TX-INV-001").count()
+    assert case_count == 1
+    db.close()
 
 
 def test_create_case_nonexistent_transaction(investigator1_token):
@@ -362,4 +371,48 @@ def test_bulk_decision_approve_all(admin_token):
     assert data["status"] == "SUCCESS"
     assert data["decision"] == "GENUINE"
     assert "processed_count" in data
+
+
+def test_investigation_lookup_by_transaction_id_and_idempotent_creation(admin_token):
+    """Verify that get_investigation_detail supports transaction_id fallback and repeated creation returns existing case."""
+    client = TestClient(app)
+
+    # 1. First creation
+    res1 = client.post(
+        "/api/v1/investigations",
+        json={"transaction_id": "TX-INV-002", "notes": "First attempt"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert res1.status_code in (200, 201)
+    case1 = res1.json()
+    case_id = case1["case_id"]
+
+    # 2. Repeated creation for same transaction must return existing case without 409
+    res2 = client.post(
+        "/api/v1/investigations",
+        json={"transaction_id": "TX-INV-002", "notes": "Second attempt"},
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert res2.status_code in (200, 201)
+    case2 = res2.json()
+    assert case2["case_id"] == case_id
+    assert case2["transaction_id"] == "TX-INV-002"
+
+    # 3. Lookup by Case ID
+    res_by_case = client.get(
+        f"/api/v1/investigations/{case_id}",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert res_by_case.status_code == 200
+    assert res_by_case.json()["case_id"] == case_id
+
+    # 4. Lookup by Transaction ID directly (used by Live Monitor & All Transactions Hub)
+    res_by_tx = client.get(
+        f"/api/v1/investigations/TX-INV-002",
+        headers={"Authorization": f"Bearer {admin_token}"},
+    )
+    assert res_by_tx.status_code == 200
+    assert res_by_tx.json()["case_id"] == case_id
+    assert res_by_tx.json()["transaction_id"] == "TX-INV-002"
+
 

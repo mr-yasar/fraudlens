@@ -36,8 +36,9 @@ export default function TransactionsView({ onViewExplanation, onOpenInvestigatio
   // Details Modal state
   const [selectedTx, setSelectedTx] = useState(null)
 
-  // Case creation notification
+  // Case creation notification & loading state
   const [caseMsg, setCaseMsg] = useState(null)
+  const [investigatingId, setInvestigatingId] = useState(null)
 
   const fetchTransactions = async () => {
     setLoading(true)
@@ -80,20 +81,18 @@ export default function TransactionsView({ onViewExplanation, onOpenInvestigatio
   }
 
   const handleInvestigate = async (txId) => {
+    if (investigatingId) return
+    setInvestigatingId(txId)
     try {
       // Ensure case exists in backend (idempotent, returns existing case if already created)
-      try {
-        await investigationsApi.create({
-          transaction_id: txId,
-          notes: 'Case initiated from All Transactions Panel',
-        })
-      } catch (err) {
-        console.log('Case already active or initialized:', err)
-      }
+      const caseDetail = await investigationsApi.create({
+        transaction_id: txId,
+        notes: 'Case initiated from All Transactions Panel',
+      })
 
       // Smoothly navigate to the investigation case
       if (onOpenInvestigation) {
-        onOpenInvestigation(txId)
+        onOpenInvestigation(txId, caseDetail?.case_id)
       } else {
         setCaseMsg(`Investigation case ready for ${txId}`)
         setTimeout(() => setCaseMsg(null), 3500)
@@ -102,7 +101,11 @@ export default function TransactionsView({ onViewExplanation, onOpenInvestigatio
       console.error('Failed to open case:', err)
       if (onOpenInvestigation) {
         onOpenInvestigation(txId)
+      } else {
+        alert(err instanceof Error ? err.message : 'Error accessing investigation case')
       }
+    } finally {
+      setInvestigatingId(null)
     }
   }
 
@@ -329,11 +332,16 @@ export default function TransactionsView({ onViewExplanation, onOpenInvestigatio
                           {!isAdmin ? null : (
                             <button
                               type="button"
+                              disabled={investigatingId === tx.transaction_id}
                               onClick={() => handleInvestigate(tx.transaction_id)}
-                              className="p-1.5 rounded-lg bg-rose-950/70 hover:bg-rose-900 border border-rose-800/80 text-rose-300 hover:text-white transition cursor-pointer"
+                              className="p-1.5 rounded-lg bg-rose-950/70 hover:bg-rose-900 border border-rose-800/80 text-rose-300 hover:text-white transition cursor-pointer disabled:opacity-50"
                               title="Investigate Transaction Case"
                             >
-                              <ShieldAlert className="w-3.5 h-3.5" />
+                              {investigatingId === tx.transaction_id ? (
+                                <RefreshCw className="w-3.5 h-3.5 animate-spin text-rose-300" />
+                              ) : (
+                                <ShieldAlert className="w-3.5 h-3.5" />
+                              )}
                             </button>
                           )}
                         </div>
