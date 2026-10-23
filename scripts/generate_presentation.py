@@ -14,8 +14,8 @@ from pptx.enum.text import PP_ALIGN, MSO_ANCHOR
 from pptx.dml.color import RGBColor
 from pptx.enum.shapes import MSO_SHAPE
 
-OUTPUT_FILE = Path(r"E:\fraudinvestigation\FraudLens_AI_Project_Presentation_25_Slides.pptx")
-ASSETS_DIR = Path(r"E:\fraudinvestigation\project_report\assets")
+OUTPUT_FILE = Path(__file__).parent.parent / "FraudLens_AI_Project_Presentation_25_Slides.pptx"
+ASSETS_DIR = Path(__file__).parent.parent / "project_report" / "assets"
 SCREENSHOTS_DIR = ASSETS_DIR / "screenshots"
 
 # Color Palette (Matching Academic Senior PPT Style)
