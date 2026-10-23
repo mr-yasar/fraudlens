@@ -125,6 +125,38 @@ class RiskDecisionOrchestrator:
             )
 
         # -----------------------------------------------------------------
+        # STEP 2b: Daily UPI Limits Validation (₹5,00,000 Overall / ₹1,49,000 Merchant)
+        # -----------------------------------------------------------------
+        from backend.app.services.upi_limit_service import UpiDailyLimitService
+
+        is_allowed, violation, _ = UpiDailyLimitService.validate_upi_transaction(
+            db=db,
+            customer_id=request.customer_id,
+            amount=request.amount,
+            payment_method=request.payment_method,
+            transaction_type=request.transaction_type,
+            merchant_category=request.merchant_category,
+        )
+        if not is_allowed and violation:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={
+                    "error_type": "UPI_DAILY_LIMIT_EXCEEDED",
+                    "limit_type": violation["limit_type"],
+                    "title": violation["title"],
+                    "message": violation["message"],
+                    "applicable_limit": violation["applicable_limit"],
+                    "amount_used": violation["amount_used"],
+                    "remaining_amount": violation["remaining_amount"],
+                    "requested_amount": violation["requested_amount"],
+                    "reset_time": violation["reset_time"],
+                    "reset_time_human": violation["reset_time_human"],
+                    "card_fallback_available": True,
+                },
+            )
+
+
+        # -----------------------------------------------------------------
         # STEP 3: Customer Behavioral Intelligence & Novelty Signals
         # -----------------------------------------------------------------
         from backend.app.services.behavior_intelligence_service import CustomerBehaviourIntelligenceService
@@ -939,6 +971,35 @@ class RiskDecisionOrchestrator:
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail=f"Insufficient Balance: Available ₹{customer.simulated_balance:,.2f}, Required ₹{approval.amount:,.2f}",
                 )
+
+            # Check UPI daily limit sufficiency if approving a UPI transaction
+            from backend.app.services.upi_limit_service import UpiDailyLimitService
+            if pi and UpiDailyLimitService.is_upi_channel(pi.payment_method):
+                is_allowed, violation, _ = UpiDailyLimitService.validate_upi_transaction(
+                    db=db,
+                    customer_id=approval.customer_id,
+                    amount=approval.amount,
+                    payment_method=pi.payment_method,
+                    merchant_category=pi.merchant_category,
+                )
+                if not is_allowed and violation:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail={
+                            "error_type": "UPI_DAILY_LIMIT_EXCEEDED",
+                            "limit_type": violation["limit_type"],
+                            "title": violation["title"],
+                            "message": violation["message"],
+                            "applicable_limit": violation["applicable_limit"],
+                            "amount_used": violation["amount_used"],
+                            "remaining_amount": violation["remaining_amount"],
+                            "requested_amount": violation["requested_amount"],
+                            "reset_time": violation["reset_time"],
+                            "reset_time_human": violation["reset_time_human"],
+                            "card_fallback_available": True,
+                        },
+                    )
+
 
             # Enforce state transition
             if pi:

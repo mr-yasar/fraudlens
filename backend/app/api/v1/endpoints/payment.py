@@ -26,9 +26,11 @@ from backend.app.schemas.payment import (
     CustomerWalletResponse,
     DemoLiquidityRequest,
     DemoLiquidityResponse,
+    UpiDailyLimitResponse,
 )
 from backend.app.services.behavior_profile_service import BehaviorProfileService
 from backend.app.services.risk_decision_orchestrator import RiskDecisionOrchestrator
+from backend.app.services.upi_limit_service import UpiDailyLimitService
 from backend.app.core.rate_limiter import rate_limit
 
 router = APIRouter()
@@ -155,6 +157,29 @@ def get_customer_wallet(
         total_transactions=profile.total_transactions,
         historical_avg_amount=profile.historical_avg_amount,
     )
+
+
+@router.get(
+    "/limits/upi/{customer_id}",
+    response_model=UpiDailyLimitResponse,
+    summary="Get Customer Daily UPI Limit Usage and Status",
+    description="Returns overall UPI daily limit (₹5,00,000) and merchant UPI daily limit (₹1,49,000), usage, remaining amounts, and reset time.",
+)
+def get_customer_upi_limits(
+    customer_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> UpiDailyLimitResponse:
+    """Retrieve UPI daily limit statistics, used/remaining balances, and 24h rolling reset window."""
+    from backend.app.api.deps import get_customer_id_for_user
+    if current_user.role not in ("ADMIN", "FRAUD_INVESTIGATOR"):
+        user_cust_id = get_customer_id_for_user(current_user, db)
+        if user_cust_id is not None:
+            customer_id = user_cust_id
+
+    usage = UpiDailyLimitService.get_upi_daily_usage(db=db, customer_id=customer_id)
+    return UpiDailyLimitResponse(**usage)
+
 
 
 @router.post(

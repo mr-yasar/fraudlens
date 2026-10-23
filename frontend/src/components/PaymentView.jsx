@@ -58,6 +58,8 @@ import { getCustomerPersona } from '../utils/customerHelper'
 import MobileSecurityApprovalModal from './MobileSecurityApprovalModal'
 import GlobalCenterModal from './common/GlobalCenterModal'
 import ContextualModuleHelp from './common/ContextualModuleHelp'
+import UpiLimitModal from './UpiLimitModal'
+import UpiDailyLimitTracker from './UpiDailyLimitTracker'
 
 // Bank accounts dynamically tailored to each customer with Salem branch locations & isolated data
 export function getCustomerBankAccounts(customerPersona) {
@@ -780,6 +782,13 @@ export default function PaymentView({
   const [phoneModalTx, setPhoneModalTx] = useState(null)
   const [phoneModalApprovalId, setPhoneModalApprovalId] = useState(null)
 
+  // Daily UPI Limits & Card Fallback State
+  const [upiLimits, setUpiLimits] = useState(null)
+  const [limitsLoading, setLimitsLoading] = useState(false)
+  const [showLimitModal, setShowLimitModal] = useState(false)
+  const [limitViolation, setLimitViolation] = useState(null)
+
+
   // Determine effective merchant or beneficiary name based on transfer type and form data
   const effectiveMerchantName = useMemo(() => {
     if (transferType === 'personal' || transferType === 'p2p') {
@@ -837,6 +846,35 @@ export default function PaymentView({
       setLoadingHistory(false)
     }
   }, [])
+
+  // Load Daily UPI Limits & Usage
+  const loadUpiLimits = useCallback(async (customerId) => {
+    if (!customerId) {
+      setUpiLimits(null)
+      return
+    }
+    setLimitsLoading(true)
+    try {
+      const data = await paymentApi.getUpiLimits(customerId)
+      setUpiLimits(data)
+    } catch (e) {
+      console.warn('Failed to fetch UPI daily limits:', e)
+    } finally {
+      setLimitsLoading(false)
+    }
+  }, [])
+
+  // Card Payment Fallback Switch
+  const handleSwitchToCardFallback = useCallback(() => {
+    setShowLimitModal(false)
+    setLimitViolation(null)
+    setPaymentMethod('credit_card')
+    setTimelineStage('idle')
+    setActionSuccessMsg(
+      `✓ Switched to Card Payment! Original amount (${formatINR(formData.amount || 0)}) and recipient details have been preserved. You can now complete the transaction via Card.`
+    )
+  }, [formData.amount])
+
 
   // Demo Liquidity Management for Testing High-Value Fraud Scenarios
   const [injectingLiquidity, setInjectingLiquidity] = useState(false)
@@ -900,14 +938,18 @@ export default function PaymentView({
     setShowPhoneModal(false)
     setPhoneModalTx(null)
     setPhoneModalApprovalId(null)
+    setUpiLimits(null)
+    setShowLimitModal(false)
+    setLimitViolation(null)
 
     // 2. Fetch scoped data strictly for the active user
     if (targetCustId) {
       loadWallet(targetCustId)
       loadPendingApprovals(targetCustId)
       loadAllTransactions(targetCustId)
+      loadUpiLimits(targetCustId)
     }
-  }, [customerPersona.customerId, loadWallet, loadPendingApprovals, loadAllTransactions])
+  }, [customerPersona.customerId, loadWallet, loadPendingApprovals, loadAllTransactions, loadUpiLimits])
 
   useEffect(() => {
     if (isCustomer) {
@@ -1142,6 +1184,53 @@ export default function PaymentView({
       return
     }
 
+    // UPI Daily Limit Pre-Check (Instant client-side feedback before submission)
+    if (paymentMethod === 'upi' && upiLimits) {
+      const isMerchantTransfer = transferType === 'merchant'
+      const overallUsed = upiLimits.overall_used || 0
+      const overallLimit = upiLimits.overall_limit || 500000.0
+      const merchantUsed = upiLimits.merchant_used || 0
+      const merchantLimit = upiLimits.merchant_limit || 149000.0
+
+      if (overallUsed + enteredAmt > overallLimit || upiLimits.overall_limit_reached) {
+        setLimitViolation({
+          limit_type: 'OVERALL',
+          title: 'Daily UPI Limit Reached',
+          message:
+            'You have reached your daily UPI payment limit of ₹5,00,000.\n\nUPI payments are unavailable for the remainder of the applicable limit period. To continue with this transaction, please select Card Payment.',
+          applicable_limit: overallLimit,
+          amount_used: overallUsed,
+          remaining_amount: Math.max(0, overallLimit - overallUsed),
+          requested_amount: enteredAmt,
+          reset_time: upiLimits.reset_time,
+          reset_time_human: upiLimits.reset_time_human,
+          card_fallback_available: true,
+        })
+        setShowLimitModal(true)
+        setEvaluating(false)
+        return
+      }
+
+      if (isMerchantTransfer && (merchantUsed + enteredAmt > merchantLimit || upiLimits.merchant_limit_reached)) {
+        setLimitViolation({
+          limit_type: 'MERCHANT',
+          title: 'Merchant UPI Limit Reached',
+          message:
+            'Your daily merchant UPI limit of ₹1,49,000 has been reached.\n\nPlease use Card Payment to continue with this merchant transaction.',
+          applicable_limit: merchantLimit,
+          amount_used: merchantUsed,
+          remaining_amount: Math.max(0, merchantLimit - merchantUsed),
+          requested_amount: enteredAmt,
+          reset_time: upiLimits.reset_time,
+          reset_time_human: upiLimits.reset_time_human,
+          card_fallback_available: true,
+        })
+        setShowLimitModal(true)
+        setEvaluating(false)
+        return
+      }
+    }
+
     setTimelineStage('initiated')
 
     // Normalize device_type for backend enum
@@ -1178,10 +1267,11 @@ export default function PaymentView({
       const result = await paymentApi.initiate(payload)
       setDecisionResult(result)
 
-      // Background refresh wallet and transactions without blocking UI or modal opening
+      // Background refresh wallet, UPI limits, and transactions without blocking UI or modal opening
       loadWallet(formData.customer_id).catch(() => {})
       loadPendingApprovals(formData.customer_id).catch(() => {})
       loadAllTransactions(formData.customer_id).catch(() => {})
+      loadUpiLimits(formData.customer_id).catch(() => {})
 
       // Unified Risk-Based Flow for all 4 users:
       // Low Risk (ALLOW): Auto-Approved -> green status -> balance deducted
@@ -1225,8 +1315,26 @@ export default function PaymentView({
         setTimelineStage('rejected')
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Transaction evaluation failed')
-      setTimelineStage('idle')
+      let limitData = null
+      if (err.detail && typeof err.detail === 'object' && err.detail.error_type === 'UPI_DAILY_LIMIT_EXCEEDED') {
+        limitData = err.detail
+      } else if (typeof err.message === 'string' && err.message.includes('UPI_DAILY_LIMIT_EXCEEDED')) {
+        try {
+          const parsed = JSON.parse(err.message)
+          if (parsed.error_type === 'UPI_DAILY_LIMIT_EXCEEDED') limitData = parsed
+        } catch {}
+      }
+
+      if (limitData) {
+        setLimitViolation(limitData)
+        setShowLimitModal(true)
+        loadUpiLimits(formData.customer_id).catch(() => {})
+        setTimelineStage('idle')
+        setError(null)
+      } else {
+        setError(err instanceof Error ? err.message : 'Transaction evaluation failed')
+        setTimelineStage('idle')
+      }
     } finally {
       setEvaluating(false)
     }
@@ -1276,6 +1384,7 @@ export default function PaymentView({
       await loadWallet(formData.customer_id)
       await loadPendingApprovals(formData.customer_id)
       await loadAllTransactions(formData.customer_id)
+      await loadUpiLimits(formData.customer_id)
     } catch (err) {
       setError(err instanceof Error ? err.message : `Failed to ${action.toLowerCase()} transaction`)
       throw err
@@ -1820,6 +1929,15 @@ export default function PaymentView({
             </div>
           </div>
 
+          {/* Real-Time Daily UPI Limit Tracker Widget */}
+          <UpiDailyLimitTracker
+            limits={upiLimits}
+            loading={limitsLoading}
+            onRefresh={() => loadUpiLimits(customerPersona.customerId)}
+            onSwitchToCard={handleSwitchToCardFallback}
+            currentPaymentMethod={paymentMethod}
+          />
+
           {/* MAIN CHECKOUT GRID: Left (Form + Simplified Instruments) | Right (Debit Account + Virtual Card + Live Risk Meter) */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             {/* LEFT COLUMN: Payment Formulation (7 cols) */}
@@ -1857,6 +1975,99 @@ export default function PaymentView({
                   </button>
                 </div>
               </div>
+
+              {/* Payment Method Instrument Tabs */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-[11px] font-mono uppercase font-bold text-slate-400">
+                    Payment Method / Instrument:
+                  </label>
+                  {paymentMethod === 'upi' && upiLimits && (
+                    <span className="text-[10px] font-mono text-cyan-400">
+                      Overall Limit: ₹5,00,000 • Merchant: ₹1,49,000
+                    </span>
+                  )}
+                  {(paymentMethod === 'credit_card' || paymentMethod === 'debit_card') && (
+                    <span className="text-[10px] font-mono text-emerald-400 font-bold">
+                      ✓ Exempt from UPI Daily Limits
+                    </span>
+                  )}
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod('upi')}
+                    className={`p-2.5 rounded-xl border text-xs font-bold flex flex-col items-center justify-center gap-1 transition ${
+                      paymentMethod === 'upi'
+                        ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/60 shadow-[0_0_12px_rgba(6,182,212,0.25)]'
+                        : 'bg-slate-950/60 text-slate-400 border-slate-800 hover:text-white'
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <Zap className="w-3.5 h-3.5 text-cyan-400" />
+                      <span>UPI Pay</span>
+                    </div>
+                    <span className="text-[9px] font-mono text-slate-400">
+                      {upiLimits?.overall_limit_reached ? 'Limit Reached' : 'Daily Limit Protected'}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod('credit_card')}
+                    className={`p-2.5 rounded-xl border text-xs font-bold flex flex-col items-center justify-center gap-1 transition ${
+                      paymentMethod === 'credit_card' || paymentMethod === 'debit_card'
+                        ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/60 shadow-[0_0_12px_rgba(99,102,241,0.25)]'
+                        : 'bg-slate-950/60 text-slate-400 border-slate-800 hover:text-white'
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <CreditCard className="w-3.5 h-3.5 text-indigo-400" />
+                      <span>Card Fallback</span>
+                    </div>
+                    <span className="text-[9px] font-mono text-indigo-300">
+                      Fallback / No UPI Limit
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod('net_banking')}
+                    className={`p-2.5 rounded-xl border text-xs font-bold flex flex-col items-center justify-center gap-1 transition ${
+                      paymentMethod === 'net_banking'
+                        ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/60 shadow-[0_0_12px_rgba(6,182,212,0.25)]'
+                        : 'bg-slate-950/60 text-slate-400 border-slate-800 hover:text-white'
+                    }`}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <Building2 className="w-3.5 h-3.5 text-cyan-400" />
+                      <span>NetBanking</span>
+                    </div>
+                    <span className="text-[9px] font-mono text-slate-400">
+                      Direct Bank Transfer
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Simulated Card Fallback Notification */}
+              {(paymentMethod === 'credit_card' || paymentMethod === 'debit_card') && (
+                <div className="p-3.5 rounded-xl bg-indigo-950/40 border border-indigo-700/60 text-xs text-indigo-200 flex items-start gap-2.5 shadow-inner">
+                  <CreditCard className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
+                  <div className="space-y-0.5">
+                    <div className="font-bold text-white flex items-center gap-2">
+                      <span>Simulated Card Checkout (Sandbox Environment)</span>
+                      <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-indigo-900 text-indigo-300 border border-indigo-700">
+                        CARD FALLBACK ACTIVE
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-300 leading-relaxed">
+                      Payment is simulated in the secure test environment. Real card information is never collected. The original transfer amount ({formatINR(formData.amount || 0)}) and merchant details have been preserved.
+                    </p>
+                  </div>
+                </div>
+              )}
+
 
               {/* Main Checkout Form */}
               <form onSubmit={handleInitiatePayment} className="space-y-4">
@@ -3168,6 +3379,15 @@ export default function PaymentView({
           }
         }}
       />
+
+      {/* UPI Daily Limits Reached & Card-Only Fallback Modal */}
+      <UpiLimitModal
+        isOpen={showLimitModal}
+        onClose={() => setShowLimitModal(false)}
+        violation={limitViolation}
+        onPayByCard={handleSwitchToCardFallback}
+      />
     </div>
   )
 }
+

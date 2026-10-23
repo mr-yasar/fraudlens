@@ -233,3 +233,21 @@ class DemoLiquidityResponse(BaseModel):
     message: str
     updated_at: datetime
 
+
+class UpiDailyLimitResponse(BaseModel):
+    """Customer daily UPI limit usage, remaining balances, and reset window."""
+    customer_id: str
+    overall_limit: float = Field(default=500000.0, description="Overall UPI daily limit in INR")
+    overall_used: float = Field(default=0.0, description="Successful UPI used in rolling 24h window")
+    overall_remaining: float = Field(default=500000.0, description="Remaining overall UPI balance")
+    overall_limit_reached: bool = False
+    merchant_limit: float = Field(default=149000.0, description="Merchant UPI daily limit in INR")
+    merchant_used: float = Field(default=0.0, description="Successful merchant UPI used in rolling 24h window")
+    merchant_remaining: float = Field(default=149000.0, description="Remaining merchant UPI balance")
+    merchant_limit_reached: bool = False
+    reset_time: str
+    reset_time_human: str
+    window_hours: int = 24
+    card_fallback_available: bool = True
+
+

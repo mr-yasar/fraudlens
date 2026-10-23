@@ -28,16 +28,19 @@ async function handleResponse(response) {
 
   if (!response.ok) {
     let errorMessage = `HTTP Error ${response.status}: ${response.statusText}`
+    let errorDetail = null
     try {
       const errorJson = await response.json()
       if (errorJson.detail) {
-        errorMessage = typeof errorJson.detail === 'string' ? errorJson.detail : JSON.stringify(errorJson.detail)
+        errorDetail = errorJson.detail
+        errorMessage = typeof errorJson.detail === 'string' ? errorJson.detail : (errorJson.detail.message || JSON.stringify(errorJson.detail))
       }
     } catch {
       // Non-JSON response
     }
     const error = new Error(errorMessage)
     error.status = response.status
+    error.detail = errorDetail
     throw error
   }
 
@@ -123,6 +126,12 @@ export const paymentApi = {
   },
   getWallet: async (customerId) => {
     const res = await fetch(`${BASE_URL}/payment/wallet/${customerId}`, {
+      headers: getAuthHeaders(),
+    })
+    return handleResponse(res)
+  },
+  getUpiLimits: async (customerId) => {
+    const res = await fetch(`${BASE_URL}/payment/limits/upi/${customerId}`, {
       headers: getAuthHeaders(),
     })
     return handleResponse(res)
