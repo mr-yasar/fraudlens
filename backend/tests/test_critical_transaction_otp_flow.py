@@ -148,7 +148,7 @@ def test_medium_or_high_risk_otp_hold_and_approval(user_tokens, user_info):
     balance_before = res_wallet.json()["available_balance"]
 
     # Amount within balance to test hold and approve
-    tx_amount = min(50000.0, balance_before * 0.25)
+    tx_amount = round(min(50000.0, balance_before * 0.25), 2)
     payload = {
         "customer_id": cid,
         "amount": tx_amount,
@@ -216,7 +216,7 @@ def test_medium_or_high_risk_otp_hold_and_approval(user_tokens, user_info):
         db = SessionLocal()
         saved_tx = db.query(Transaction).filter(Transaction.transaction_id == tx_id).first()
         assert saved_tx is not None
-        assert saved_tx.amount == tx_amount
+        assert abs(float(saved_tx.amount) - tx_amount) < 0.01
         assert saved_tx.customer_id == cid
         db.close()
     else:
@@ -230,7 +230,7 @@ def test_medium_or_high_risk_otp_hold_and_approval(user_tokens, user_info):
     db = SessionLocal()
     saved_tx = db.query(Transaction).filter(Transaction.transaction_id == tx_id).first()
     assert saved_tx is not None
-    assert saved_tx.amount == tx_amount
+    assert abs(float(saved_tx.amount) - tx_amount) < 0.01
     assert saved_tx.customer_id == cid
     db.close()
 

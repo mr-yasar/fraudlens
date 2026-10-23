@@ -63,10 +63,21 @@ class RiskDecisionOrchestrator:
         """Fetch or create customer entity with default simulated wallet balance."""
         customer = db.query(Customer).filter(Customer.customer_id == customer_id).first()
         if not customer:
+            default_bal = 50000.0
+            cid_u = customer_id.upper()
+            if "MONISHA" in cid_u:
+                default_bal = 45000.0
+            elif "MOHANA" in cid_u:
+                default_bal = 60000.0
+            elif "SOWMIYA" in cid_u:
+                default_bal = 80000.0
+            elif "AJAY" in cid_u:
+                default_bal = 300000.0
+
             customer = Customer(
                 customer_id=customer_id,
                 account_age_days=int(account_age_days) if account_age_days is not None else 30,
-                simulated_balance=547855.0,
+                simulated_balance=default_bal,
                 currency="INR",
             )
             db.add(customer)
@@ -671,6 +682,7 @@ class RiskDecisionOrchestrator:
             prediction=1 if decision == PaymentDecision.BLOCK else 0,
             risk_score=float(final_risk_score),
             risk_level=risk_level.value,
+            created_at=datetime.now(timezone.utc),
         )
         db.add(db_tx)
 
@@ -747,7 +759,7 @@ class RiskDecisionOrchestrator:
             explanation_id=explanation_id,
             case_id=case_id,
             approval_id=approval_id,
-            otp_code=generated_otp,
+            otp_code="BIOMETRIC_FACE_ID" if requires_face_id else generated_otp,
             verification_required=verification_required,
             is_new_beneficiary=pre_auth_features.is_new_beneficiary,
             is_new_device=pre_auth_features.is_new_device,

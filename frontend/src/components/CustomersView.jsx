@@ -18,11 +18,25 @@ import {
   MapPin,
   Calendar,
   ExternalLink,
+  Zap,
+  Sparkles,
 } from 'lucide-react'
-import { customersApi } from '../services/api'
+import { customersApi, paymentApi } from '../services/api'
 import { formatINR } from '../utils/formatters'
 import { getCustomerPersona } from '../utils/customerHelper'
 import GlobalCenterModal from './common/GlobalCenterModal'
+
+function getCustomerBalance(c) {
+  if (c?.simulated_balance !== null && c?.simulated_balance !== undefined) {
+    return c.simulated_balance
+  }
+  const cid = String(c?.customer_id || c?.id || '').toUpperCase()
+  if (cid.includes('MONISHA')) return 45000.0
+  if (cid.includes('MOHANA')) return 60000.0
+  if (cid.includes('SOWMIYA')) return 80000.0
+  if (cid.includes('AJAY')) return 300000.0
+  return 50000.0
+}
 
 export default function CustomersView({ onSelectTransaction, user, isAdmin }) {
   const customerPersona = getCustomerPersona(user) || {}
@@ -40,6 +54,64 @@ export default function CustomersView({ onSelectTransaction, user, isAdmin }) {
   const [selectedCust, setSelectedCust] = useState(null)
   const [custTxs, setCustTxs] = useState([])
   const [detailLoading, setDetailLoading] = useState(false)
+
+  // Demo Liquidity Simulator Handlers (5L, 10L, 20L)
+  const [injectingId, setInjectingId] = useState(null)
+  const [liquiditySuccess, setLiquiditySuccess] = useState(null)
+
+  const handleInjectLiquidity = async (customerId, amountInRupees) => {
+    if (!customerId) return
+    setInjectingId(customerId)
+    try {
+      const res = await paymentApi.injectDemoLiquidity(customerId, {
+        amount: amountInRupees,
+        action: 'SET',
+      })
+      setCustomers((prev) =>
+        prev.map((c) =>
+          c.customer_id === customerId
+            ? { ...c, simulated_balance: res.simulated_balance }
+            : c
+        )
+      )
+      if (selectedCust?.customer_id === customerId) {
+        setSelectedCust((prev) => ({ ...prev, simulated_balance: res.simulated_balance }))
+      }
+      setLiquiditySuccess(`✓ Injected ₹${(amountInRupees / 100000).toFixed(0)} Lakhs for ${customerId}!`)
+      setTimeout(() => setLiquiditySuccess(null), 3500)
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setInjectingId(null)
+    }
+  }
+
+  const handleResetLiquidity = async (customerId) => {
+    if (!customerId) return
+    setInjectingId(customerId)
+    try {
+      const res = await paymentApi.injectDemoLiquidity(customerId, {
+        amount: 0,
+        action: 'RESET',
+      })
+      setCustomers((prev) =>
+        prev.map((c) =>
+          c.customer_id === customerId
+            ? { ...c, simulated_balance: res.simulated_balance }
+            : c
+        )
+      )
+      if (selectedCust?.customer_id === customerId) {
+        setSelectedCust((prev) => ({ ...prev, simulated_balance: res.simulated_balance }))
+      }
+      setLiquiditySuccess(`✓ Reset balance for ${customerId} to ₹${res.simulated_balance.toLocaleString('en-IN')}`)
+      setTimeout(() => setLiquiditySuccess(null), 3500)
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setInjectingId(null)
+    }
+  }
 
   const fetchCustomers = async () => {
     setLoading(true)
@@ -220,16 +292,89 @@ export default function CustomersView({ onSelectTransaction, user, isAdmin }) {
                   </div>
 
                   {/* Available Cash Liquidity */}
-                  <div className="p-2.5 bg-gradient-to-r from-emerald-950/70 via-slate-950/80 to-cyan-950/70 rounded-xl border border-emerald-700/60 mb-3 flex items-center justify-between">
+                  <div className="p-2.5 bg-gradient-to-r from-emerald-950/70 via-slate-950/80 to-cyan-950/70 rounded-xl border border-emerald-700/60 mb-2 flex items-center justify-between">
                     <div>
                       <span className="text-[9px] text-emerald-400 uppercase font-mono font-bold block">Available Cash</span>
                       <span className="font-mono font-black text-emerald-300 text-sm">
-                        {formatINR(c.simulated_balance || 547855.0)}
+                        {formatINR(getCustomerBalance(c))}
                       </span>
                     </div>
                     <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 font-bold border border-emerald-600">
                       Active Cash
                     </span>
+                  </div>
+
+                  {/* Demo Liquidity Box (5L, 10L, 20L) for Fraud Testing */}
+                  <div className="p-2 bg-slate-950/90 rounded-xl border border-amber-500/30 mb-3" onClick={(e) => e.stopPropagation()}>
+                    <div className="flex items-center justify-between text-[9px] font-mono text-amber-300 font-bold mb-1.5">
+                      <span className="flex items-center gap-1">
+                        <Zap className="w-2.5 h-2.5 text-amber-400" />
+                        Demo Liquidity:
+                      </span>
+                      <span className="text-[8px] text-slate-400 font-normal">Fraud Testing</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        type="button"
+                        disabled={injectingId === c.customer_id}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleInjectLiquidity(c.customer_id, 500000)
+                        }}
+                        className={`flex-1 py-1 rounded text-[10px] font-mono font-bold transition cursor-pointer text-center ${
+                          getCustomerBalance(c) === 500000
+                            ? 'bg-amber-500 text-slate-950 font-black'
+                            : 'bg-slate-900 hover:bg-amber-950/60 text-amber-300 border border-amber-500/30'
+                        }`}
+                        title="Set ₹5 Lakhs for testing high-ticket fraud"
+                      >
+                        5L
+                      </button>
+                      <button
+                        type="button"
+                        disabled={injectingId === c.customer_id}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleInjectLiquidity(c.customer_id, 1000000)
+                        }}
+                        className={`flex-1 py-1 rounded text-[10px] font-mono font-bold transition cursor-pointer text-center ${
+                          getCustomerBalance(c) === 1000000
+                            ? 'bg-amber-500 text-slate-950 font-black'
+                            : 'bg-slate-900 hover:bg-amber-950/60 text-amber-300 border border-amber-500/30'
+                        }`}
+                        title="Set ₹10 Lakhs for testing high-ticket fraud"
+                      >
+                        10L
+                      </button>
+                      <button
+                        type="button"
+                        disabled={injectingId === c.customer_id}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleInjectLiquidity(c.customer_id, 2000000)
+                        }}
+                        className={`flex-1 py-1 rounded text-[10px] font-mono font-bold transition cursor-pointer text-center ${
+                          getCustomerBalance(c) === 2000000
+                            ? 'bg-amber-500 text-slate-950 font-black'
+                            : 'bg-slate-900 hover:bg-amber-950/60 text-amber-300 border border-amber-500/30'
+                        }`}
+                        title="Set ₹20 Lakhs for testing high-ticket fraud"
+                      >
+                        20L
+                      </button>
+                      <button
+                        type="button"
+                        disabled={injectingId === c.customer_id}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleResetLiquidity(c.customer_id)
+                        }}
+                        className="px-1.5 py-1 rounded text-[10px] font-mono text-slate-400 hover:text-white bg-slate-900 border border-slate-700 transition cursor-pointer"
+                        title="Reset balance to baseline"
+                      >
+                        ↺
+                      </button>
+                    </div>
                   </div>
 
                   {/* Status Flags */}
@@ -292,7 +437,7 @@ export default function CustomersView({ onSelectTransaction, user, isAdmin }) {
                   Available Cash Liquidity / Wallet
                 </span>
                 <span className="text-2xl font-black text-emerald-300">
-                  {formatINR(selectedCust.simulated_balance || 547855.0)}
+                  {formatINR(getCustomerBalance(selectedCust))}
                 </span>
               </div>
               <div className="text-right">
@@ -300,6 +445,79 @@ export default function CustomersView({ onSelectTransaction, user, isAdmin }) {
                   Verified Account Liquidity
                 </span>
                 <div className="text-[10px] text-slate-400 mt-1">Real-Time Instant Pre-Auth Liquidity</div>
+              </div>
+            </div>
+
+            {/* Demo Liquidity Injector for High-Value Testing */}
+            <div className="p-3 rounded-2xl bg-gradient-to-r from-amber-950/40 via-purple-950/30 to-indigo-950/40 border border-amber-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg">
+              <div className="flex items-center gap-2.5">
+                <span className="p-2 rounded-xl bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                  <Zap className="w-4 h-4 text-amber-400 animate-pulse" />
+                </span>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-amber-300 font-mono uppercase tracking-wider">
+                      Demo Liquidity Injector
+                    </span>
+                    <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-amber-500/20 text-amber-200 border border-amber-500/40">
+                      FRAUD DETECTION
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-300 mt-0.5">
+                    Inject 5, 10, or 20 Lakhs to test large-ticket anomaly scoring and FinCEN SAR rules.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  type="button"
+                  disabled={injectingId === selectedCust.customer_id}
+                  onClick={() => handleInjectLiquidity(selectedCust.customer_id, 500000)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold transition flex items-center gap-1 cursor-pointer ${
+                    getCustomerBalance(selectedCust) === 500000
+                      ? 'bg-amber-500 text-slate-950 font-black'
+                      : 'bg-slate-900 hover:bg-amber-950/60 text-amber-300 border border-amber-500/30'
+                  }`}
+                >
+                  <Sparkles className="w-3 h-3" />
+                  ₹5L
+                </button>
+                <button
+                  type="button"
+                  disabled={injectingId === selectedCust.customer_id}
+                  onClick={() => handleInjectLiquidity(selectedCust.customer_id, 1000000)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold transition flex items-center gap-1 cursor-pointer ${
+                    getCustomerBalance(selectedCust) === 1000000
+                      ? 'bg-amber-500 text-slate-950 font-black'
+                      : 'bg-slate-900 hover:bg-amber-950/60 text-amber-300 border border-amber-500/30'
+                  }`}
+                >
+                  <Sparkles className="w-3 h-3" />
+                  ₹10L
+                </button>
+                <button
+                  type="button"
+                  disabled={injectingId === selectedCust.customer_id}
+                  onClick={() => handleInjectLiquidity(selectedCust.customer_id, 2000000)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold transition flex items-center gap-1 cursor-pointer ${
+                    getCustomerBalance(selectedCust) === 2000000
+                      ? 'bg-amber-500 text-slate-950 font-black'
+                      : 'bg-slate-900 hover:bg-amber-950/60 text-amber-300 border border-amber-500/30'
+                  }`}
+                >
+                  <Sparkles className="w-3 h-3" />
+                  ₹20L
+                </button>
+                <button
+                  type="button"
+                  disabled={injectingId === selectedCust.customer_id}
+                  onClick={() => handleResetLiquidity(selectedCust.customer_id)}
+                  className="px-2 py-1.5 rounded-xl text-xs font-mono text-slate-400 hover:text-white bg-slate-900 border border-slate-700 transition cursor-pointer"
+                  title="Reset to baseline"
+                >
+                  ↺ Reset
+                </button>
               </div>
             </div>
 

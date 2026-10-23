@@ -1,6 +1,7 @@
 import urllib.request
 import json
 import sys
+import uuid
 
 BASE_URL = "http://127.0.0.1:8000/api/v1"
 
@@ -26,10 +27,10 @@ def run_tests():
     print("=== TESTING ALL 4 CUSTOMER ACCOUNTS FOR STRICT PRIVACY & DATA ISOLATION ===")
     
     users = [
-        {"name": "Monisha", "email": "monisha@fraudlens.ai", "expected_cust": "CUST_MONISHA_001"},
-        {"name": "Mohana", "email": "mohana@fraudlens.ai", "expected_cust": "CUST_MOHANA_002"},
-        {"name": "Sowmiya", "email": "sowmiya@fraudlens.ai", "expected_cust": "CUST_SOWMIYA_003"},
-        {"name": "Ajay", "email": "ajay@fraudlens.ai", "expected_cust": "CUST_AJAY_004"},
+        {"name": "Monisha", "email": "monisha@fraudlens.ai", "expected_cust": "CUST_MONISHA_001", "expected_balance": 45000.0},
+        {"name": "Mohana", "email": "mohana@fraudlens.ai", "expected_cust": "CUST_MOHANA_002", "expected_balance": 60000.0},
+        {"name": "Sowmiya", "email": "sowmiya@fraudlens.ai", "expected_cust": "CUST_SOWMIYA_003", "expected_balance": 80000.0},
+        {"name": "Ajay", "email": "ajay@fraudlens.ai", "expected_cust": "CUST_AJAY_004", "expected_balance": 300000.0},
     ]
     
     tokens = {}
@@ -59,7 +60,8 @@ def run_tests():
         status, wallet = api_call(f"/payment/wallet/{u['expected_cust']}", token=token)
         assert status == 200, f"/payment/wallet failed: {wallet}"
         assert wallet["customer_id"] == u["expected_cust"], f"Expected {u['expected_cust']}, got {wallet['customer_id']}"
-        print(f"  [OK] Wallet verified for {wallet['customer_id']}: Balance = {wallet['available_balance']}")
+        assert abs(wallet["available_balance"] - u["expected_balance"]) < 0.01, f"Expected balance {u['expected_balance']}, got {wallet['available_balance']}"
+        print(f"  [OK] Wallet verified for {wallet['customer_id']}: Balance = {wallet['available_balance']} (Matches expected limit: {u['expected_balance']})")
 
     # Now perform Ajay transaction test
     print("\n=== INITIATING PAYMENT AS AJAY ===")
@@ -77,7 +79,7 @@ def run_tests():
         "transaction_country": "IN",
         "transaction_type": "online_payment",
         "failed_attempts": 0,
-        "idempotency_key": f"test-ajay-{sys.platform}-9901"
+        "idempotency_key": f"test-ajay-{uuid.uuid4().hex[:10]}"
     }
     status, pay_res = api_call("/payment/initiate", method="POST", data=pay_payload, token=ajay_token)
     assert status == 200, f"Payment initiate failed: {pay_res}"

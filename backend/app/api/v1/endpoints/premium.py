@@ -669,6 +669,12 @@ def run_scenario(
     if not scenario:
         raise HTTPException(status_code=400, detail=f"Unknown scenario ID '{payload.scenario_id}'.")
 
+    # Ensure demo customer maintains configured liquidity limit for demonstration scenarios
+    customer = db.query(Customer).filter(Customer.customer_id == customer_id).first()
+    if customer and (customer.simulated_balance or 0.0) < scenario["amount"]:
+        customer.simulated_balance = 300000.0
+        db.commit()
+
     try:
         result = PremiumSecurityService.execute_or_stage_transaction(
             db=db,

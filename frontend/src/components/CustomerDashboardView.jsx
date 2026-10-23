@@ -31,7 +31,7 @@ import {
   DollarSign,
   Fingerprint,
 } from 'lucide-react'
-import { dashboardApi } from '../services/api'
+import { dashboardApi, paymentApi } from '../services/api'
 import MobileSecurityApprovalModal from './MobileSecurityApprovalModal'
 import { sound } from './login/soundEffects'
 import GlobalCenterModal from './common/GlobalCenterModal'
@@ -73,6 +73,60 @@ export default function CustomerDashboardView({
       setError(err instanceof Error ? err.message : 'Failed to retrieve personal customer dashboard')
     } finally {
       setLoading(false)
+    }
+  }
+
+  // Demo Liquidity Management for Testing High-Value Fraud Scenarios
+  const [injectingLiquidity, setInjectingLiquidity] = useState(false)
+
+  const handleInjectLiquidity = async (amountInRupees) => {
+    if (!customerId) return
+    setInjectingLiquidity(true)
+    try {
+      const res = await paymentApi.injectDemoLiquidity(customerId, {
+        amount: amountInRupees,
+        action: 'SET',
+      })
+      setData((prev) => ({
+        ...(prev || {}),
+        account_balance: res.simulated_balance,
+      }))
+      setNotification({
+        type: 'SUCCESS',
+        title: 'Demo Liquidity Configured',
+        message: `Simulated balance set to ₹${(amountInRupees / 100000).toFixed(0)} Lakhs (₹${res.simulated_balance.toLocaleString('en-IN')}) for high-value fraud testing.`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+      })
+      sound?.playVerified && sound.playVerified()
+    } catch (e) {
+      setError(`Failed to inject demo liquidity: ${e.message}`)
+    } finally {
+      setInjectingLiquidity(false)
+    }
+  }
+
+  const handleResetLiquidity = async () => {
+    if (!customerId) return
+    setInjectingLiquidity(true)
+    try {
+      const res = await paymentApi.injectDemoLiquidity(customerId, {
+        amount: 0,
+        action: 'RESET',
+      })
+      setData((prev) => ({
+        ...(prev || {}),
+        account_balance: res.simulated_balance,
+      }))
+      setNotification({
+        type: 'SUCCESS',
+        title: 'Balance Reset',
+        message: `Simulated balance reset to base limit of ₹${res.simulated_balance.toLocaleString('en-IN')}.`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+      })
+    } catch (e) {
+      setError(`Failed to reset demo liquidity: ${e.message}`)
+    } finally {
+      setInjectingLiquidity(false)
     }
   }
 
@@ -176,7 +230,7 @@ export default function CustomerDashboardView({
           ...prev,
           pending_approvals: remaining,
           pending_approvals_count: remaining.length,
-          account_balance: Math.max(0, (prev.account_balance || 547855) - amt),
+          account_balance: Math.max(0, (prev.account_balance || (customerId?.includes('MONISHA') ? 45000 : customerId?.includes('MOHANA') ? 60000 : customerId?.includes('SOWMIYA') ? 80000 : customerId?.includes('AJAY') ? 300000 : 50000)) - amt),
           security_summary: {
             ...(prev.security_summary || {}),
             pending_reviews_count: remaining.length,
@@ -563,6 +617,88 @@ export default function CustomerDashboardView({
           <div className="text-[11px] text-slate-400 mt-1 font-mono flex items-center justify-between">
             <span>{security.trusted_devices_count || 1} Devices Registered</span>
             <span className="text-cyan-400 text-[10px] group-hover:underline">Inspect &rarr;</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Demo Liquidity Simulator Box (5, 10, 20 Lakhs) for Project Fraud Testing */}
+      <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-950/40 via-purple-950/30 to-indigo-950/40 border border-amber-500/30 backdrop-blur-sm shadow-xl">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+          <div className="flex items-start sm:items-center gap-3">
+            <span className="p-2.5 rounded-xl bg-amber-500/15 text-amber-400 border border-amber-500/30 shrink-0">
+              <Zap className="w-5 h-5 text-amber-400 animate-pulse" />
+            </span>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs font-bold text-amber-300 font-mono uppercase tracking-wider">
+                  Demo Liquidity Simulator
+                </span>
+                <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-amber-500/20 text-amber-200 border border-amber-500/40">
+                  HIGH-VALUE FRAUD SIMULATION
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-300 mt-0.5">
+                Simulate high account balances to test large transactions, anomaly scoring, and FinCEN SAR rules without balance rejections.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 flex-wrap shrink-0">
+            <span className="text-[10px] font-mono text-slate-400 uppercase hidden sm:inline">Set Liquidity:</span>
+            <button
+              type="button"
+              disabled={injectingLiquidity}
+              onClick={() => handleInjectLiquidity(500000)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                data?.account_balance === 500000
+                  ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/30 scale-105 border border-amber-400'
+                  : 'bg-slate-900/90 text-amber-300 hover:bg-amber-950/50 hover:text-amber-200 border border-amber-500/40'
+              }`}
+              title="Set ₹5,00,000 demo liquidity"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              ₹5 Lakhs
+            </button>
+
+            <button
+              type="button"
+              disabled={injectingLiquidity}
+              onClick={() => handleInjectLiquidity(1000000)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                data?.account_balance === 1000000
+                  ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/30 scale-105 border border-amber-400'
+                  : 'bg-slate-900/90 text-amber-300 hover:bg-amber-950/50 hover:text-amber-200 border border-amber-500/40'
+              }`}
+              title="Set ₹10,00,000 demo liquidity"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              ₹10 Lakhs
+            </button>
+
+            <button
+              type="button"
+              disabled={injectingLiquidity}
+              onClick={() => handleInjectLiquidity(2000000)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                data?.account_balance === 2000000
+                  ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/30 scale-105 border border-amber-400'
+                  : 'bg-slate-900/90 text-amber-300 hover:bg-amber-950/50 hover:text-amber-200 border border-amber-500/40'
+              }`}
+              title="Set ₹20,00,000 demo liquidity"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              ₹20 Lakhs
+            </button>
+
+            <button
+              type="button"
+              disabled={injectingLiquidity}
+              onClick={() => handleResetLiquidity()}
+              className="px-2.5 py-1.5 rounded-xl text-[11px] font-mono text-slate-400 hover:text-white bg-slate-900/80 hover:bg-slate-800 border border-slate-700 transition cursor-pointer"
+              title="Reset balance to standard baseline"
+            >
+              ↺ Reset
+            </button>
           </div>
         </div>
       </div>

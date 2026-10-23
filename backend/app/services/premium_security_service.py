@@ -151,7 +151,7 @@ class PremiumSecurityService:
         time_penalty = 0
         # Unusual night hours: 00:00 - 05:30
         if 0 <= hour <= 5:
-            time_penalty = 18
+            time_penalty = 22
             contributing_factors.append(f"Unusual Night-Time Activity: Transaction initiated at {hour:02d}:00 hours (standard active window: 08:00 - 22:00 IST).")
         elif 22 <= hour <= 23:
             time_penalty = 6
@@ -294,7 +294,7 @@ class PremiumSecurityService:
                 customer_id=customer_id,
                 name=user.name if user else "Ajay",
                 email=user.email if user else "ajay@fraudlens.ai",
-                simulated_balance=2500000.0,
+                simulated_balance=300000.0,
                 currency=currency,
                 risk_segment="Enterprise Security",
             )
@@ -302,8 +302,8 @@ class PremiumSecurityService:
             db.commit()
             db.refresh(customer)
 
-        # 2. Check balance sufficiency
-        if (customer.simulated_balance or 0.0) < amount:
+        # 2. Check balance sufficiency for approved transactions
+        if eval_result["decision"] == "ALLOW" and (customer.simulated_balance or 0.0) < amount:
             raise ValueError(f"Insufficient funds: Wallet balance ₹{customer.simulated_balance:,.2f} is lower than transfer amount ₹{amount:,.2f}.")
 
         # 3. Create Transaction Record

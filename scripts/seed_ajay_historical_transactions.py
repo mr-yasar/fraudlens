@@ -27,25 +27,28 @@ def seed_ajay_transactions():
     db = SessionLocal()
     try:
         # Verify Customer CUST_PREMIUM_004 exists
-        customer = db.query(Customer).filter(Customer.customer_id == "CUST_PREMIUM_004").first()
+        customer = db.query(Customer).filter(Customer.customer_id.in_(["CUST_PREMIUM_004", "CUST_AJAY_004"])).first()
         if not customer:
-            print("Creating customer CUST_PREMIUM_004 for Ajay...")
+            print("Creating customer for Ajay...")
             customer = Customer(
-                customer_id="CUST_PREMIUM_004",
+                customer_id="CUST_AJAY_004",
                 name="Ajay",
                 email="ajay@fraudlens.ai",
-                simulated_balance=2500000.0,
+                simulated_balance=300000.0,
                 currency="INR",
                 risk_segment="Enterprise Security",
                 account_age_days=730,
             )
             db.add(customer)
             db.commit()
+        else:
+            customer.simulated_balance = 300000.0
+            db.commit()
 
         # Ingest records in chunks
         existing_tx_ids = set(
             row[0] for row in db.query(Transaction.transaction_id).filter(
-                Transaction.customer_id == "CUST_PREMIUM_004"
+                Transaction.customer_id.in_(["CUST_PREMIUM_004", "CUST_AJAY_004"])
             ).all()
         )
         print(f"Found {len(existing_tx_ids)} existing transactions for Ajay in database.")
@@ -78,7 +81,7 @@ def seed_ajay_transactions():
 
             t = Transaction(
                 transaction_id=tx_id,
-                customer_id="CUST_PREMIUM_004",
+                customer_id=str(row.get("customer_id", customer.customer_id)),
                 merchant_id=str(row.get("merchant_id", "M029")),
                 merchant_name=str(row.get("merchant_name", "CloudDesk Digital")),
                 merchant_category=str(row.get("merchant_category", "Software / Digital Services")),
@@ -129,7 +132,7 @@ def seed_ajay_transactions():
         else:
             print("All transactions already present in database.")
 
-        total_tx = db.query(Transaction).filter(Transaction.customer_id == "CUST_PREMIUM_004").count()
+        total_tx = db.query(Transaction).filter(Transaction.customer_id.in_(["CUST_PREMIUM_004", "CUST_AJAY_004"])).count()
         print(f"Total transactions for Ajay in DB now: {total_tx}")
 
     finally:

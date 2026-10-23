@@ -81,6 +81,7 @@ def run_e2e_workflow():
         {"name": "Monisha", "email": "monisha@fraudlens.ai", "id": "CUST_MONISHA_001", "rate": "3%", "flow": "ALLOW"},
         {"name": "Mohana",  "email": "mohana@fraudlens.ai",  "id": "CUST_MOHANA_002",  "rate": "12%", "flow": "REVIEW"},
         {"name": "Sowmiya", "email": "sowmiya@fraudlens.ai", "id": "CUST_SOWMIYA_003", "rate": "26%", "flow": "BLOCK"},
+        {"name": "Ajay",    "email": "ajay@fraudlens.ai",     "id": "CUST_AJAY_004",    "rate": "0.2%", "flow": "ALLOW"},
     ]
 
     for p in personas:

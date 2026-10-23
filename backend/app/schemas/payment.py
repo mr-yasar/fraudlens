@@ -217,3 +217,19 @@ class CustomerWalletResponse(BaseModel):
     usual_locations: List[str] = Field(default_factory=list)
     total_transactions: int = 0
     historical_avg_amount: float = 0.0
+
+
+class DemoLiquidityRequest(BaseModel):
+    """Payload to inject demo liquidity for testing high-value fraud scenarios."""
+    amount: float = Field(..., description="Demo liquidity amount in INR (e.g. 500000, 1000000, 2000000)", ge=0.0)
+    action: str = Field(default="SET", description="Liquidity action: 'SET', 'ADD', or 'RESET'")
+
+
+class DemoLiquidityResponse(BaseModel):
+    """Result of demo liquidity adjustment."""
+    customer_id: str
+    simulated_balance: float
+    previous_balance: float
+    message: str
+    updated_at: datetime
+

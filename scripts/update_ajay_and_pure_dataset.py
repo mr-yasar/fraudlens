@@ -51,11 +51,11 @@ def run():
         c = db.query(Customer).filter(Customer.customer_id.in_(["CUST_PREMIUM_004", "CUST_AJAY_004"])).first()
         if not c:
             c = Customer(
-                customer_id="CUST_PREMIUM_004",
+                customer_id="CUST_AJAY_004",
                 name="Ajay",
                 email="ajay@fraudlens.ai",
                 account_age_days=730,
-                simulated_balance=2500000.0,
+                simulated_balance=300000.0,
                 currency="INR",
                 risk_segment="Enterprise Security",
             )
@@ -65,13 +65,24 @@ def run():
         else:
             c.name = "Ajay"
             c.email = "ajay@fraudlens.ai"
+            c.simulated_balance = 300000.0
             c.risk_segment = "Enterprise Security"
             db.commit()
-        print(f"[OK] Customer updated: ID={c.customer_id}, Name={c.name}, Segment={c.risk_segment}")
+        print(f"[OK] Customer updated: ID={c.customer_id}, Name={c.name}, Balance={c.simulated_balance}, Segment={c.risk_segment}")
+        ajay_cid = c.customer_id
 
         # Update Behavioral Profile for Ajay
-        bp = db.query(BehavioralProfile).filter(BehavioralProfile.customer_id == "CUST_PREMIUM_004").first()
-        if bp:
+        bp = db.query(BehavioralProfile).filter(BehavioralProfile.customer_id.in_(["CUST_PREMIUM_004", ajay_cid])).first()
+        if not bp:
+            bp = BehavioralProfile(
+                customer_id=ajay_cid,
+                behavioral_baseline="High-ticket enterprise settlements with hardware enclave biometric security and zero-loss protection.",
+                trusted_devices="MacBook Pro M3 Max, iPhone 15 Pro Max, Apple Watch Ultra 2",
+            )
+            db.add(bp)
+            db.commit()
+        else:
+            bp.customer_id = ajay_cid
             bp.behavioral_baseline = "High-ticket enterprise settlements with hardware enclave biometric security and zero-loss protection."
             bp.trusted_devices = "MacBook Pro M3 Max, iPhone 15 Pro Max, Apple Watch Ultra 2"
             db.commit()
@@ -181,7 +192,7 @@ def run():
             },
             # User 4: Ajay
             {
-                "customer_id": "CUST_PREMIUM_004",
+                "customer_id": ajay_cid,
                 "device_identifier": "dev-mbp-m3",
                 "device_name": "MacBook Pro M3 Max",
                 "device_type": "desktop_macos",
@@ -195,7 +206,7 @@ def run():
                 "status": "ACTIVE",
             },
             {
-                "customer_id": "CUST_PREMIUM_004",
+                "customer_id": ajay_cid,
                 "device_identifier": "dev-iphone-15pm",
                 "device_name": "iPhone 15 Pro Max",
                 "device_type": "mobile_ios",
@@ -209,7 +220,7 @@ def run():
                 "status": "ACTIVE",
             },
             {
-                "customer_id": "CUST_PREMIUM_004",
+                "customer_id": ajay_cid,
                 "device_identifier": "dev-watch-u2",
                 "device_name": "Apple Watch Ultra 2",
                 "device_type": "wearable_watchos",
@@ -219,7 +230,7 @@ def run():
                 "location_region": "Mumbai / Cyber City",
                 "is_trusted": True,
                 "is_compromised": False,
-                "trust_score": 96,
+                "trust_score": 95,
                 "status": "ACTIVE",
             },
         ]
@@ -326,7 +337,7 @@ def run():
             },
             # Ajay
             {
-                "customer_id": "CUST_PREMIUM_004",
+                "customer_id": ajay_cid,
                 "session_id": "sess-ajay-mumbai-01",
                 "device_id": "dev-mbp-m3",
                 "device_name": "MacBook Pro M3 Max",
@@ -336,7 +347,7 @@ def run():
                 "risk_score": 4,
             },
             {
-                "customer_id": "CUST_PREMIUM_004",
+                "customer_id": ajay_cid,
                 "session_id": "sess-ajay-blr-02",
                 "device_id": "dev-iphone-15pm",
                 "device_name": "iPhone 15 Pro Max",
@@ -358,6 +369,7 @@ def run():
             "CUST_MOHANA_002": u_mohana.id if u_mohana else 12,
             "CUST_SOWMIYA_003": u_sowmiya.id if u_sowmiya else 13,
             "CUST_PREMIUM_004": u_ajay.id if u_ajay else 15,
+            "CUST_AJAY_004": u_ajay.id if u_ajay else 15,
         }
 
         for s_data in all_sessions:
@@ -401,7 +413,7 @@ def run():
 
         ajay_records = []
         for idx in range(1, num_records + 1):
-            tx_id = f"TXN-CUST_PREMIUM_004-{10000 + idx}"
+            tx_id = f"TXN-{ajay_cid}-{10000 + idx}"
             jitter = random.uniform(-2.5, 2.5)
             current_time += datetime.timedelta(minutes=max(delta_minutes + jitter, 1.0))
             
@@ -430,7 +442,7 @@ def run():
                 failed_txs = 0
                 pw_changed = 0
                 is_new_ben = 0
-                ben_id = "BEN-CUST_PREMIUM_004-CF"
+                ben_id = f"BEN-{ajay_cid}-CF"
                 ben_name = "Cloudflare Global Services"
                 ben_count = 14
             else:
@@ -450,7 +462,7 @@ def run():
                 failed_txs = 0
                 pw_changed = 0
                 is_new_ben = 0
-                ben_id = "BEN-CUST_PREMIUM_004-TRUSTED"
+                ben_id = f"BEN-{ajay_cid}-TRUSTED"
                 ben_name = random.choice(["Cloudflare Global Services", "AWS Enterprise Cloud", "Stripe Global Settlement"])
                 ben_count = random.randint(10, 40)
 
@@ -463,7 +475,7 @@ def run():
                 "day_of_week": tx_dow,
                 "is_weekend": is_weekend,
                 "is_night_transaction": is_night,
-                "customer_id": "CUST_PREMIUM_004",
+                "customer_id": ajay_cid,
                 "customer_account_age_days": 730,
                 "customer_usual_location": "Mumbai",
                 "customer_usual_state": "Maharashtra",

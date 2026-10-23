@@ -127,6 +127,14 @@ export const paymentApi = {
     })
     return handleResponse(res)
   },
+  injectDemoLiquidity: async (customerId, payload) => {
+    const res = await fetch(`${BASE_URL}/payment/wallet/${customerId}/liquidity`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(payload),
+    })
+    return handleResponse(res)
+  },
   getBeneficiaries: async (customerId) => {
     const res = await fetch(`${BASE_URL}/payment/beneficiaries/${customerId}`, {
       headers: getAuthHeaders(),

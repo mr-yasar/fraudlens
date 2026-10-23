@@ -246,9 +246,10 @@ FraudLens AI is an end-to-end real-time explainable fraud detection platform bui
 - **Score ≥ 70 (High Risk)**: Instant Hard Block (payment rejected, alert to SOC, auto-created investigation case).
 
 ### Synthetic Testing Personas (Algorithms Benchmarking Only):
-- **Monisha**: Routine low-risk benchmark persona (3% simulated fraud rate) at NovaMart Fresh on trusted iOS device. Available Balance: ₹16,11,121.99 (includes ₹15 Lakhs Liquidity Feature).
-- **Mohana**: Moderate-risk benchmark persona (12% simulated fraud rate) with velocity spikes at electronics stores. Available Balance: ₹17,20,000.00 (includes ₹15 Lakhs Liquidity Feature).
-- **Sowmiya**: High-risk attack vector persona (26% simulated fraud rate) used to test automated blocking against midnight bullion attacks. Available Balance: ₹15,45,000.00 (includes ₹15 Lakhs Liquidity Feature).
+- **Monisha**: Routine low-risk benchmark persona (3% simulated fraud rate) at NovaMart Fresh on trusted iOS device. Available Balance: ₹45,000.00.
+- **Mohana**: Moderate-risk benchmark persona (12% simulated fraud rate) with velocity spikes at electronics stores. Available Balance: ₹60,000.00.
+- **Sowmiya**: High-risk attack vector persona (26% simulated fraud rate) used to test automated blocking against midnight bullion attacks. Available Balance: ₹80,000.00.
+- **Ajay**: Enterprise security benchmark persona (0.2% - 1% clean baseline) for high-assurance enterprise settlements. Available Balance: ₹3,00,000.00.
 
 ### Deep Project Training Knowledge:
 {FRAUDLENS_FULL_KNOWLEDGE}

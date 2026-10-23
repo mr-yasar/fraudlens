@@ -144,7 +144,7 @@ class FraudModelTrainer:
             min_samples_leaf=self.config.rf_min_samples_leaf,
             class_weight="balanced_subsample",
             random_state=self.config.random_state,
-            n_jobs=-1,
+            n_jobs=1,
         )
         rf.fit(X_train, y_train)
         self.models["random_forest"] = rf
@@ -163,6 +163,7 @@ class FraudModelTrainer:
             scale_pos_weight=scale_pos_weight,
             eval_metric="logloss",
             random_state=self.config.random_state,
+            n_jobs=1,
         )
         xgb.fit(X_train, y_train)
         self.models["xgboost"] = xgb
@@ -176,7 +177,7 @@ class FraudModelTrainer:
             ],
             voting="soft",
             weights=[0.45, 0.40, 0.15],
-            n_jobs=-1,
+            n_jobs=1,
         )
         ensemble.fit(X_train, y_train)
         self.models["ensemble_stacking"] = ensemble

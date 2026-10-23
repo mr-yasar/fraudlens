@@ -92,13 +92,14 @@ npm run dev
 
 ## 🔑 Demo Login Accounts
 
-| Role | Email | Password | Access Level |
+| Role | Email | Password | Access Level & Balance |
 |---|---|---|---|
 | **Admin** | `admin@fraudlens.ai` | `Admin@1234` | Full SOC command, Model Lab, Retrain Triggers, Global Audit |
 | **Fraud Investigator** | `investigator@fraudlens.ai` | `Investigator@1234` | Case Management, Forensic Command Center, SAR Filing |
-| **Monisha** | `monisha@fraudlens.ai` | `Customer@1234` | Safe user profile (3% risk, Instant Green Pass) |
-| **Mohana** | `mohana@fraudlens.ai` | `Customer@1234` | Edge-case user (12% risk, Step-up OTP Challenge) |
-| **Sowmiya** | `sowmiya@fraudlens.ai` | `Customer@1234` | Velocity attack victim (26% risk, Instant Account Freeze) |
+| **Monisha** | `monisha@fraudlens.ai` | `Customer@1234` | Standard Retail profile (₹45,000 Balance, 3% risk baseline) |
+| **Mohana** | `mohana@fraudlens.ai` | `Customer@1234` | Active Shopper profile (₹60,000 Balance, 12% risk baseline) |
+| **Sowmiya** | `sowmiya@fraudlens.ai` | `Customer@1234` | Velocity attack victim (₹80,000 Balance, 26% risk baseline) |
+| **Ajay** | `ajay@fraudlens.ai` | `Customer@1234` | Enterprise VIP profile (₹3,00,000 Balance, High-Value Shield) |
 
 *(Guest access is also available without logging in — visitors can freely ask the AI Assistant about platform architecture, models, and fraud detection mechanisms).*
 

@@ -183,14 +183,14 @@ def init_db(db: Session) -> None:
             name="Monisha",
             email="monisha@fraudlens.ai",
             account_age_days=180,
-            simulated_balance=1000000000.0,
+            simulated_balance=45000.0,
             currency="INR",
             risk_segment="Standard Low Risk",
         )
         db.add(c_monisha)
         db.commit()
     else:
-        c_monisha.simulated_balance = 1000000000.0
+        c_monisha.simulated_balance = 45000.0
         db.commit()
 
     # 4. Seed Existing Customer 2 (Mohana)
@@ -215,14 +215,14 @@ def init_db(db: Session) -> None:
             name="Mohana",
             email="mohana@fraudlens.ai",
             account_age_days=90,
-            simulated_balance=1000000000.0,
+            simulated_balance=60000.0,
             currency="INR",
             risk_segment="Medium Velocity",
         )
         db.add(c_mohana)
         db.commit()
     else:
-        c_mohana.simulated_balance = 1000000000.0
+        c_mohana.simulated_balance = 60000.0
         db.commit()
 
     # 5. Seed Existing Customer 3 (Sowmiya)
@@ -247,14 +247,14 @@ def init_db(db: Session) -> None:
             name="Sowmiya",
             email="sowmiya@fraudlens.ai",
             account_age_days=45,
-            simulated_balance=1000000000.0,
+            simulated_balance=80000.0,
             currency="INR",
             risk_segment="High Threat Watch",
         )
         db.add(c_sowmiya)
         db.commit()
     else:
-        c_sowmiya.simulated_balance = 1000000000.0
+        c_sowmiya.simulated_balance = 80000.0
         db.commit()
 
     # 6. Seed Premium User 4 (Ajay - Dedicated Enterprise Premium)
@@ -357,7 +357,7 @@ def init_db(db: Session) -> None:
             name="Ajay",
             email="ajay@fraudlens.ai",
             account_age_days=720,
-            simulated_balance=1000000000.0,
+            simulated_balance=300000.0,
             currency="INR",
             risk_segment="Enterprise Security",
         )
@@ -367,16 +367,24 @@ def init_db(db: Session) -> None:
     else:
         c_premium.name = "Ajay"
         c_premium.email = "ajay@fraudlens.ai"
-        c_premium.simulated_balance = 1000000000.0
+        c_premium.simulated_balance = 300000.0
         c_premium.risk_segment = "Enterprise Security"
         db.commit()
 
-    # Universal Sweep: Set unlimited demo funds (₹100 Crores) for all customers
+    # Enforce configured customer available balances / money limits
+    balance_map = {
+        "CUST_MONISHA_001": 45000.0,
+        "CUST_MOHANA_002": 60000.0,
+        "CUST_SOWMIYA_003": 80000.0,
+        "CUST_AJAY_004": 300000.0,
+        "CUST_PREMIUM_004": 300000.0,
+    }
     try:
-        db.query(Customer).update({Customer.simulated_balance: 1000000000.0}, synchronize_session=False)
+        for cid, bal in balance_map.items():
+            db.query(Customer).filter(Customer.customer_id == cid).update({Customer.simulated_balance: bal}, synchronize_session=False)
         db.commit()
     except Exception as e:
-        logger.warning(f"Could not universal-update customer balances: {e}")
+        logger.warning(f"Could not enforce configured customer balances: {e}")
 
     # Seed User 4 Devices
     dev1 = db.query(CustomerDevice).filter(CustomerDevice.device_identifier == "dev-mbp-m3").first()

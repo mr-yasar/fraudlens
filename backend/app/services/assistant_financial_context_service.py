@@ -34,8 +34,19 @@ def get_wallet_account_summary(customer_id: Optional[str], db: Session) -> Dict[
             "account_number_masked": "•••• 0000",
         }
 
+    def_bal = 50000.0
+    cid_u = (customer_id or "").upper()
+    if "MONISHA" in cid_u:
+        def_bal = 45000.0
+    elif "MOHANA" in cid_u:
+        def_bal = 60000.0
+    elif "SOWMIYA" in cid_u:
+        def_bal = 80000.0
+    elif "AJAY" in cid_u:
+        def_bal = 300000.0
+
     customer = db.query(Customer).filter(Customer.customer_id == customer_id).first()
-    balance = float(customer.simulated_balance) if customer and customer.simulated_balance is not None else 50000.0
+    balance = float(customer.simulated_balance) if customer and customer.simulated_balance is not None else def_bal
     currency = customer.currency if customer and customer.currency else "INR"
 
     # Pending held amounts

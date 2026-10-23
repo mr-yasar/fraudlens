@@ -24,6 +24,8 @@ from backend.app.schemas.payment import (
     BeneficiaryResponse,
     BeneficiaryCreateRequest,
     CustomerWalletResponse,
+    DemoLiquidityRequest,
+    DemoLiquidityResponse,
 )
 from backend.app.services.behavior_profile_service import BehaviorProfileService
 from backend.app.services.risk_decision_orchestrator import RiskDecisionOrchestrator
@@ -92,12 +94,23 @@ def get_customer_wallet(
     if user_cust_id is not None:
         customer_id = user_cust_id
 
+    def_bal = 50000.0
+    cid_u = customer_id.upper()
+    if "MONISHA" in cid_u:
+        def_bal = 45000.0
+    elif "MOHANA" in cid_u:
+        def_bal = 60000.0
+    elif "SOWMIYA" in cid_u:
+        def_bal = 80000.0
+    elif "AJAY" in cid_u:
+        def_bal = 300000.0
+
     customer = db.query(Customer).filter(Customer.customer_id == customer_id).first()
     if not customer:
         customer = Customer(
             customer_id=customer_id,
             account_age_days=30,
-            simulated_balance=547855.0,
+            simulated_balance=def_bal,
             currency="INR",
         )
         db.add(customer)
@@ -128,10 +141,12 @@ def get_customer_wallet(
         for b in beneficiaries
     ]
 
+    current_balance = float(customer.simulated_balance if customer.simulated_balance is not None else def_bal)
+
     return CustomerWalletResponse(
         customer_id=customer.customer_id,
-        simulated_balance=float(customer.simulated_balance or 547855.0),
-        available_balance=float(customer.simulated_balance or 547855.0),
+        simulated_balance=current_balance,
+        available_balance=current_balance,
         currency=customer.currency or "INR",
         account_age_days=profile.account_age_days,
         known_beneficiaries=bene_dtos,
@@ -139,6 +154,81 @@ def get_customer_wallet(
         usual_locations=profile.usual_locations,
         total_transactions=profile.total_transactions,
         historical_avg_amount=profile.historical_avg_amount,
+    )
+
+
+@router.post(
+    "/wallet/{customer_id}/liquidity",
+    response_model=DemoLiquidityResponse,
+    summary="Inject Demo Liquidity for High-Value Fraud Detection Testing",
+    description="Adjusts or top-ups customer simulated wallet balance with 5, 10, or 20 Lakhs to enable testing high-ticket fraud simulations without balance rejection.",
+)
+def adjust_demo_liquidity(
+    customer_id: str,
+    payload: DemoLiquidityRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> DemoLiquidityResponse:
+    """Inject or reset demo liquidity for project fraud demonstration purposes."""
+    from backend.app.api.deps import get_customer_id_for_user
+    user_cust_id = get_customer_id_for_user(current_user, db)
+    if user_cust_id is not None:
+        customer_id = user_cust_id
+
+    customer = db.query(Customer).filter(Customer.customer_id == customer_id).first()
+    if not customer:
+        raise HTTPException(status_code=404, detail=f"Customer '{customer_id}' not found")
+
+    prev_balance = float(customer.simulated_balance or 0.0)
+
+    # Standard persona baselines
+    cid_u = customer_id.upper()
+    if "MONISHA" in cid_u:
+        base_bal = 45000.0
+    elif "MOHANA" in cid_u:
+        base_bal = 60000.0
+    elif "SOWMIYA" in cid_u:
+        base_bal = 80000.0
+    elif "AJAY" in cid_u:
+        base_bal = 300000.0
+    else:
+        base_bal = 50000.0
+
+    act = (payload.action or "SET").upper()
+    if act == "RESET":
+        new_balance = base_bal
+        msg = f"Reset balance to standard baseline of INR {new_balance:,.2f}"
+    elif act == "ADD":
+        new_balance = prev_balance + payload.amount
+        msg = f"Injected INR {payload.amount:,.2f} demo liquidity. New balance: INR {new_balance:,.2f}"
+    else:  # SET
+        new_balance = payload.amount
+        msg = f"Configured demo liquidity to INR {new_balance:,.2f}"
+
+    customer.simulated_balance = new_balance
+
+    audit = AuditLog(
+        user_id=current_user.id if current_user else None,
+        action="DEMO_LIQUIDITY_INJECTED",
+        resource_type="customer_wallet",
+        resource_id=customer_id,
+        details=json.dumps({
+            "previous_balance": prev_balance,
+            "new_balance": new_balance,
+            "action": act,
+            "amount": payload.amount,
+        }),
+    )
+    db.add(audit)
+    db.commit()
+    db.refresh(customer)
+
+    return DemoLiquidityResponse(
+        customer_id=customer_id,
+        simulated_balance=float(new_balance),
+        previous_balance=prev_balance,
+        message=msg,
+        updated_at=datetime.now(timezone.utc),
     )
 
 

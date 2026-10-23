@@ -27,13 +27,12 @@ TreeSHAP explainability, and a <4ms pre-authorization gateway.
 Stack: FastAPI (Python) backend + React/Vite frontend + PostgreSQL database.
 Version: 1.9 | GitHub: github.com/mr-yasar/fraudlens
 
---- THE 3 CUSTOMER PERSONAS & 15 LAKHS CASH LIQUIDITY (STRICTLY PRIVATE) ---
-Every registered customer account includes an active ₹15,00,000 (15 Lakhs INR) Cash Liquidity Reserve
-for seamless pre-authorization evaluation and high-limit liquidity testing.
+--- THE 4 CUSTOMER PERSONAS & MONEY LIMIT BALANCES (STRICTLY PRIVATE) ---
+Each registered customer account maintains calibrated money limit balances for realistic testing:
 
 1. MONISHA (CUST_MONISHA_001)
    - Email: monisha.s@customer.fraudlens.ai | Password: customer123
-   - Available Balance: ₹16,11,121.99 (includes ₹15 Lakhs Liquidity Feature)
+   - Available Balance: ₹45,000.00 (45k Limit)
    - Fraud Rate: ~3% | Risk Profile: LOW | Behavioral: Routine daily shopper
    - Device: iOS iPhone 15 Pro (trusted) | Location: Chennai, Tamil Nadu
    - Favorite Merchants: NovaMart Fresh (Grocery), MediCare Plus (Pharmacy)
@@ -43,23 +42,32 @@ for seamless pre-authorization evaluation and high-limit liquidity testing.
 
 2. MOHANA (CUST_MOHANA_002)
    - Email: mohana.r@customer.fraudlens.ai | Password: customer123
-   - Available Balance: ₹17,20,000.00 (includes ₹15 Lakhs Liquidity Feature)
+   - Available Balance: ₹60,000.00 (60k Limit)
    - Fraud Rate: ~12% | Risk Profile: MEDIUM | Behavioral: Velocity spikes & cross-city activity
    - Device: Android Samsung Galaxy (partially trusted) | Location: Coimbatore → Salem
-   - Favorite Merchants: CircuitBay Electronics (₹14,500), FashionFirst Boutique
-   - Typical Amount: ₹2,000–₹18,000 | Sometimes active 11 PM–2 AM
+   - Favorite Merchants: CircuitBay Electronics (₹5,500), FashionFirst Boutique
+   - Typical Amount: ₹2,000–₹12,000 | Sometimes active 11 PM–2 AM
    - AI Behavior: Frequently triggers OTP Step-Up for review transactions
    - Fraud Types Seen: Card-Not-Present, Velocity Burst, Geo-location Jump
 
 3. SOWMIYA (CUST_SOWMIYA_003)
    - Email: sowmiya.k@customer.fraudlens.ai | Password: customer123
-   - Available Balance: ₹15,45,000.00 (includes ₹15 Lakhs Liquidity Feature)
+   - Available Balance: ₹80,000.00 (80k Limit)
    - Fraud Rate: ~26% | Risk Profile: HIGH | Behavioral: Active botnet targeting
    - Device: Multiple unrecognized Android devices | Location: Multiple cities
-   - Targeted Merchants: Aurelia Gold House (₹75,000), GoldVault Bullion, CryptoExchange (₹45,000)
-   - Typical Amount: ₹15,000–₹95,000 | Often active 12 AM–4 AM (midnight attacks)
+   - Targeted Merchants: Aurelia Gold House, GoldVault Bullion, CryptoExchange
+   - Typical Amount: ₹10,000–₹45,000 | Often active 12 AM–4 AM (midnight attacks)
    - AI Behavior: Transactions BLOCKED automatically with zero fund loss
    - Fraud Types Seen: Account Takeover (ATO), Botnet Credential Injection, Mule Liquidation
+
+4. AJAY (CUST_AJAY_004)
+   - Email: ajay@fraudlens.ai | Password: Customer@1234
+   - Available Balance: ₹3,00,000.00 (3 Lakhs Limit)
+   - Fraud Rate: ~0.2% | Risk Profile: ENTERPRISE | Behavioral: High-assurance corporate settlement
+   - Device: MacBook Pro M3 Max (Hardware Enclave), iPhone 15 Pro Max | Location: Mumbai, Maharashtra
+   - Favorite Beneficiaries: Cloudflare Global Services, AWS Enterprise Cloud, Stripe Global Settlement
+   - Typical Amount: ₹15,000–₹85,000 | Hours: Normal business & enterprise cycles
+   - AI Behavior: High-velocity trusted settlements authenticated via hardware biometric enclave
 
 --- 29 MASTER CANONICAL MERCHANTS (10 CALIBRATED CATEGORIES) ---
 1. Grocery & Supermarket: NovaMart Fresh, DailyMart Supermarket, NatureBasket

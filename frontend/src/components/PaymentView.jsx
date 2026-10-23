@@ -73,7 +73,7 @@ export function getCustomerBankAccounts(customerPersona) {
         accountNumberMasked: '•••• •••• 7182',
         ifsc: 'HDFC0000491',
         branch: 'Fairlands, Salem',
-        balance: 99999750.0,
+        balance: 300000.0,
         isPrimary: true,
         logoColor: 'from-blue-700 to-indigo-800',
       },
@@ -84,7 +84,7 @@ export function getCustomerBankAccounts(customerPersona) {
         accountNumberMasked: '•••• •••• 3049',
         ifsc: 'SBIN0001824',
         branch: 'Suramangalam, Salem',
-        balance: 4500000.0,
+        balance: 150000.0,
         isPrimary: false,
         logoColor: 'from-cyan-700 to-blue-900',
       },
@@ -95,7 +95,7 @@ export function getCustomerBankAccounts(customerPersona) {
         accountNumberMasked: '•••• •••• 6612',
         ifsc: 'ICIC0000128',
         branch: 'Meyyanur, Salem',
-        balance: 2850000.0,
+        balance: 100000.0,
         isPrimary: false,
         logoColor: 'from-orange-700 to-amber-900',
       },
@@ -106,7 +106,7 @@ export function getCustomerBankAccounts(customerPersona) {
         accountNumberMasked: '•••• 8820',
         ifsc: 'FLNS000001',
         branch: 'Salem Digital Cyber Hub',
-        balance: 500000.0,
+        balance: 50000.0,
         isPrimary: false,
         logoColor: 'from-emerald-600 to-teal-800',
       },
@@ -122,7 +122,7 @@ export function getCustomerBankAccounts(customerPersona) {
         accountNumberMasked: '•••• •••• 5591',
         ifsc: 'ICIC0000128',
         branch: 'Meyyanur, Salem',
-        balance: 320000.0,
+        balance: 60000.0,
         isPrimary: true,
         logoColor: 'from-orange-700 to-amber-900',
       },
@@ -133,7 +133,7 @@ export function getCustomerBankAccounts(customerPersona) {
         accountNumberMasked: '•••• •••• 4210',
         ifsc: 'HDFC0000491',
         branch: 'Fairlands, Salem',
-        balance: 145000.0,
+        balance: 35000.0,
         isPrimary: false,
         logoColor: 'from-blue-700 to-indigo-800',
       },
@@ -144,7 +144,7 @@ export function getCustomerBankAccounts(customerPersona) {
         accountNumberMasked: '•••• 3340',
         ifsc: 'FLNS000001',
         branch: 'Salem Digital Cyber Hub',
-        balance: 25000.0,
+        balance: 15000.0,
         isPrimary: false,
         logoColor: 'from-emerald-600 to-teal-800',
       },
@@ -160,7 +160,7 @@ export function getCustomerBankAccounts(customerPersona) {
         accountNumberMasked: '•••• •••• 9832',
         ifsc: 'UTIB0000350',
         branch: 'Hasthampatti, Salem',
-        balance: 185000.0,
+        balance: 80000.0,
         isPrimary: true,
         logoColor: 'from-rose-700 to-pink-900',
       },
@@ -171,7 +171,7 @@ export function getCustomerBankAccounts(customerPersona) {
         accountNumberMasked: '•••• •••• 1144',
         ifsc: 'SBIN0001824',
         branch: 'Suramangalam, Salem',
-        balance: 92000.0,
+        balance: 45000.0,
         isPrimary: false,
         logoColor: 'from-cyan-700 to-blue-900',
       },
@@ -182,7 +182,7 @@ export function getCustomerBankAccounts(customerPersona) {
         accountNumberMasked: '•••• 7712',
         ifsc: 'FLNS000001',
         branch: 'Salem Digital Cyber Hub',
-        balance: 10000.0,
+        balance: 20000.0,
         isPrimary: false,
         logoColor: 'from-emerald-600 to-teal-800',
       },
@@ -198,7 +198,7 @@ export function getCustomerBankAccounts(customerPersona) {
       accountNumberMasked: '•••• •••• 4821',
       ifsc: 'HDFC0000491',
       branch: 'Fairlands, Salem',
-      balance: 547855.0,
+      balance: 45000.0,
       isPrimary: true,
       logoColor: 'from-blue-700 to-indigo-800',
     },
@@ -209,7 +209,7 @@ export function getCustomerBankAccounts(customerPersona) {
       accountNumberMasked: '•••• •••• 9102',
       ifsc: 'SBIN0001824',
       branch: 'Suramangalam, Salem',
-      balance: 242100.0,
+      balance: 25000.0,
       isPrimary: false,
       logoColor: 'from-cyan-700 to-blue-900',
     },
@@ -220,7 +220,7 @@ export function getCustomerBankAccounts(customerPersona) {
       accountNumberMasked: '•••• •••• 3341',
       ifsc: 'ICIC0000128',
       branch: 'Meyyanur, Salem',
-      balance: 180000.0,
+      balance: 18000.0,
       isPrimary: false,
       logoColor: 'from-orange-700 to-amber-900',
     },
@@ -231,7 +231,7 @@ export function getCustomerBankAccounts(customerPersona) {
       accountNumberMasked: '•••• 1500',
       ifsc: 'FLNS000001',
       branch: 'Salem Digital Cyber Hub',
-      balance: 547855.0,
+      balance: 10000.0,
       isPrimary: false,
       logoColor: 'from-emerald-600 to-teal-800',
     },
@@ -838,6 +838,55 @@ export default function PaymentView({
     }
   }, [])
 
+  // Demo Liquidity Management for Testing High-Value Fraud Scenarios
+  const [injectingLiquidity, setInjectingLiquidity] = useState(false)
+
+  const handleInjectLiquidity = useCallback(async (amountInRupees) => {
+    const targetCustId = customerPersona.customerId
+    if (!targetCustId) return
+    setInjectingLiquidity(true)
+    setError(null)
+    try {
+      const res = await paymentApi.injectDemoLiquidity(targetCustId, {
+        amount: amountInRupees,
+        action: 'SET',
+      })
+      setWallet((prev) => ({
+        ...(prev || {}),
+        simulated_balance: res.simulated_balance,
+        available_balance: res.simulated_balance,
+      }))
+      setActionSuccessMsg(`✓ Injected demo liquidity of ₹${(amountInRupees / 100000).toFixed(0)} Lakhs (₹${res.simulated_balance.toLocaleString('en-IN')}) for ${customerPersona.name}! High-value fraud detection testing is enabled.`)
+    } catch (e) {
+      setError(`Failed to inject demo liquidity: ${e.message}`)
+    } finally {
+      setInjectingLiquidity(false)
+    }
+  }, [customerPersona.customerId, customerPersona.name])
+
+  const handleResetLiquidity = useCallback(async () => {
+    const targetCustId = customerPersona.customerId
+    if (!targetCustId) return
+    setInjectingLiquidity(true)
+    setError(null)
+    try {
+      const res = await paymentApi.injectDemoLiquidity(targetCustId, {
+        amount: 0,
+        action: 'RESET',
+      })
+      setWallet((prev) => ({
+        ...(prev || {}),
+        simulated_balance: res.simulated_balance,
+        available_balance: res.simulated_balance,
+      }))
+      setActionSuccessMsg(`✓ Reset balance back to baseline limit of ₹${res.simulated_balance.toLocaleString('en-IN')} for ${customerPersona.name}.`)
+    } catch (e) {
+      setError(`Failed to reset demo liquidity: ${e.message}`)
+    } finally {
+      setInjectingLiquidity(false)
+    }
+  }, [customerPersona.customerId, customerPersona.name])
+
   // Critical 4-User Privacy Isolation: Purge previous user state immediately on persona/customer switch
   useEffect(() => {
     const targetCustId = customerPersona.customerId
@@ -1399,6 +1448,89 @@ export default function PaymentView({
           </div>
         </div>
 
+        {/* Demo Liquidity Box (5, 10, 20 Lakhs) for High-Value Fraud Testing */}
+        <div className="relative z-10 my-3 p-3.5 rounded-2xl bg-gradient-to-r from-amber-950/40 via-purple-950/30 to-indigo-950/40 border border-amber-500/30 backdrop-blur-sm shadow-lg">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+            <div className="flex items-start sm:items-center gap-3">
+              <span className="p-2 rounded-xl bg-amber-500/15 text-amber-400 border border-amber-500/30 shrink-0">
+                <Zap className="w-4 h-4 text-amber-400 animate-pulse" />
+              </span>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs font-bold text-amber-300 font-mono uppercase tracking-wider">
+                    Demo Liquidity Injector
+                  </span>
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-amber-500/20 text-amber-200 border border-amber-500/40">
+                    PROJECT FRAUD DETECTION
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-300 mt-0.5">
+                  Inject demo liquidity to test high-ticket transactions, ML amount deviation scoring, and AML thresholds without insufficient balance blocks.
+                </p>
+              </div>
+            </div>
+
+            {/* Quick Action Presets: 5L, 10L, 20L, Reset */}
+            <div className="flex items-center gap-2 flex-wrap shrink-0">
+              <span className="text-[10px] font-mono text-slate-400 uppercase hidden sm:inline">Demo Amount:</span>
+              <button
+                type="button"
+                disabled={injectingLiquidity}
+                onClick={() => handleInjectLiquidity(500000)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                  availableBalance === 500000
+                    ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/30 scale-105 border border-amber-400'
+                    : 'bg-slate-900/90 text-amber-300 hover:bg-amber-950/50 hover:text-amber-200 border border-amber-500/40'
+                }`}
+                title="Set ₹5,00,000 demo liquidity for high-ticket fraud testing"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                ₹5 Lakhs
+              </button>
+
+              <button
+                type="button"
+                disabled={injectingLiquidity}
+                onClick={() => handleInjectLiquidity(1000000)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                  availableBalance === 1000000
+                    ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/30 scale-105 border border-amber-400'
+                    : 'bg-slate-900/90 text-amber-300 hover:bg-amber-950/50 hover:text-amber-200 border border-amber-500/40'
+                }`}
+                title="Set ₹10,00,000 demo liquidity for high-ticket fraud testing"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                ₹10 Lakhs
+              </button>
+
+              <button
+                type="button"
+                disabled={injectingLiquidity}
+                onClick={() => handleInjectLiquidity(2000000)}
+                className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                  availableBalance === 2000000
+                    ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/30 scale-105 border border-amber-400'
+                    : 'bg-slate-900/90 text-amber-300 hover:bg-amber-950/50 hover:text-amber-200 border border-amber-500/40'
+                }`}
+                title="Set ₹20,00,000 demo liquidity for high-ticket fraud testing"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                ₹20 Lakhs
+              </button>
+
+              <button
+                type="button"
+                disabled={injectingLiquidity}
+                onClick={() => handleResetLiquidity()}
+                className="px-2.5 py-1.5 rounded-xl text-[11px] font-mono text-slate-400 hover:text-white bg-slate-900/80 hover:bg-slate-800 border border-slate-700 transition cursor-pointer"
+                title="Reset balance to standard baseline (Monisha 45k, Mohana 60k, Sowmiya 80k, Ajay 300k)"
+              >
+                ↺ Reset
+              </button>
+            </div>
+          </div>
+        </div>
+
         {/* Today's Activity Bar */}
         <div className="relative z-10 pt-4 border-t border-slate-800/80 grid grid-cols-2 sm:grid-cols-4 gap-3">
           <div className="p-3 rounded-2xl bg-slate-950/80 border border-slate-800/90">
@@ -1759,13 +1891,26 @@ export default function PaymentView({
                       />
                     </div>
 
-                    {/* Insufficient Balance Inline Alert */}
+                    {/* Insufficient Balance Inline Alert with 1-Click Demo Liquidity Injection */}
                     {isInsufficient && (
-                      <div className="mt-2 p-2.5 rounded-xl bg-rose-950/80 border border-rose-600 text-rose-200 text-xs flex items-center gap-2 animate-shake">
-                        <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
-                        <span>
-                          <strong>Insufficient Balance:</strong> You requested {formatINR(formData.amount)}, but available balance is only {formatINR(availableBalance)}.
-                        </span>
+                      <div className="mt-2 p-2.5 rounded-xl bg-rose-950/80 border border-rose-600 text-rose-200 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 animate-shake shadow-lg shadow-rose-950/40">
+                        <div className="flex items-center gap-2">
+                          <AlertTriangle className="w-4 h-4 text-rose-400 shrink-0" />
+                          <span>
+                            <strong>Insufficient Balance:</strong> Requested {formatINR(formData.amount)}, but available balance is only {formatINR(availableBalance)}.
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => handleInjectLiquidity(Number(formData.amount) <= 500000 ? 500000 : Number(formData.amount) <= 1000000 ? 1000000 : 2000000)}
+                            className="px-2.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 text-[10px] font-bold font-mono transition flex items-center gap-1 shadow cursor-pointer"
+                            title="Inject sufficient demo liquidity to test this high-value transaction"
+                          >
+                            <Zap className="w-3 h-3 text-slate-950" />
+                            + Auto-Inject Demo Liquidity
+                          </button>
+                        </div>
                       </div>
                     )}
 
