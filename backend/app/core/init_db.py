@@ -25,6 +25,8 @@ logger = logging.getLogger("fraudlens.init_db")
 
 def _sync_sqlite_columns(db: Session) -> None:
     """Safely apply non-destructive ALTER TABLE ADD COLUMN for SQLite if missing."""
+    if "sqlite" not in str(engine.url):
+        return
     try:
         with engine.connect() as conn:
             # Check users columns

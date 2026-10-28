@@ -3,7 +3,7 @@
  * Ensures consistent JWT header injection, centralized error handling, and robust routing.
  */
 
-const BASE_URL = '/api/v1'
+const BASE_URL = (import.meta.env.VITE_API_BASE_URL ? import.meta.env.VITE_API_BASE_URL.replace(/\/+$/, '') : '') + '/api/v1'
 
 function getAuthHeaders() {
   const token = localStorage.getItem('fraudlens_token') || localStorage.getItem('access_token') || sessionStorage.getItem('fraudlens_token')
